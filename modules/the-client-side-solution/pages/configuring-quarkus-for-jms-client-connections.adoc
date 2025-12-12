@@ -1,0 +1,46 @@
+#  Configuring Quarkus for JMS client connections
+
+== Configuring Quarkus for JMS Client Connections
+
+Quarkus, a Kubernetes-native Java framework, can be effectively used as a JMS client to connect with ActiveMQ Artemis. This section will guide you through configuring Quarkus for JMS client connections, ensuring efficient and reliable communication with the ActiveMQ Artemis broker.
+
+### Prerequisites
+
+Before configuring Quarkus for JMS client connections, ensure that:
+
+1. ActiveMQ Artemis is deployed on OpenShift and accessible via a route.
+2. The necessary credentials and connection details are available.
+
+### Configuring Quarkus Application Properties
+
+Update the `application.properties` file in your Quarkus project to include the following properties:
+
+```properties
+quarkus.artemis.url=tcp://broker-route.apps-crc.testing:443?useTopologyForLoadBalancing=false;sslEnabled=true;trustStorePath=/keys/keystore.jks;trustStorePassword=password;verifyHost=false;failoverOnInitialConnection=true&reconnectAttempts=3&callTimeout=2000&retryInterval=5000
+quarkus.artemis.username=admin
+quarkus.artemis.password=admin
+```
+
+Replace `broker-route.apps-crc.testing` with the appropriate route for your ActiveMQ Artemis broker. Update the `username` and `password` with the actual credentials for your broker.
+
+### Wrapping Connection Factory with JmsPoolConnectionFactory
+
+To manage connections efficiently, wrap the JMS connection factory in the `JmsPoolConnectionFactory` provided by the pooled-jms library from messaginghub. This separation ensures optimal producer and consumer management.
+
+In your Quarkus application, create a CDI producer method to configure the `JmsPoolConnectionFactory`:
+
+```java
+import io.smallrye.common.annotation.Identifier;
+import jakarta.enterprise.inject.Produces;
+import jakarta.inject.Singleton;
+import org.apache.activemq.artemis.jms.client.ActiveMQConnectionFactory;
+import org.messaginghub.pooled.jms.JmsPoolConnectionFactory;
+
+@Singleton
+public class MyConfig {
+    @ConfigProperty(name = "quarkus.artemis.url")
+    String url;
+
+    @Produces
+    @Identifier("pcfProducer")
+    public JmsPoolConnectionFactory pcfProducer()

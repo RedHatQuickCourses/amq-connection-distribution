@@ -1,0 +1,25 @@
+#  Connection rebalancing and best practices
+
+== Connection Rebalancing and Best Practices
+
+In a multi-node broker setup, such as an ActiveMQ Artemis cluster, it's crucial to ensure even distribution of messages across all brokers to optimize performance and reliability. However, most modern application frameworks like Spring Boot or Quarkus create and scale connections on demand, leading to connection disparity between nodes and affecting message distribution.
+
+### Problem with Uneven Message Distribution
+
+When a client connects to a JMS-specific broker cluster, such as ActiveMQ Artemis, the default connection management mechanisms are not typically configured for even distribution of connections across all cluster members. If the application does not employ a connection pooling mechanism, it usually creates a single connection that can only be served by one broker. This results in uneven message distribution across brokers, which can negatively impact the overall system performance.
+
+### Solution: Connection Rebalancing and Best Practices
+
+To address the issue of uneven message distribution, we can implement connection rebalancing and follow best practices for managing JMS client connections.
+
+1. **Connection Rebalancing**: To achieve even distribution, create a new service targeting both pods in your OpenShift deployment. This ensures that connections are balanced between the two nodes.
+
+2. **JmsPoolConnectionFactory**: Wrap your connection factory with the JmsPoolConnectionFactory provided by the pooled-jms library from messaginghub. This separation of producer and consumer connection factories allows you to set the maximum connections greater than or equal to the number of brokers in the cluster.
+
+3. **Connection Pooling**: Implement a connection pooling mechanism to manage producer and consumer connections efficiently. This approach enables the application to create multiple connections that can be served by any broker in the cluster, promoting even message distribution.
+
+4. **Configuring Quarkus for JMS Client Connections**: When using Quarkus, configure it to work with JmsPoolConnectionFactory for efficient connection management. This ensures that your application can take full advantage of connection pooling and rebalancing.
+
+5. **Failover and Retry Mechanisms**: Implement failover and retry mechanisms to handle potential disconnections and maintain high availability. This ensures that your application remains resilient in the face of network issues or broker failures.
+
+By following these best practices, you can ensure even message distribution across brokers in an ActiveMQ Artemis cluster, enhancing the overall performance, reliability, and scalability of your distributed applications.

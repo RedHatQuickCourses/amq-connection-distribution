@@ -1,0 +1,38 @@
+#  Implementing failover and retry mechanisms
+
+== Implementing Failover and Retry Mechanisms
+
+In a distributed system, it's crucial to ensure that message delivery is resilient to failures. Failover and retry mechanisms play a vital role in maintaining the reliability of message-oriented middleware (MOM) systems, such as ActiveMQ Artemis. This section will guide you through implementing these mechanisms to ensure high availability and fault tolerance in your JMS client applications.
+
+### Failover Mechanism
+
+Failover refers to the automatic transfer of service from one available server to another in case of a failure. In the context of ActiveMQ Artemis, failover ensures that if one broker in a cluster fails, the client connections are seamlessly redirected to another available broker without any disruption in service.
+
+#### Configuring Failover
+
+To configure failover in ActiveMQ Artemis, you need to set up a shared store cluster, which allows brokers to synchronize their state. This ensures that if one broker fails, another can take over its responsibilities.
+
+1. **Enable the shared store:** In the `broker.xml` configuration file, set the `journal-directory` and `bindings-directory` to a shared file system that is accessible by all brokers in the cluster. This ensures that all brokers have access to the same persistent data.
+
+```xml
+<journal-directory>path/to/shared/journal</journal-directory>
+<bindings-directory>path/to/shared/bindings</bindings-directory>
+```
+
+2. **Configure the cluster connection:** In your JMS client application, configure the cluster connection using the `ClusterClientConnection` class. This class allows the client to connect to a cluster of ActiveMQ Artemis brokers.
+
+```java
+ClusterConnection clusterConnection = new ClusterConnection();
+clusterConnection.setClusterClient(new ClusterClient());
+clusterConnection.setConnector("artemis");
+clusterConnection.setHost("broker1.example.com", 61616);
+clusterConnection.setHost("broker2.example.com", 61616);
+clusterConnection.setUsername("username");
+clusterConnection.setPassword("password");
+```
+
+### Retry Mechanism
+
+Retry mechanisms are essential for handling transient failures in a distributed system. In the context of JMS clients, retries ensure that messages are not lost due to temporary network issues or broker unavailability.
+
+####

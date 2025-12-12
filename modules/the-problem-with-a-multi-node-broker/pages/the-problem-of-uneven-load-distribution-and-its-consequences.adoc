@@ -1,0 +1,21 @@
+#  The problem of uneven load distribution and its consequences
+
+== The Problem with a Multi-Node Broker
+
+In a multi-node broker setup, such as an ActiveMQ Artemis cluster, the challenge of uneven message distribution arises when connection management mechanisms are not configured for an even distribution of connections across all members of the cluster. This issue is particularly prevalent when applications do not employ a connection pooling mechanism.
+
+Without connection pooling, applications typically create a single connection that can only be served by one broker. This introduces the problem of uneven message distribution across all brokers. Although messages can move between nodes if a non-negative redistribution-delay is configured for an address, this reduces the cluster throughput and can even lead to paging pending messages to disk for queues with a high incoming message rate.
+
+### Consequences of Uneven Load Distribution
+
+1. **Reduced Cluster Throughput:** Uneven distribution of messages can lead to reduced overall throughput of the broker cluster. Some brokers may become overloaded with messages while others remain underutilized, causing inefficient resource allocation.
+
+2. **Increased Latency:** As messages accumulate on overloaded brokers, the latency for message processing and delivery increases. This can negatively impact the performance and responsiveness of the distributed application.
+
+3. **Disk Paging:** In cases of high incoming message rates, brokers may start paging pending messages to disk to manage memory. This can lead to increased disk I/O, further degrading performance and potentially causing message loss if the paging process fails.
+
+4. **Resource Waste:** Underutilized brokers in the cluster waste computational resources, such as CPU and memory, which could have been better allocated to other tasks or brokers in need.
+
+5. **Scalability Issues:** Uneven load distribution can hinder the scalability of the system. As the application demand grows, it becomes increasingly difficult to maintain a balanced workload across brokers, making it challenging to scale the system horizontally.
+
+To mitigate these consequences, it is essential to implement connection rebalancing and best practices, as discussed in the subsequent sections. This will ensure even message distribution across brokers, optimizing resource utilization, and enhancing the overall performance and reliability of the ActiveMQ Artemis cluster.

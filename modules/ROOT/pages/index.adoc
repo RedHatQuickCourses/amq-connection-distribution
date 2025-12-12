@@ -1,22 +1,29 @@
-= An Example Quick Course
+=  Message Oriented Middleware (MOM) with ActiveMQ Artemis on OpenShift
 :navtitle: Home
 
 == Introduction
 
-Course Title: Course title FIXME
+Course Title:  Message Oriented Middleware (MOM) with ActiveMQ Artemis on OpenShift
 
 Description:
 Course description FIXME
 
 Duration: FIXME hours
 
-== Objectives
+== Topics covered in this course
 
-On completing this course, you should be able to:
 
-* Observable, measurable objective...
-* Observable, measurable objective...
-* Observable, measurable objective...
+*  MOM Overview
+
+*  ActiveMQ Artemis Broker Overview
+
+*  ActiveMQ Artemis Deployment on OpenShift
+
+*  The Problem with a Multi-Node Broker
+
+*  The Client-Side Solution
+
+
 
 == Prerequisites
 

@@ -1,0 +1,22 @@
+#  ActiveMQ Artemis Deployment on OpenShift
+
+**ActiveMQ Artemis Deployment on OpenShift**
+
+- **OpenShift Overview**: OpenShift is a container application platform based on Kubernetes, providing a robust environment for deploying and managing applications. Its benefits include automated deployment, scaling, and management of applications in containers.
+
+- **Red Hat AMQ Operator**: This operator simplifies the deployment and management of ActiveMQ Artemis on OpenShift. It automates the creation, configuration, and scaling of ActiveMQ Artemis brokers.
+
+- **ActiveMQArtemis Custom Resource**: This is a Kubernetes-native object that defines the desired state for an ActiveMQ Artemis deployment. It includes configuration options for high performance and reliability, such as cluster topology, message paging, and journal settings.
+
+- **Deployment Steps**:
+  - Install the Red Hat AMQ Operator.
+  - Create an ActiveMQArtemis custom resource to define the broker configuration.
+  - OpenShift automatically provisions and configures the ActiveMQ Artemis brokers based on the custom resource definition.
+
+- **Service and Route Configuration**:
+  - Create a Service to expose the ActiveMQ Artemis brokers within the OpenShift cluster.
+  - Configure a Route with the "haproxy.router.openshift.io/balance" annotation set to "roundrobin" for load balancing incoming connections across the brokers.
+
+- **Application Configuration**:
+  - In the application (e.g., Quarkus), configure the ActiveMQ Artemis connection URL, credentials, and other settings in the application.properties file.
+  - Use JmsPoolConnectionFactory from the pooled-jms library to manage connections efficiently and implement failover and retry mechanisms.

@@ -1,0 +1,5 @@
+* xref:the-client-side-solution.adoc[]
+** xref:connection-rebalancing-and-best-practices.adoc[]
+** xref:configuring-quarkus-for-jms-client-connections.adoc[]
+** xref:using-jmspoolconnectionfactory-for-efficient-connection-management.adoc[]
+** xref:implementing-failover-and-retry-mechanisms.adoc[]

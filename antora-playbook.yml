@@ -1,6 +1,6 @@
 site:
-  title: FIXME Course Title
-  start_page: REPLACEREPONAME::index.adoc
+  title:  Message Oriented Middleware (MOM) with ActiveMQ Artemis on OpenShift
+  start_page: amq-connection-distribution::index.adoc
 
 content:
   sources:

@@ -1,0 +1,33 @@
+#  Introduction to ActiveMQ Artemis
+
+== ActiveMQ Artemis Broker Overview
+
+ActiveMQ Artemis is a high-performance, open-source message-oriented middleware (MOM) broker that facilitates reliable communication between distributed applications. It is designed to handle a large number of messages and provide features essential for modern distributed systems, such as loose coupling, scalability, faster response, high availability, and reliability.
+
+### Key Components
+
+ActiveMQ Artemis Brokers consist of several key components that work together to ensure efficient message handling:
+
+1. **Message Queues**: These are the primary destinations for messages in Artemis. A message queue ensures that each message is processed exactly once by a single consumer.
+
+2. **Topics**: Topics are publish-subscribe channels that allow multiple consumers to receive messages. Messages published to a topic are delivered to all active consumers subscribed to that topic.
+
+3. **Addresses**: Addresses are logical destinations that map to queues or topics. They provide a way to organize and route messages within the broker.
+
+### Configuration Options for High Performance and Reliability
+
+ActiveMQ Artemis offers various configuration options to optimize performance and ensure reliability:
+
+1. **Persistence**: Artemis can store messages persistently on disk, ensuring that messages are not lost in case of broker failure. This feature is crucial for mission-critical applications.
+
+2. **Page Memory**: Artemis uses a page memory feature to store messages in memory, which significantly improves performance for high-throughput applications.
+
+3. **Journal and Large Messages**: Artemis supports journaling for messages, allowing for efficient storage and retrieval of large messages.
+
+4. **Clustering**: Artemis can be deployed in a cluster configuration, where multiple brokers work together to provide high availability and scalability.
+
+5. **Security**: Artemis supports various security features, including authentication, authorization, and encryption, to protect sensitive data.
+
+By understanding and effectively utilizing these components and configuration options, developers can leverage ActiveMQ Artemis to build robust, scalable, and reliable distributed applications.
+
+<a href="JMS_Client_Connection_Rebalancing_And_Best_Practices.html">Next: Client-Side Solution</a>

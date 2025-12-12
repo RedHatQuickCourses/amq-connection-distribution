@@ -1,0 +1,3 @@
+* xref:mom-overview.adoc[]
+** xref:definition-and-importance-of-mom-in-distributed-applications.adoc[]
+** xref:key-features-of-mom-loose-coupling-scalability-faster-response-high-availability-and-reliability.adoc[]

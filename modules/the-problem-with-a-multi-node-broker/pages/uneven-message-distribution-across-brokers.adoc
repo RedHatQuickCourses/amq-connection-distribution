@@ -1,0 +1,23 @@
+#  Uneven message distribution across brokers
+
+== Uneven Message Distribution Across Brokers
+
+In a multi-node ActiveMQ Artemis broker cluster, uneven message distribution across brokers can occur due to the lack of even connection distribution. This issue arises when a client connects to a JMS-specific broker cluster, such as ActiveMQ Artemis, and most connection management mechanisms are not configured for an even distribution of connections across all members of the cluster.
+
+When an application does not use a connection pooling mechanism, it typically creates one connection that can only be served by one broker. This introduces the problem of uneven message distribution, as messages are not balanced across all brokers in the cluster. Although messages can move between nodes if a non-negative redistribution-delay is configured for an address, this reduces the cluster throughput and may even lead to paging pending messages to disk for queues with a high incoming message rate.
+
+This uneven distribution can be exacerbated when modern application frameworks like Spring Boot or Quarkus create and scale connections on demand. Since brokers generally handle connections independently, this results in a connection disparity between the two nodes, which in turn affects consumers.
+
+To address this issue, it is essential to implement connection rebalancing and best practices. This will ensure that messages are evenly distributed across the brokers in the cluster, enhancing overall system performance and reliability.
+
+**Hands-on Activity: Verifying Uneven Message Distribution**
+
+To verify the uneven message distribution across brokers, you can run the following command:
+
+```bash
+oc exec broker-<node-name> -- /home/jboss/amq-broker/bin/artemis queue stat --url tcp://broker-<node-name>:61616 --clustered --user admin --password admin --queueName <queue-name>
+```
+
+Replace `<node-name>` with the appropriate broker node name (e.g., `broker-ss-0` or `broker-ss-1`) and `<queue-name>` with the desired queue name (e.g., `prices`). This command will display the message and connection statistics for the specified queue on each broker node, allowing you to assess the distribution.
+
+By understanding and addressing the issue of uneven message distribution across brokers, you can optimize your ActiveMQ Artemis deployment on OpenShift and ensure high availability and reliability for your distributed applications.

@@ -1,0 +1,12 @@
+#  ActiveMQ Artemis Broker Overview
+
+**ActiveMQ Artemis Broker Overview**
+
+- **Introduction to ActiveMQ Artemis**: ActiveMQ Artemis is a high-performance, open-source message broker that facilitates reliable communication between distributed applications. It is an implementation of the Java Message Service (JMS) standard.
+
+- **Key Components**:
+  - **Message Queues**: These are used for point-to-point communication. A message sent to a queue is received by one of the consumers listening on that queue.
+  - **Topics**: These are used for publish-subscribe communication. A message published to a topic is delivered to all consumers subscribed to that topic.
+  - **Addresses**: These are used to route messages to the correct destination, whether it's a queue or a topic.
+
+- **Configuration Options**: ActiveMQ Artemis offers various configuration options to ensure high performance and reliability. These include settings for persistence, page maximum, and journal directory. It also supports clustering for load balancing and high availability.

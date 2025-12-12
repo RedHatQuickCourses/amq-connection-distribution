@@ -1,0 +1,43 @@
+#  Using JmsPoolConnectionFactory for efficient connection management
+
+== Using JmsPoolConnectionFactory for Efficient Connection Management
+
+In the context of Message-Oriented Middleware (MOM) with ActiveMQ Artemis on OpenShift, efficient connection management is crucial for maintaining high performance and reliability. One of the key tools for achieving this is the `JmsPoolConnectionFactory` provided by the pooled-jms library from messaginghub.
+
+### Why Use JmsPoolConnectionFactory?
+
+The `JmsPoolConnectionFactory` separates producer and consumer connection factories, allowing for better control and management of connections. This separation is essential in a multi-node broker environment, where uneven message distribution and connection pooling issues can significantly impact message distribution and system performance.
+
+### Configuring JmsPoolConnectionFactory
+
+To configure `JmsPoolConnectionFactory`, you need to set the maximum connections (`setMaxConnections`) to a value equal to or greater than the number of brokers in your cluster. This ensures that connections are evenly distributed across all brokers, preventing uneven load distribution and its consequences.
+
+Here's an example of how to configure `JmsPoolConnectionFactory` for both producers and consumers:
+
+```java
+@Produces
+@Identifier("pcfProducer")
+public JmsPoolConnectionFactory pcfProducer() throws Exception {
+    ActiveMQConnectionFactory activeMQConnectionFactory = new ActiveMQConnectionFactory(url);
+    JmsPoolConnectionFactory poolConnectionFactory = new JmsPoolConnectionFactory();
+    poolConnectionFactory.setConnectionFactory(activeMQConnectionFactory);
+    poolConnectionFactory.setMaxConnections(5); //max connections should be set equal to or more than the number of brokers
+    poolConnectionFactory.setMaxSessionsPerConnection(500);
+    return poolConnectionFactory;
+}
+
+@Produces
+@Identifier("pcfConsumer")
+public JmsPoolConnectionFactory pcfConsumer() throws Exception {
+    ActiveMQConnectionFactory activeMQConnectionFactory = new ActiveMQConnectionFactory(url);
+    JmsPoolConnectionFactory poolConnectionFactory = new JmsPoolConnectionFactory();
+    poolConnectionFactory.setConnectionFactory(activeMQConnectionFactory);
+    poolConnectionFactory.setMaxConnections(5); //max connections should be set equal to or more than the number of brokers
+    poolConnectionFactory.setMaxSessionsPerConnection(1);
+    return poolConnectionFactory;
+}
+```
+
+### Consumer Application Configuration
+
+In the consumer application, it's important to create the same number of consumers as the number of max connections in the consumer connection factory. This ensures that all connections (and by association, the consumers) are created
