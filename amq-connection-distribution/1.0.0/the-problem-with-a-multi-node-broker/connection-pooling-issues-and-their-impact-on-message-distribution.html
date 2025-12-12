@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Connection pooling issues and their impact on message distribution :: Message Oriented Middleware (MOM) with ActiveMQ Artemis on OpenShift</title>
+    <link rel="prev" href="uneven-message-distribution-across-brokers.html">
+    <link rel="next" href="the-problem-of-uneven-load-distribution-and-its-consequences.html">
+    <meta name="generator" content="Antora 3.1.3">
+    <link rel="stylesheet" href="../../../_/css/site.css">
+    <script>var uiRootPath = '../../../_'</script>
+  </head>
+  <body class="article">
+<header class="header">
+  <nav class="navbar">
+    <div class="navbar-brand">
+      <a class="navbar-item" href="https://www.redhat.com" target="_blank"><img src="../../../_/img/redhat-logo.png" height="40px" alt="Red Hat"></a>
+      <a class="navbar-item" style="font-size: 24px; color: white" href="../../..">Message Oriented Middleware (MOM) with ActiveMQ Artemis on OpenShift</a>
+      <button class="navbar-burger" data-target="topbar-nav">
+        <span></span>
+        <span></span>
+        <span></span>
+      </button>
+    </div>
+    <div id="topbar-nav" class="navbar-menu">
+      <div class="navbar-end">
+        <a class="navbar-item" href="https://github.com/RedHatQuickCourses/REPLACEREPONAME/issues" target="_blank">Report Issues</a>
+      </div>
+    </div>
+  </nav>
+</header>
+<div class="body">
+<div class="nav-container" data-component="amq-connection-distribution" data-version="1.0.0">
+  <aside class="nav">
+    <div class="panels">
+<div class="nav-panel-menu is-active" data-panel="menu">
+  <nav class="nav-menu">
+    <h3 class="title"><a href="../index.html">Message Oriented Middleware (MOM) with ActiveMQ Artemis on OpenShift</a></h3>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="../index.html">Home</a>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="../LABENV/index.html">Lab Environment</a>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../mom-overview/mom-overview.html">MOM Overview</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../mom-overview/definition-and-importance-of-mom-in-distributed-applications.html">Definition and importance of MOM in distributed applications</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../mom-overview/key-features-of-mom-loose-coupling-scalability-faster-response-high-availability-and-reliability.html">Key features of MOM: loose coupling, scalability, faster response, high availability, and reliability</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../activemq-artemis-broker-overview/activemq-artemis-broker-overview.html">ActiveMQ Artemis Broker Overview</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../activemq-artemis-broker-overview/introduction-to-activemq-artemis.html">Introduction to ActiveMQ Artemis</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../activemq-artemis-broker-overview/key-components-message-queues-topics-and-addresses.html">Key components: message queues, topics, and addresses</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../activemq-artemis-broker-overview/configuration-options-for-high-performance-and-reliability.html">Configuration options for high performance and reliability</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../activemq-artemis-deployment-on-openshift/activemq-artemis-deployment-on-openshift.html">ActiveMQ Artemis Deployment on OpenShift</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../activemq-artemis-deployment-on-openshift/overview-of-openshift-and-its-benefits-for-deploying-mom.html">Overview of OpenShift and its benefits for deploying MOM</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../activemq-artemis-deployment-on-openshift/steps-to-deploy-activemq-artemis-on-openshift.html">Steps to deploy ActiveMQ Artemis on OpenShift</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../activemq-artemis-deployment-on-openshift/configuring-services-and-routes-for-load-balancing.html">Configuring services and routes for load balancing</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="the-problem-with-a-multi-node-broker.html">The Problem with a Multi-Node Broker</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="uneven-message-distribution-across-brokers.html">Uneven message distribution across brokers</a>
+  </li>
+  <li class="nav-item is-current-page" data-depth="2">
+    <a class="nav-link" href="connection-pooling-issues-and-their-impact-on-message-distribution.html">Connection pooling issues and their impact on message distribution</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="the-problem-of-uneven-load-distribution-and-its-consequences.html">The problem of uneven load distribution and its consequences</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../the-client-side-solution/the-client-side-solution.html">The Client-Side Solution</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../the-client-side-solution/connection-rebalancing-and-best-practices.html">Connection rebalancing and best practices</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../the-client-side-solution/configuring-quarkus-for-jms-client-connections.html">Configuring Quarkus for JMS client connections</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../the-client-side-solution/using-jmspoolconnectionfactory-for-efficient-connection-management.html">Using JmsPoolConnectionFactory for efficient connection management</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../the-client-side-solution/implementing-failover-and-retry-mechanisms.html">Implementing failover and retry mechanisms</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="../appendix/appendix.html">Appendix</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </nav>
+</div>
+<div class="nav-panel-explore" data-panel="explore">
+  <div class="context">
+    <span class="title">Message Oriented Middleware (MOM) with ActiveMQ Artemis on OpenShift</span>
+    <span class="version">1.0.0</span>
+  </div>
+  <ul class="components">
+    <li class="component is-current">
+      <a class="title" href="../index.html">Message Oriented Middleware (MOM) with ActiveMQ Artemis on OpenShift</a>
+      <ul class="versions">
+        <li class="version is-current is-latest">
+          <a href="../index.html">1.0.0</a>
+        </li>
+      </ul>
+    </li>
+  </ul>
+</div>
+    </div>
+  </aside>
+</div>
+<main class="article">
+<div class="toolbar" role="navigation">
+<button class="nav-toggle"></button>
+  <a href="../index.html" class="home-link"></a>
+<nav class="breadcrumbs" aria-label="breadcrumbs">
+  <ul>
+    <li><a href="../index.html">Message Oriented Middleware (MOM) with ActiveMQ Artemis on OpenShift</a></li>
+    <li><a href="the-problem-with-a-multi-node-broker.html">The Problem with a Multi-Node Broker</a></li>
+    <li><a href="connection-pooling-issues-and-their-impact-on-message-distribution.html">Connection pooling issues and their impact on message distribution</a></li>
+  </ul>
+</nav>
+</div>
+  <div class="content">
+<aside class="toc sidebar" data-title="Contents" data-levels="2">
+  <div class="toc-menu"></div>
+</aside>
+<article class="doc">
+<h1 class="page">Connection pooling issues and their impact on message distribution</h1>
+<div class="sect1">
+<h2 id="_connection_pooling_issues_and_their_impact_on_message_distribution"><a class="anchor" href="#_connection_pooling_issues_and_their_impact_on_message_distribution"></a>Connection Pooling Issues and Their Impact on Message Distribution</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>In a Message Oriented Middleware (MOM) environment, such as ActiveMQ Artemis, connection pooling is a crucial aspect of managing client connections to the broker. Connection pooling allows for the reuse of a set of connections, reducing the overhead of establishing a new connection each time one is needed. However, without proper configuration, connection pooling can introduce issues that negatively impact message distribution across brokers in a cluster.</p>
+</div>
+<div class="sect2">
+<h3 id="_problem_uneven_message_distribution"><a class="anchor" href="#_problem_uneven_message_distribution"></a>Problem: Uneven Message Distribution</h3>
+<div class="paragraph">
+<p>When a client connects to a JMS-specific broker cluster (like ActiveMQ Artemis), most connection management mechanisms are not configured for an even distribution of connections across all cluster members. If the application does not employ a connection pooling mechanism, it typically creates a single connection that can only be served by one broker. This setup introduces the problem of uneven message distribution across brokers.</p>
+</div>
+<div class="paragraph">
+<p>In a multi-node broker cluster, messages can move between nodes if a non-negative redistribution-delay is configured for an address. However, this reduces the overall cluster throughput and can even lead to paging pending messages to disk for queues with a high incoming message rate. Consequently, some brokers may become overloaded with messages while others remain underutilized, resulting in inefficient resource allocation and suboptimal performance.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_best_practices_for_connection_pooling"><a class="anchor" href="#_best_practices_for_connection_pooling"></a>Best Practices for Connection Pooling</h3>
+<div class="paragraph">
+<p>To address connection pooling issues and ensure even message distribution, consider the following best practices:</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p><strong>Use JmsPoolConnectionFactory</strong>: Wrap your connection factory in the JmsPoolConnectionFactory provided by the pooled-jms library from messaginghub. This separation of producer and consumer connection factories allows for better control over the maximum number of connections.</p>
+</li>
+<li>
+<p><strong>Set Maximum Connections</strong>: Configure the maximum number of connections to be greater than or equal to the number of brokers in the cluster. This ensures that connections are distributed evenly across all available brokers, maximizing resource utilization and improving overall performance.</p>
+</li>
+<li>
+<p><strong>Implement Failover and Retry Mechanisms</strong>: Incorporate failover and retry mechanisms in your client applications to handle broker failures gracefully. This ensures high availability and reliability in the MOM infrastructure.</p>
+</li>
+</ol>
+</div>
+<div class="paragraph">
+<p>By following these best practices, you can mitigate connection pooling issues and achieve a more balanced message distribution across brokers in an ActiveMQ Artemis cluster. This leads to improved throughput, better resource allocation, and enhanced overall performance of your distributed</p>
+</div>
+</div>
+</div>
+</div>
+<nav class="pagination">
+  <span class="prev"><a href="uneven-message-distribution-across-brokers.html">Uneven message distribution across brokers</a></span>
+  <span class="next"><a href="the-problem-of-uneven-load-distribution-and-its-consequences.html">The problem of uneven load distribution and its consequences</a></span>
+</nav>
+</article>
+  </div>
+</main>
+</div>
+<footer class="footer">
+  <img src="../../../_/img/rhl-logo-red.png" height="40px" alt="Red Hat"  href="https://redhat.com" >
+</footer><script id="site-script" src="../../../_/js/site.js" data-ui-root-path="../../../_"></script>
+<script async src="../../../_/js/vendor/highlight.js"></script>
+  </body>
+</html>

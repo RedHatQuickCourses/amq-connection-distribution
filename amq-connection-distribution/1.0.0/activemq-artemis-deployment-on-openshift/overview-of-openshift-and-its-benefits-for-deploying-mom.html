@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Overview of OpenShift and its benefits for deploying MOM :: Message Oriented Middleware (MOM) with ActiveMQ Artemis on OpenShift</title>
+    <link rel="prev" href="activemq-artemis-deployment-on-openshift.html">
+    <link rel="next" href="steps-to-deploy-activemq-artemis-on-openshift.html">
+    <meta name="generator" content="Antora 3.1.3">
+    <link rel="stylesheet" href="../../../_/css/site.css">
+    <script>var uiRootPath = '../../../_'</script>
+  </head>
+  <body class="article">
+<header class="header">
+  <nav class="navbar">
+    <div class="navbar-brand">
+      <a class="navbar-item" href="https://www.redhat.com" target="_blank"><img src="../../../_/img/redhat-logo.png" height="40px" alt="Red Hat"></a>
+      <a class="navbar-item" style="font-size: 24px; color: white" href="../../..">Message Oriented Middleware (MOM) with ActiveMQ Artemis on OpenShift</a>
+      <button class="navbar-burger" data-target="topbar-nav">
+        <span></span>
+        <span></span>
+        <span></span>
+      </button>
+    </div>
+    <div id="topbar-nav" class="navbar-menu">
+      <div class="navbar-end">
+        <a class="navbar-item" href="https://github.com/RedHatQuickCourses/REPLACEREPONAME/issues" target="_blank">Report Issues</a>
+      </div>
+    </div>
+  </nav>
+</header>
+<div class="body">
+<div class="nav-container" data-component="amq-connection-distribution" data-version="1.0.0">
+  <aside class="nav">
+    <div class="panels">
+<div class="nav-panel-menu is-active" data-panel="menu">
+  <nav class="nav-menu">
+    <h3 class="title"><a href="../index.html">Message Oriented Middleware (MOM) with ActiveMQ Artemis on OpenShift</a></h3>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="../index.html">Home</a>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="../LABENV/index.html">Lab Environment</a>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../mom-overview/mom-overview.html">MOM Overview</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../mom-overview/definition-and-importance-of-mom-in-distributed-applications.html">Definition and importance of MOM in distributed applications</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../mom-overview/key-features-of-mom-loose-coupling-scalability-faster-response-high-availability-and-reliability.html">Key features of MOM: loose coupling, scalability, faster response, high availability, and reliability</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../activemq-artemis-broker-overview/activemq-artemis-broker-overview.html">ActiveMQ Artemis Broker Overview</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../activemq-artemis-broker-overview/introduction-to-activemq-artemis.html">Introduction to ActiveMQ Artemis</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../activemq-artemis-broker-overview/key-components-message-queues-topics-and-addresses.html">Key components: message queues, topics, and addresses</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../activemq-artemis-broker-overview/configuration-options-for-high-performance-and-reliability.html">Configuration options for high performance and reliability</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="activemq-artemis-deployment-on-openshift.html">ActiveMQ Artemis Deployment on OpenShift</a>
+<ul class="nav-list">
+  <li class="nav-item is-current-page" data-depth="2">
+    <a class="nav-link" href="overview-of-openshift-and-its-benefits-for-deploying-mom.html">Overview of OpenShift and its benefits for deploying MOM</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="steps-to-deploy-activemq-artemis-on-openshift.html">Steps to deploy ActiveMQ Artemis on OpenShift</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="configuring-services-and-routes-for-load-balancing.html">Configuring services and routes for load balancing</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../the-problem-with-a-multi-node-broker/the-problem-with-a-multi-node-broker.html">The Problem with a Multi-Node Broker</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../the-problem-with-a-multi-node-broker/uneven-message-distribution-across-brokers.html">Uneven message distribution across brokers</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../the-problem-with-a-multi-node-broker/connection-pooling-issues-and-their-impact-on-message-distribution.html">Connection pooling issues and their impact on message distribution</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../the-problem-with-a-multi-node-broker/the-problem-of-uneven-load-distribution-and-its-consequences.html">The problem of uneven load distribution and its consequences</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../the-client-side-solution/the-client-side-solution.html">The Client-Side Solution</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../the-client-side-solution/connection-rebalancing-and-best-practices.html">Connection rebalancing and best practices</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../the-client-side-solution/configuring-quarkus-for-jms-client-connections.html">Configuring Quarkus for JMS client connections</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../the-client-side-solution/using-jmspoolconnectionfactory-for-efficient-connection-management.html">Using JmsPoolConnectionFactory for efficient connection management</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../the-client-side-solution/implementing-failover-and-retry-mechanisms.html">Implementing failover and retry mechanisms</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="../appendix/appendix.html">Appendix</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </nav>
+</div>
+<div class="nav-panel-explore" data-panel="explore">
+  <div class="context">
+    <span class="title">Message Oriented Middleware (MOM) with ActiveMQ Artemis on OpenShift</span>
+    <span class="version">1.0.0</span>
+  </div>
+  <ul class="components">
+    <li class="component is-current">
+      <a class="title" href="../index.html">Message Oriented Middleware (MOM) with ActiveMQ Artemis on OpenShift</a>
+      <ul class="versions">
+        <li class="version is-current is-latest">
+          <a href="../index.html">1.0.0</a>
+        </li>
+      </ul>
+    </li>
+  </ul>
+</div>
+    </div>
+  </aside>
+</div>
+<main class="article">
+<div class="toolbar" role="navigation">
+<button class="nav-toggle"></button>
+  <a href="../index.html" class="home-link"></a>
+<nav class="breadcrumbs" aria-label="breadcrumbs">
+  <ul>
+    <li><a href="../index.html">Message Oriented Middleware (MOM) with ActiveMQ Artemis on OpenShift</a></li>
+    <li><a href="activemq-artemis-deployment-on-openshift.html">ActiveMQ Artemis Deployment on OpenShift</a></li>
+    <li><a href="overview-of-openshift-and-its-benefits-for-deploying-mom.html">Overview of OpenShift and its benefits for deploying MOM</a></li>
+  </ul>
+</nav>
+</div>
+  <div class="content">
+<aside class="toc sidebar" data-title="Contents" data-levels="2">
+  <div class="toc-menu"></div>
+</aside>
+<article class="doc">
+<h1 class="page">Overview of OpenShift and its benefits for deploying MOM</h1>
+<div class="sect1">
+<h2 id="_overview_of_openshift_and_its_benefits_for_deploying_mom"><a class="anchor" href="#_overview_of_openshift_and_its_benefits_for_deploying_mom"></a>Overview of OpenShift and its Benefits for Deploying MOM</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>OpenShift, a container application platform by Red Hat, is an excellent choice for deploying Message Oriented Middleware (MOM) solutions like ActiveMQ Artemis. This section will provide an overview of OpenShift and highlight its benefits for deploying MOM.</p>
+</div>
+<div class="paragraph">
+<p><strong>What is OpenShift?</strong></p>
+</div>
+<div class="paragraph">
+<p>OpenShift is built on top of Docker containers and Kubernetes, providing a robust, secure, and scalable platform for deploying and managing containerized applications. It simplifies the deployment process, automates application management, and offers a seamless integration with various development tools and CI/CD pipelines.</p>
+</div>
+<div class="paragraph">
+<p><strong>Benefits of OpenShift for Deploying MOM</strong></p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p><strong>Scalability</strong>: OpenShift allows for easy horizontal scaling of applications, which is crucial for MOM solutions like ActiveMQ Artemis. As the number of messages and connected clients grow, you can quickly add more broker pods to handle the increased load.</p>
+</li>
+<li>
+<p><strong>High Availability</strong>: OpenShift ensures high availability by automatically restarting failed containers and rescheduling them on healthy nodes. This feature is essential for MOM deployments, as it guarantees continuous message delivery even in the event of broker failures.</p>
+</li>
+<li>
+<p><strong>Load Balancing</strong>: OpenShift&#8217;s built-in load balancing capabilities distribute incoming client connections across multiple broker pods. This ensures that no single broker becomes a bottleneck, leading to more efficient message distribution and improved overall performance.</p>
+</li>
+<li>
+<p><strong>Simplified Deployment</strong>: OpenShift simplifies the deployment process using custom resources, such as the ActiveMQArtemis custom resource. This allows you to define your MOM infrastructure as code, making it easier to manage and maintain.</p>
+</li>
+<li>
+<p><strong>Integration with CI/CD Pipelines</strong>: OpenShift seamlessly integrates with popular CI/CD tools, enabling automated deployment, testing, and scaling of MOM applications. This ensures that your MOM infrastructure can evolve alongside your application requirements.</p>
+</li>
+<li>
+<p><strong>Security</strong>: OpenShift provides robust security features, including role-based access control (RBAC), image signing, and secret management. These features help protect your MOM infrastructure and the sensitive data it handles.</p>
+</li>
+<li>
+<p><strong>Observability and Monitoring</strong>: OpenShift offers integrated monitoring and logging capabilities, allowing you to track the health and performance of your MOM deployment. This helps in identifying and resolving issues quickly, ensuring smooth operation of your distributed applications.</p>
+</li>
+</ol>
+</div>
+<div class="paragraph">
+<p>In</p>
+</div>
+</div>
+</div>
+<nav class="pagination">
+  <span class="prev"><a href="activemq-artemis-deployment-on-openshift.html">ActiveMQ Artemis Deployment on OpenShift</a></span>
+  <span class="next"><a href="steps-to-deploy-activemq-artemis-on-openshift.html">Steps to deploy ActiveMQ Artemis on OpenShift</a></span>
+</nav>
+</article>
+  </div>
+</main>
+</div>
+<footer class="footer">
+  <img src="../../../_/img/rhl-logo-red.png" height="40px" alt="Red Hat"  href="https://redhat.com" >
+</footer><script id="site-script" src="../../../_/js/site.js" data-ui-root-path="../../../_"></script>
+<script async src="../../../_/js/vendor/highlight.js"></script>
+  </body>
+</html>
