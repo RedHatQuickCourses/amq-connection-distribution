@@ -1,5 +1,5 @@
 site:
-  title:  Message Oriented Middleware (MOM) with ActiveMQ Artemis on OpenShift
+  title:  Red Hat AMQ Broker on OpenShift: Deployment and Configuration
   start_page: amq-connection-distribution::index.adoc
 
 content:

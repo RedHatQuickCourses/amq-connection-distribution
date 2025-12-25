@@ -1,0 +1,209 @@
+#  Hands-on Lab: Exposing AMQ Broker Externally
+
+= Red Hat AMQ Broker on OpenShift: Hands-on Lab - Exposing AMQ Broker Externally
+
+This lab guides you through the process of making your Red Hat AMQ Broker instance, deployed on OpenShift, accessible to external clients. You'll learn how to leverage OpenShift's networking capabilities, specifically *Routes*, to expose the broker's messaging services.
+
+== Understanding External Access for AMQ Broker on OpenShift
+
+When you deploy AMQ Broker instances within OpenShift, they typically run inside pods and are accessible to other applications within the same OpenShift cluster via internal services. However, for client applications running outside the OpenShift cluster (e.g., on developer workstations, on-premises systems, or other cloud environments), you need mechanisms to expose these services externally.
+
+OpenShift provides several methods to expose internal services:
+
+*   **Routes:** This is the most common and recommended way to expose HTTP/HTTPS services. Routes define how external HTTP/HTTPS traffic is directed to specific services within OpenShift. For messaging protocols like AMQP, MQTT, or STOMP, Routes can also be used if they leverage SNI (Server Name Indication) or if you're willing to expose a single protocol per route. OpenShift Routes offer features like load balancing, SSL/TLS termination (edge, re-encrypt), and path-based routing.
+*   **NodePorts:** A `NodePort` service type exposes a service on a static port on each node in the cluster. External clients can then access the service using the IP address of any node and the assigned `NodePort`. This method bypasses the OpenShift router but requires direct access to cluster nodes and potentially external load balancers.
+*   **Load Balancers:** On cloud providers, a `LoadBalancer` service type provisions an external load balancer to distribute traffic to your service. This is ideal for exposing non-HTTP/HTTPS services and provides a dedicated external IP. However, it's dependent on the underlying cloud infrastructure.
+
+For AMQ Broker, especially for standard messaging protocols like AMQP, MQTT, and STOMP, OpenShift Routes are often the preferred method due to their flexibility, integration with OpenShift's internal ingress controller (HAProxy by default), and built-in security features.
+
+=== Securing External Access
+
+Exposing services externally inherently introduces security considerations. When making AMQ Broker accessible from outside the cluster, it's crucial to ensure secure communication:
+
+*   **SSL/TLS:** Always use SSL/TLS for encrypting data in transit. OpenShift Routes can handle SSL/TLS termination at the edge (decrypting traffic at the router) or re-encryption (decrypting at the router, re-encrypting, and sending to the service), or passthrough (router forwards encrypted traffic directly to the service). For AMQ Broker, configuring the broker's acceptors with SSL/TLS and then using a passthrough route is often the most secure end-to-end approach, as discussed in the xref:security-configuration.adoc[Security Configuration] and xref:acceptor-configuration.adoc[Acceptor Configuration] labs.
+*   **Network Policies:** OpenShift Network Policies allow you to control traffic flow between pods, and also between external sources and pods. You can define policies to restrict external access to specific IP ranges or namespaces.
+*   **Authentication and Authorization:** Ensure that any client connecting externally is properly authenticated and authorized to perform operations on the broker, as covered in the xref:security-configuration.adoc[Security Configuration] lab.
+
+In this lab, we will focus on creating OpenShift Routes to expose the AMQ Broker's standard AMQP port.
+
+== Hands-on Lab: Exposing AMQ Broker Externally
+
+In this lab, you will expose your deployed AMQ Broker instance externally using OpenShift Routes, enabling client applications outside the cluster to connect and exchange messages.
+
+=== Prerequisites
+
+Before starting this lab, ensure you have:
+
+*   An OpenShift cluster with the `oc` command-line tool configured and logged in.
+*   An AMQ Broker instance deployed in your OpenShift project, preferably created using the AMQ Broker Operator as demonstrated in the xref:amq-on-openshift.adoc[AMQ On OpenShift] lab.
+*   (Optional but recommended) A simple AMQP client installed on your local machine for testing connectivity (e.g., `qpid-jms-client`, `rhea`, or just `netcat`/`telnet`).
+
+=== Activity 1: Identify the AMQ Broker Service
+
+First, let's identify the OpenShift Service created by the AMQ Broker Operator for your broker instance. This service is what the Route will target.
+
+.Log in to your OpenShift project where the broker is deployed. Replace `my-amq-project` with your actual project name.
++
+[source,bash]
+----
+oc login -u developer -p developer
+oc project my-amq-project
+----
+
+.List the services in your project and identify the one corresponding to your AMQ Broker instance. The service name typically follows the pattern `<broker-name>-amqp`.
++
+[source,bash]
+----
+oc get svc
+----
++
+.Example Output
+[source,bash]
+----
+NAME                            TYPE        CLUSTER-IP       EXTERNAL-IP   PORT(S)                               AGE
+mybroker-amqp                   ClusterIP   172.30.150.123   <none>        5672/TCP,5671/TCP,61616/TCP,61613/TCP   5m
+mybroker-console                ClusterIP   172.30.200.234   <none>        8161/TCP                              5m
+kubernetes                      ClusterIP   172.30.0.1       <none>        443/TCP,53/UDP,53/TCP                 1h
+----
++
+From the example, `mybroker-amqp` is the service we're interested in, exposing ports like `5672` (AMQP) and `5671` (AMQPS). The `mybroker-console` service is for the web console (typically exposed via a separate HTTP route).
+
+=== Activity 2: Create an OpenShift Route for AMQP
+
+Now, let's create an OpenShift Route to expose the AMQP 5672 port of your broker service.
+
+.Create a basic insecure Route for the AMQP (5672) port.
++
+[source,bash]
+----
+oc create route passthrough mybroker-amqp --service=mybroker-amqp --port=amqp --insecure-policy=Redirect
+----
++
+NOTE: We're using `passthrough` here. Even for an unencrypted AMQP port, `passthrough` works for non-HTTP traffic. The `--insecure-policy=Redirect` is more relevant for HTTP/HTTPS routes but is generally a good practice for secure-aware routes. If you were exposing an AMQPS port (5671) *and* the broker was configured for SSL/TLS, `passthrough` would ensure end-to-end encryption. For plain AMQP, it will simply forward the TCP connection.
+
+.Alternatively, you can create a Route via a YAML definition, which offers more control.
++
+.mybroker-amqp-route.yaml
+[source,yaml]
+----
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: mybroker-amqp-route
+spec:
+  host: mybroker-amqp.apps.mycluster.example.com  # Optional: specify a custom hostname
+  to:
+    kind: Service
+    name: mybroker-amqp
+    weight: 100
+  port:
+    targetPort: amqp # This refers to the named port 'amqp' (5672) in the service
+  tls:
+    termination: passthrough # Use passthrough to forward raw TCP for AMQP
+    insecureEdgeTerminationPolicy: Redirect
+  wildcardPolicy: None
+----
++
+Apply this YAML:
++
+[source,bash]
+----
+oc apply -f mybroker-amqp-route.yaml
+----
+
+.Verify that the Route has been created.
++
+[source,bash]
+----
+oc get route mybroker-amqp mybroker-amqp-route
+----
++
+.Example Output
+[source,bash]
+----
+NAME                    HOST/PORT                                           PATH   SERVICES        PORT   TERMINATION   WILDCARD
+mybroker-amqp           mybroker-amqp-my-amq-project.apps.cluster.name.com         mybroker-amqp   amqp   passthrough   None
+mybroker-amqp-route     mybroker-amqp.apps.mycluster.example.com                   mybroker-amqp   amqp   passthrough   None
+----
++
+Note the `HOST/PORT` column. This is the external URL that clients will use to connect to your AMQ Broker. It typically follows the pattern `<route-name>-<project-name>.<router-domain>`.
+
+TIP: If your broker also exposes an SSL/TLS-enabled AMQPS port (e.g., `5671`), and the broker's acceptor is configured for TLS, you should create a separate passthrough route targeting the `amqps` port to ensure end-to-end encryption.
++
+[source,bash]
+----
+oc create route passthrough mybroker-amqps --service=mybroker-amqp --port=amqps --insecure-policy=Redirect
+----
++
+This would create a second route, e.g., `mybroker-amqps-my-amq-project.apps.cluster.name.com`, which clients could use for secure AMQP communication.
+
+=== Activity 3: Test External Access
+
+Now that the Route is established, you can test connectivity from an external client.
+
+.Identify the Route's hostname.
++
+[source,bash]
+----
+export AMQ_BROKER_HOST=$(oc get route mybroker-amqp -o jsonpath='{.spec.host}')
+echo "AMQ Broker accessible at: $AMQ_BROKER_HOST"
+----
+
+.Use a simple AMQP client to connect to the broker using the obtained hostname.
++
+If you have `netcat` or `telnet` installed, you can perform a basic connectivity test:
++
+[source,bash]
+----
+nc -vz $AMQ_BROKER_HOST 5672
+----
++
+.Example Output (successful connection)
+[source,bash]
+----
+Connection to mybroker-amqp-my-amq-project.apps.cluster.name.com 5672 port [tcp/*] succeeded!
+----
++
+This confirms that the TCP connection can be established. For a full functional test, you would use an AMQP client library or tool.
+
+.Example using `qpid-jms-client` (requires Java and Qpid JMS client libraries).
++
+First, ensure you have a client application that can connect to an AMQP broker. Let's assume you have a simple producer/consumer application or can use `qpid-jms-client`'s command-line tools.
++
+To connect using a basic JMS client (replace `your_client_app.jar` with your actual client application):
++
+[source,bash]
+----
+java -jar your_client_app.jar --broker-url "amqp://$AMQ_BROKER_HOST:5672" --username <user> --password <password>
+----
++
+If you don't have a specific client, you can use `qpid-jms-client` to send a message:
++
+[source,bash]
+----
+# Replace <user> and <password> with credentials configured on your broker
+# Replace /queue/exampleQueue with an existing queue on your broker
+qpid-jms-client send --broker-url "amqp://$AMQ_BROKER_HOST:5672" --destination "/queue/exampleQueue" --text "Hello from external client!" --user <user> --password <password>
+----
++
+Then, consume it:
++
+[source,bash]
+----
+qpid-jms-client receive --broker-url "amqp://$AMQ_BROKER_HOST:5672" --destination "/queue/exampleQueue" --user <user> --password <password>
+----
+
+You should see the message successfully sent and received, demonstrating that your AMQ Broker is externally accessible.
+
+=== Activity 4: Clean Up (Optional)
+
+If you wish to remove the created Route:
+
+.Delete the Route.
++
+[source,bash]
+----
+oc delete route mybroker-amqp mybroker-amqp-route
+----
+
+This concludes the lab on exposing your Red Hat AMQ Broker instance externally on OpenShift. You have successfully used OpenShift Routes to make your messaging services accessible to clients outside the cluster. Remember to always consider security best practices, especially SSL/TLS encryption, when exposing production services externally.

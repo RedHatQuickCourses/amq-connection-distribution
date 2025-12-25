@@ -1,0 +1,352 @@
+#  Configuring OpenShift Routes for external client access
+
+= Configuring OpenShift Routes for External Client Access
+
+This section delves into how OpenShift Routes enable external access to services running within your cluster, focusing on their application for Red Hat AMQ Broker. By the end of this module, you will understand the mechanics of OpenShift Routes and be able to configure them to expose your AMQ Broker instances securely to external clients.
+
+== Understanding OpenShift Routes for External Access
+
+OpenShift, built upon Kubernetes, provides robust mechanisms for internal service discovery and communication. However, for applications like Red Hat AMQ Broker, which often require clients outside the OpenShift cluster to connect, a different mechanism is needed: *Routes*.
+
+A *Route* in OpenShift exposes a service at a host name, making it accessible to external clients. The OpenShift router, typically powered by HAProxy, intercepts external requests, routes them to the correct service, and then to the appropriate backend pods. This abstraction simplifies exposing applications without directly managing IP addresses or complex load balancer configurations.
+
+When an AMQ Broker instance is deployed on OpenShift, it typically runs as a pod managed by a Deployment, and its network communication is facilitated by an OpenShift Service. This Service provides a stable internal IP address and DNS name for the broker within the cluster. To allow clients outside the OpenShift cluster to connect, we must create an OpenShift Route that points to this internal Service.
+
+=== How OpenShift Routes Work
+
+At its core, an OpenShift Route consists of:
+
+*   **Host:** A fully qualified domain name (FQDN) that external clients use to access the service. If not specified, OpenShift generates one.
+*   **Path:** An optional URL path prefix to direct traffic to specific endpoints within the service.
+*   **Service:** The internal OpenShift Service that the Route targets.
+*   **Port:** The specific port on the target Service that the Route exposes.
+*   **TLS Termination:** Configuration for handling encrypted (SSL/TLS) traffic. This is crucial for securing external communication.
+
+The OpenShift Ingress Controller (Router) continuously monitors for new Route objects. When a Route is created, the router configures itself to listen for requests on the specified host and path. Upon receiving a request, it forwards the traffic to the backend pods associated with the target Service.
+
+=== Types of TLS Termination for Routes
+
+Securing external access is paramount, especially for messaging brokers like AMQ Broker that handle sensitive data. OpenShift Routes offer different TLS termination strategies:
+
+*   **Edge Termination:**
+    *   TLS is terminated at the OpenShift router.
+    *   The router decrypts the traffic and then sends plaintext (unencrypted) traffic to the backend AMQ Broker pods.
+    *   *Use Case:* Suitable when the internal network between the router and the pods is considered secure, and the application pods don't need to handle TLS certificates themselves.
+    *   *Consideration for AMQ Broker:* While simpler to configure, sending plaintext AMQP, MQTT, or OpenWire over the internal network might not be ideal for strong security postures, especially if the broker itself is configured for TLS.
+
+*   **Passthrough Termination:**
+    *   TLS is *not* terminated at the OpenShift router.
+    *   The router directly passes the encrypted traffic from the client to the backend AMQ Broker pods without decrypting it.
+    *   The AMQ Broker pod itself is responsible for terminating the TLS connection using its own certificates.
+    *   *Use Case:* Recommended for messaging protocols (AMQP, MQTT, OpenWire, STOMP) where the client-server handshake and encryption are handled end-to-end by the messaging protocol itself. This ensures that the entire communication path remains encrypted.
+    *   *Consideration for AMQ Broker:* This is often the preferred method for exposing AMQ Broker's secure ports (e.g., AMQPS, MQTTS) as it maintains end-to-end encryption. The broker must be configured with its own TLS certificates.
+
+*   **Re-encrypt Termination:**
+    *   TLS is terminated at the OpenShift router (first decryption).
+    *   The router then re-encrypts the traffic using a different certificate and establishes a new TLS connection to the backend AMQ Broker pods (second encryption).
+    *   *Use Case:* Useful when the router needs to inspect or modify headers (like adding client certificates for authentication) before forwarding, and you still require encryption between the router and the backend pods.
+    *   *Consideration for AMQ Broker:* Less common for basic broker connectivity, but can be useful in advanced scenarios where the router plays an active role in security or traffic manipulation.
+
+=== Route Configuration for AMQ Broker
+
+When configuring Routes for AMQ Broker, consider the following:
+
+*   **Protocol:** AMQ Broker supports various protocols (AMQP, MQTT, OpenWire, STOMP). Each protocol often has a default secure port (e.g., 5671 for AMQPS, 8883 for MQTTS).
+*   **TLS Requirements:** For production deployments, always use secure communication. Passthrough routes are typically best for AMQ Broker's secure listeners, as the broker itself is designed to handle the messaging protocol's TLS handshake.
+*   **Certificate Management:** If using passthrough routes, ensure your AMQ Broker instances are configured with valid TLS certificates. For edge or re-encrypt, the router needs its certificates, and for re-encrypt, the broker also needs its certificates.
+
+In the context of AMQ Broker on OpenShift, you will typically define a Service for your broker instance that exposes its various protocol ports. Then, you will create one or more Routes, each targeting a specific port on that Service, to provide external access.
+
+For example, to expose the AMQP 5671 port for secure client connections, you would create a Route targeting the AMQP-SSL port of your AMQ Broker Service, with `passthrough` TLS termination.
+
+NOTE: If your AMQ Broker `Acceptor` is configured for SSL/TLS, using a `passthrough` Route is the most straightforward and secure approach for external access, as it allows the broker to handle the TLS handshake directly with the client.
+
+== Hands-on Lab: Exposing AMQ Broker Externally with OpenShift Routes
+
+In this lab, you will deploy a simple AMQ Broker instance and then configure OpenShift Routes to expose its messaging protocols externally. We will focus on exposing the AMQP protocol as an example, first with an insecure (edge) route for demonstration, and then with a secure (passthrough) route.
+
+=== Prerequisites
+
+*   An OpenShift cluster where you have `developer` or `admin` permissions.
+*   The `oc` command-line tool installed and logged in to your OpenShift cluster.
+*   A project (namespace) created for this lab. If you haven't already, create one:
+    [source,bash]
+    ----
+    oc new-project amq-broker-external-access
+    ----
+*   The AMQ Broker Operator installed in your cluster (from a previous lab, or ensure it's available).
+*   A basic AMQ Broker instance deployed in your project. If you haven't done so, deploy a basic broker first.
+
+NOTE: This lab assumes you have a basic AMQ Broker instance running and its Service is accessible internally. If not, refer to the "Deploying AMQ Broker instances using the Operator" section to deploy one. For simplicity, we'll use a basic non-persistent broker for the route demonstration.
+
+==== 1. Deploy a Basic AMQ Broker Instance (if not already done)
+
+First, let's ensure we have an AMQ Broker instance running. We'll use a basic configuration.
+
+.Create a file named `my-broker.yaml`:
+[source,yaml]
+----
+apiVersion: broker.amq.io/v1beta1
+kind: ActiveMQArtemis
+metadata:
+  name: my-broker
+spec:
+  deploymentPlan:
+    size: 1
+    image: registry.redhat.io/amq7/amq-broker-rhel8:7.10
+  acceptors:
+    - name: amqp
+      port: 5672
+      protocols: AMQP
+      sslEnabled: false
+    - name: amqps
+      port: 5671
+      protocols: AMQP
+      sslEnabled: true
+      sslSecret: amq-ssl-cert
+  console:
+    expose: true
+    sslEnabled: true
+    sslSecret: amq-ssl-cert
+----
+
+.Apply the broker configuration:
+[source,bash]
+----
+oc apply -f my-broker.yaml
+----
+
+.Wait for the broker to be ready:
+[source,bash]
+----
+oc get activemqartemis my-broker -w
+# Look for 'Ready' status. This might take a few minutes.
+----
+
+==== 2. Create a Self-Signed Certificate Secret for AMQ Broker TLS
+
+For secure (passthrough) routes, our AMQ Broker needs its own TLS certificates. We'll generate a self-signed certificate and store it in an OpenShift secret. In a production environment, you would use certificates from a trusted CA.
+
+.Generate a self-signed certificate and key:
+[source,bash]
+----
+openssl req -x509 -newkey rsa:2048 -keyout tls.key -out tls.crt -days 365 -nodes -subj "/CN=my-broker.amq-broker-external-access.svc"
+----
+NOTE: Replace `my-broker.amq-broker-external-access.svc` with the actual internal service name of your broker. The operator typically creates a service named `<broker-name>-amq-amqp` for AMQP. You can find the service name with `oc get svc | grep amq-amqp`. It's usually `<broker-name>-amqp`. So, the Common Name (CN) should be `<broker-name>-amqp.<namespace>.svc`. For `my-broker`, it would be `my-broker-amqp.amq-broker-external-access.svc`.
+
+Let's re-do this part with the correct service name pattern.
+
+.First, get the actual service name for AMQP:
+[source,bash]
+----
+oc get svc | grep "my-broker-amqp"
+# Expected output similar to: my-broker-amqp      ClusterIP   172.30.XXX.YYY   <none>        5671/TCP,5672/TCP   ...
+----
+Let's assume the service name is `my-broker-amqp`.
+
+.Generate a self-signed certificate and key with the correct CN:
+[source,bash]
+----
+openssl req -x509 -newkey rsa:2048 -keyout tls.key -out tls.crt -days 365 -nodes -subj "/CN=my-broker-amqp.amq-broker-external-access.svc"
+----
+
+.Create an OpenShift secret from the certificate and key:
+[source,bash]
+----
+oc create secret tls amq-ssl-cert --cert=tls.crt --key=tls.key
+----
+
+.Now, update the `my-broker` instance to use this `amq-ssl-cert` for its `amqps` acceptor. (We already included `sslSecret: amq-ssl-cert` in `my-broker.yaml`, so if you applied it, the broker should pick this up after the secret is created). If the broker was deployed *before* the secret, it might need a restart or reconciliation by the operator. You can force a redeployment by scaling down and up, or deleting and re-creating the broker (after saving any data if it were persistent). For this lab, if you applied `my-broker.yaml` and then created the secret, the operator *should* reconcile.
+
+==== 3. Verify the AMQ Broker Service
+
+The AMQ Broker Operator automatically creates a Service for your broker instance. We need to identify the correct Service and its ports to target with our Routes.
+
+.Get the services in your project:
+[source,bash]
+----
+oc get svc -l app.kubernetes.io/name=my-broker
+----
+You should see services like `my-broker-amqp` (for messaging protocols) and `my-broker-console` (for the web console).
+The `my-broker-amqp` service typically exposes ports 5672 (AMQP insecure) and 5671 (AMQPS secure).
+
+==== 4. Expose the AMQP Insecure Port (5672) using an Edge Route (Demonstration)
+
+First, let's create a simple, insecure edge route. While not recommended for production AMQ Broker connections, it demonstrates the basic route creation process.
+
+.Create an edge route for the AMQP 5672 port:
+[source,bash]
+----
+oc create route passthrough amqp-insecure-route --service=my-broker-amqp --port=5672 --hostname=amqp-insecure.apps.$(oc get ingress.config.openshift.io cluster -o jsonpath='{.spec.domain}')
+----
+NOTE: We used `--hostname` to specify a custom hostname. If you omit `--hostname`, OpenShift will generate one for you (e.g., `amqp-insecure-route-amq-broker-external-access.apps.cluster.domain`).
+The type `passthrough` here is incorrect for an insecure route. Let's correct it to `edge` for demonstration of `http` like access.
+A route type of `passthrough` with `port=5672` (insecure) doesn't make much sense unless you plan to use an application protocol over TCP that handles its own security, which the broker isn't doing on 5672. For plain HTTP/TCP, it's generally an `edge` route, but without TLS.
+
+Let's simplify. `oc create route` without `passthrough` or `reencrypt` implies an `edge` route by default. For a plaintext port, it's effectively a TCP proxy.
+
+.Corrected command for an insecure route (effectively a TCP proxy for 5672):
+[source,bash]
+----
+oc create route --tcp amqp-insecure-route --service=my-broker-amqp --port=5672 --hostname=amqp-insecure.apps.$(oc get ingress.config.openshift.io cluster -o jsonpath='{.spec.domain}')
+----
+The `--tcp` flag creates a passthrough-like route for non-HTTP traffic, without TLS termination. It's often used for arbitrary TCP services.
+
+.Verify the route:
+[source,bash]
+----
+oc get route amqp-insecure-route
+----
+Look for the `HOST/PORT` column. This is the external URL to access your broker's insecure AMQP port.
+
+.Test the insecure route (Optional, requires an AMQP client):
+You could use a simple AMQP client (e.g., Python's `qpid-proton` or `rhea` library) to connect to the provided host and port.
+*Python example (install `pip install python-qpid-proton`):*
+[source,python]
+----
+from proton import Messenger
+m = Messenger()
+m.start()
+# Replace with your actual route host
+address = "amqp://amqp-insecure.apps.<your-cluster-domain>:80/"
+# NOTE: The default route port is 80 for HTTP/TCP. If your router uses a different port (e.g., 443 for TCP passthrough), adjust accordingly.
+# Often for --tcp routes, it's port 443 or a specific nodeport/loadbalancer IP.
+# For simplicity, if your router is set up for 80, this would work.
+# A more common approach for raw TCP is a passthrough route over 443.
+m.send(m.message(address=address, body="Hello from external client!"))
+print("Message sent to " + address)
+m.stop()
+----
+*Troubleshooting:* Connecting to a raw TCP route can be tricky as the router might enforce HTTP behavior. For pure TCP, a `passthrough` route on the standard HTTPS port (443) is more robust, or direct LoadBalancer/NodePort exposure.
+
+Given the complexities of plain TCP routes and how routers usually handle HTTP/HTTPS, we'll quickly move to the recommended secure passthrough route.
+
+==== 5. Expose the AMQPS Secure Port (5671) using a Passthrough Route (Recommended)
+
+This is the recommended approach for exposing AMQ Broker securely, allowing end-to-end TLS encryption.
+
+.Create a passthrough route for the AMQPS 5671 port:
+[source,bash]
+----
+oc create route passthrough amqps-secure-route --service=my-broker-amqp --port=5671 --hostname=amqps-secure.apps.$(oc get ingress.config.openshift.io cluster -o jsonpath='{.spec.domain}')
+----
+Here, `--port=5671` targets the secure AMQP port, and `passthrough` ensures that the TLS handshake happens directly between the client and the AMQ Broker pod.
+
+.Verify the route:
+[source,bash]
+----
+oc get route amqps-secure-route
+----
+Take note of the `HOST/PORT`. This will be `amqps-secure.apps.<your-cluster-domain>:443`.
+
+.Test the secure route (Requires an AMQP client and the self-signed CA certificate):
+To connect, your AMQP client needs to trust the certificate that your AMQ Broker is using. Since we used a self-signed certificate, you'll need to provide the `tls.crt` file (which acts as the CA for itself in this case) to your client.
+
+*Python example (install `pip install python-qpid-proton`):*
+[source,python]
+----
+from proton import Messenger
+from proton.handlers import MessagingHandler
+from proton.reactor import Container
+
+# Replace with your actual route host
+broker_host = "amqps-secure.apps.$(oc get ingress.config.openshift.io cluster -o jsonpath='{.spec.domain}')"
+broker_port = 443 # OpenShift routes typically expose on port 443 for passthrough TLS
+
+class RecvHandler(MessagingHandler):
+    def __init__(self, conn_url, count):
+        super(RecvHandler, self).__init__()
+        self.conn_url = conn_url
+        self.count = count
+        self.received = 0
+
+    def on_start(self, event):
+        conn = event.container.connect(self.conn_url,
+                                       ssl_domain=self.ssl_domain)
+        event.container.create_receiver(conn, "myQueue") # Or whatever queue you use
+        event.container.create_sender(conn, "myQueue")
+
+    def on_sendable(self, event):
+        if self.received < self.count:
+            msg = event.message
+            msg.body = {"sequence": self.received}
+            event.sender.send(msg)
+            self.received += 1
+            print(f"Sent message: {msg.body}")
+
+    def on_message(self, event):
+        print(f"Received message: {event.message.body}")
+        self.received += 1
+        if self.received >= self.count:
+            event.connection.close()
+
+# Create an SSL domain that trusts our self-signed certificate
+ssl_domain = Messenger.get_default_ssl_domain()
+ssl_domain.set_peer_authentication(Messenger.VERIFY_PEER, "tls.crt") # Provide the path to tls.crt
+ssl_domain.set_trusted_ca_db("tls.crt") # Tell it to trust our cert
+# If your client needs a client certificate for mutual TLS, you would add:
+# ssl_domain.set_credentials("client.crt", "client.key", None)
+
+print(f"Connecting to: {broker_host}:{broker_port}")
+try:
+    container = Container(RecvHandler(f"amqps://{broker_host}:{broker_port}", 1))
+    container.ssl_domain = ssl_domain # Attach the custom SSL domain
+    container.run()
+except Exception as e:
+    print(f"Error connecting or sending message: {e}")
+
+----
+To run the Python client, save the code as `amqp_client.py` in the same directory where your `tls.crt` file is located. Then execute: `python amqp_client.py`.
+You should see messages being sent and received, indicating a successful secure connection through the OpenShift Route.
+
+==== 6. Exposing the AMQ Console using a Re-encrypt Route (Optional)
+
+The AMQ Broker console is an HTTP/HTTPS application. We configured it with `sslEnabled: true` and `sslSecret: amq-ssl-cert`. A `re-encrypt` route is a good choice here, as it secures traffic to the router, and then re-encrypts it to the console pod. This allows the router to manage the external TLS certificate, while the console uses its own internal certificate.
+
+.Get the console service name:
+[source,bash]
+----
+oc get svc | grep "my-broker-console"
+# Expected output similar to: my-broker-console   ClusterIP   172.30.XXX.YYY   <none>        8161/TCP   ...
+----
+Let's assume the service name is `my-broker-console`.
+
+.Create a re-encrypt route for the AMQ Console:
+[source,bash]
+----
+oc create route reencrypt amq-console-route --service=my-broker-console --port=8161 \
+  --hostname=amq-console.apps.$(oc get ingress.config.openshift.io cluster -o jsonpath='{.spec.domain}') \
+  --dest-ca-cert=tls.crt
+----
+Here, `--dest-ca-cert=tls.crt` tells the router to trust the broker's self-signed certificate when re-encrypting the connection to the backend pod. If the broker uses a CA-signed cert, you'd provide the CA bundle here.
+
+.Verify the route:
+[source,bash]
+----
+oc get route amq-console-route
+----
+Open the `HOST/PORT` URL in your web browser. You should be able to access the AMQ Broker console. You might see a browser warning because the external certificate provided by the router is likely self-signed or invalid for your browser (unless your OpenShift cluster is configured with valid external certificates for its router).
+
+==== 7. Clean Up
+
+.Delete the routes:
+[source,bash]
+----
+oc delete route amqp-insecure-route amqps-secure-route amq-console-route
+----
+
+.Delete the AMQ Broker instance and secret:
+[source,bash]
+----
+oc delete activemqartemis my-broker
+oc delete secret amq-ssl-cert
+rm tls.crt tls.key # Remove local cert files
+----
+
+.Delete the project (optional):
+[source,bash]
+----
+oc delete project amq-broker-external-access
+----
+
+This lab has provided a practical walkthrough of configuring OpenShift Routes to expose your AMQ Broker instance to external clients. Understanding the different TLS termination types is crucial for securing your messaging infrastructure. For most messaging protocols like AMQP, MQTT, and OpenWire, passthrough routes are generally preferred for end-to-end encryption.

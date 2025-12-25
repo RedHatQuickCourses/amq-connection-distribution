@@ -1,0 +1,200 @@
+#  Hands-on Lab: Configuring Network Acceptors
+
+= Hands-on Lab: Configuring Network Acceptors
+
+This section provides a detailed explanation of network acceptors within Red Hat AMQ Broker and guides you through a hands-on lab to configure multiple acceptors for different messaging protocols on OpenShift.
+
+== Understanding Network Acceptors
+
+In the context of message brokers like Red Hat AMQ Broker, a *network acceptor* acts as an entry point for client applications to connect and send or receive messages. Each acceptor is configured to listen on a specific network port and typically supports one or more messaging protocols. Think of an acceptor as a "door" into your broker, where each door might be designed for a different type of guest (messaging protocol).
+
+AMQ Broker, being based on Apache ActiveMQ Artemis, is multi-protocol capable, meaning it can communicate with clients using various standard protocols. Common protocols include:
+
+*   **AMQP (Advanced Message Queuing Protocol):** A robust, open standard protocol for message-oriented middleware. It is widely used for interoperable messaging between systems. AMQ Broker supports AMQP 1.0.
+*   **OpenWire:** The native protocol for Apache ActiveMQ 5.x. AMQ Broker includes an OpenWire acceptor for compatibility with existing ActiveMQ 5.x clients.
+*   **STOMP (Simple Text Oriented Messaging Protocol):** A lightweight wire protocol designed for simple text messaging, often used with web-based clients or scripting languages.
+*   **MQTT (Message Queuing Telemetry Transport):** A lightweight messaging protocol ideal for IoT (Internet of Things) devices and constrained environments due to its low bandwidth usage and small code footprint.
+
+When you deploy an AMQ Broker instance on OpenShift using the AMQ Broker Operator, acceptors are configured as part of the `ActiveMQArtemis` Custom Resource (CR). The Operator then provisions the necessary resources (like `Service` objects and potentially `Route` objects) to expose these acceptors.
+
+Each acceptor definition within the `ActiveMQArtemis` CR allows you to specify:
+
+*   `name`: A unique identifier for the acceptor.
+*   `port`: The network port the acceptor will listen on.
+*   `protocols`: An array of messaging protocols supported by this acceptor (e.g., `AMQP`, `OPENWIRE`, `STOMP`, `MQTT`).
+*   `sslEnabled`: A boolean indicating whether SSL/TLS encryption is enabled for this acceptor. (This will be covered in more detail in the Security Configuration section, but it's important to know its placement here).
+*   `enabled`: A boolean to enable or disable the acceptor.
+*   Other advanced settings: Such as `bindings`, `consumerWindowSize`, `tcpSendBufferSize`, `connectionsAllowed`, etc., for fine-tuning performance and behavior.
+
+By configuring multiple acceptors, you can allow different types of client applications, potentially using different protocols, to connect to the same AMQ Broker instance. For example, you might have an OpenWire acceptor for legacy Java applications and an AMQP acceptor for new microservices, all connecting to the same broker.
+
+In this lab, you will configure an AMQ Broker instance with acceptors for AMQP, OpenWire, and MQTT to understand how to expose different protocols.
+
+== Hands-on Lab: Configuring Network Acceptors
+
+This lab will guide you through deploying an AMQ Broker instance on OpenShift with custom network acceptors for AMQP, OpenWire, and MQTT protocols.
+
+=== Prerequisites
+
+*   Access to a Red Hat OpenShift Container Platform cluster.
+*   The Red Hat AMQ Broker Operator installed in your cluster (as covered in previous sections).
+*   The `oc` command-line tool configured to connect to your OpenShift cluster.
+*   A dedicated OpenShift project (e.g., `amq-broker-dev`) for this lab.
+
+=== Lab Steps
+
+==== 1. Log in to OpenShift and create a project
+
+Ensure you are logged in to your OpenShift cluster and working within a dedicated project.
+
+[source,bash]
+----
+oc login -u developer -p developer
+oc new-project amq-broker-acceptors --display-name="AMQ Broker Acceptors Lab"
+----
+
+==== 2. Define the ActiveMQArtemis Custom Resource with Multiple Acceptors
+
+Create a YAML file named `amq-broker-with-acceptors.yaml` with the following content. This configuration defines a basic AMQ Broker instance with three specific acceptors: one for AMQP on port 5672, one for OpenWire on port 61616, and one for MQTT on port 1883.
+
+[source,yaml,subs="attributes+"]
+----
+apiVersion: broker.amq.io/v1beta1
+kind: ActiveMQArtemis
+metadata:
+  name: my-broker-acceptors
+spec:
+  deploymentPlan:
+    size: 1
+    image: registry.redhat.io/amq7/amq-broker-rhel8:7.11
+    requireLogin: false
+  # Define custom network acceptors
+  acceptors:
+    - name: amqp-acceptor
+      port: 5672
+      protocols:
+        - AMQP
+      sslEnabled: false
+      enabled: true
+    - name: openwire-acceptor
+      port: 61616
+      protocols:
+        - OPENWIRE
+      sslEnabled: false
+      enabled: true
+    - name: mqtt-acceptor
+      port: 1883
+      protocols:
+        - MQTT
+      sslEnabled: false
+      enabled: true
+  # Expose a console for management (optional, but useful for verification)
+  console:
+    expose: true
+    sslEnabled: false
+----
+
+*   `acceptors`: This array specifies the custom network listeners for the broker.
+*   `name`: A unique name for each acceptor, used for identification.
+*   `port`: The port on which the acceptor will listen for incoming connections.
+*   `protocols`: An array listing the messaging protocols supported by this specific acceptor.
+*   `sslEnabled: false`: For simplicity in this lab, SSL/TLS is disabled. In a production environment, you would enable this and configure certificates.
+*   `console`: Enabled for easy access to the Hawtio management console, which can help verify the broker's status and configurations.
+
+==== 3. Deploy the AMQ Broker Instance
+
+Apply the Custom Resource to your OpenShift cluster. The AMQ Broker Operator will detect this CR and deploy the broker instance.
+
+[source,bash]
+----
+oc apply -f amq-broker-with-acceptors.yaml
+----
+
+Wait for the broker pod to be ready. You can monitor its status:
+
+[source,bash]
+----
+oc get activemqartemis my-broker-acceptors -w
+oc get pod -l app.kubernetes.io/name=activemqartemis-broker -w
+----
+
+Look for the `STATUS` of the pod to change to `Running` and `READY` to be `1/1`.
+
+==== 4. Verify the Acceptor Configuration
+
+Once the broker is running, you can verify that the acceptors have been configured correctly.
+
+. Examine the Services created by the Operator:
+The Operator automatically creates OpenShift `Service` objects for each exposed protocol (including the custom acceptors you defined).
+
+[source,bash]
+----
+oc get svc -l activemq-artemis-name=my-broker-acceptors
+----
+
+You should see services similar to these, indicating that the ports for AMQP, OpenWire, and MQTT are being exposed:
+
+```
+NAME                         TYPE        CLUSTER-IP       EXTERNAL-IP   PORT(S)                                     AGE
+my-broker-acceptors-amqp     ClusterIP   172.30.147.199   <none>        5672/TCP,8161/TCP                           2m
+my-broker-acceptors-mqtt     ClusterIP   172.30.187.166   <none>        1883/TCP                                    2m
+my-broker-acceptors-openwire ClusterIP   172.30.228.238   <none>        61616/TCP                                   2m
+my-broker-acceptors-console  ClusterIP   172.30.100.10    <none>        8161/TCP                                    2m
+```
+
+The `PORT(S)` column for `my-broker-acceptors-amqp` might also show `8161/TCP` (for the console port, as the Operator might combine some services or expose management on the AMQP service by default if not separated), but the important part is that `5672/TCP`, `1883/TCP`, and `61616/TCP` are present across the relevant services.
+
+. Inspect the broker's logs:
+You can look at the broker pod's logs to confirm that it started the acceptors.
+
+[source,bash]
+----
+BROKER_POD=$(oc get pod -l app.kubernetes.io/name=activemqartemis-broker -o jsonpath='{.items[0].metadata.name}')
+oc logs $BROKER_POD | grep "Started acceptor"
+----
+
+You should see log entries similar to this, confirming that your custom acceptors have been initialized:
+
+```
+... ActiveMQArtemisServerImpl::initialise Acceptor 'amqp-acceptor' is listening on nio://0.0.0.0:5672 ...
+... ActiveMQArtemisServerImpl::initialise Acceptor 'openwire-acceptor' is listening on nio://0.0.0.0:61616 ...
+... ActiveMQArtemisServerImpl::initialise Acceptor 'mqtt-acceptor' is listening on nio://0.0.0.0:1883 ...
+```
+
+. (Optional) Check listening ports inside the pod:
+For a deeper inspection, you can exec into the broker pod and verify the listening ports directly using `netstat`.
+
+[source,bash]
+----
+oc exec -it $BROKER_POD -- netstat -tulnp | grep LISTEN
+----
+
+You should see output similar to the following, confirming that the broker is listening on the configured ports:
+
+```
+tcp        0      0 0.0.0.0:5672            0.0.0.0:*               LISTEN      -
+tcp        0      0 0.0.0.0:61616           0.0.0.0:*               LISTEN      -
+tcp        0      0 0.0.0.0:1883            0.0.0.0:*               LISTEN      -
+tcp        0      0 0.0.0.0:8161            0.0.0.0:*               LISTEN      -
+```
+The `8161` port corresponds to the management console.
+
+At this point, you have successfully deployed an AMQ Broker instance on OpenShift with multiple network acceptors configured for different protocols. External clients, assuming appropriate external access (e.g., via Routes or LoadBalancers, which will be covered in the "External Access" section), could now connect to your broker using AMQP, OpenWire, or MQTT protocols on their respective ports.
+
+==== 5. Clean Up
+
+To remove the deployed broker instance and associated resources, delete the `ActiveMQArtemis` Custom Resource.
+
+[source,bash]
+----
+oc delete -f amq-broker-with-acceptors.yaml
+----
+
+You can also delete the project if it was created solely for this lab:
+
+[source,bash]
+----
+oc delete project amq-broker-acceptors
+----
+
+This concludes the hands-on lab for configuring network acceptors. You now have a practical understanding of how to define and deploy AMQ Broker instances with specific protocol listeners using the OpenShift AMQ Broker Operator.

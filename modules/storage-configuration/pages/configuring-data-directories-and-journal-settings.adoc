@@ -1,0 +1,171 @@
+#  Configuring data directories and journal settings
+
+Here's the detailed educational content on configuring data directories and journal settings for Red Hat AMQ Broker, presented in Antora AsciiDoc format, complete with a hands-on activity.
+
+```asciidoc
+[[_configuring_data_directories_and_journal_settings]]
+=== Configuring Data Directories and Journal Settings
+
+One of the most critical aspects of any reliable messaging system like Red Hat AMQ Broker is its ability to persist messages. Message persistence ensures that messages are not lost even if the broker crashes or restarts. AMQ Broker achieves this through a robust journaling mechanism, which records all message operations to disk. Understanding and configuring the data directories and journal settings is paramount for ensuring both data durability and optimal performance.
+
+==== Understanding Message Persistence and Journaling
+
+At its core, AMQ Broker uses a write-ahead log (WAL) approach, commonly referred to as a "journal," for persistence. All message operations—sending, receiving, acknowledging, transactions—are first written to the journal files on disk before being applied in memory. This guarantees that if the broker unexpectedly terminates, it can recover its state by replaying the journal.
+
+Key concepts in AMQ Broker journaling:
+
+*   **Journal Files:** These are the actual files on disk that store the operational log. They typically contain a sequence of records representing message adds, removes, acknowledgments, and transactional updates.
+*   **Data Directories:** This is the location on the file system where the journal files, as well as other persistent data (like large messages, security settings, configuration if not externalized), are stored. For AMQ Broker on OpenShift, these data directories are typically backed by Persistent Volumes (PVs) and Persistent Volume Claims (PVCs), providing durable and portable storage.
+*   **AIO (Asynchronous I/O) vs. NIO (Non-blocking I/O):** AMQ Broker supports different I/O mechanisms for writing to the journal. AIO is generally preferred on Linux systems as it offers better performance by allowing the broker to continue processing while disk writes occur asynchronously. NIO is a Java-based alternative that is fully synchronous but can be less performant for high-throughput scenarios.
+
+==== Core Journal Settings and Their Impact
+
+The behavior and performance of the AMQ Broker's journaling are controlled by several key parameters. These settings directly influence the broker's durability, throughput, and recovery time.
+
+.Common Journal Settings
+[cols="1,1,3a"]
+|===
+|Setting |Default Value |Description
+
+|`journal-type`
+|`AIO` (if available), otherwise `NIO`
+|Specifies the I/O type used for the journal. `AIO` (Asynchronous I/O) is generally recommended for production Linux environments for better performance. `NIO` (Non-blocking I/O) is a Java-based alternative.
+
+|`journal-file-size`
+|`10485760` (10 MB)
+|The size of each individual journal file in bytes. Larger file sizes can reduce file switching overhead but might increase recovery time after a crash if the file is sparsely filled. Smaller files can lead to more frequent file switching.
+
+|`journal-min-files`
+|`2`
+|The minimum number of journal files the broker keeps. This setting ensures that there are always enough files pre-allocated or available to prevent I/O blocking when new files are needed.
+
+|`journal-pool-files`
+|`10`
+|The number of journal files that the broker will attempt to pre-create or keep available in a pool. This helps to reduce latency when a new journal file is required.
+
+|`journal-compact-min-files`
+|`10`
+|The minimum number of journal files required to trigger a compaction. Compaction reclaims disk space by removing deleted message records from journal files.
+
+|`journal-compact-percentage`
+|`30`
+|The percentage of a journal file that must be reclaimable (empty space) to be considered for compaction. For example, if set to 30, a file with 30% or more empty space will be compacted.
+
+|`journal-sync-transactional`
+|`true`
+|Determines if transactional updates are synchronously flushed to disk. Setting this to `true` guarantees transactional durability but can impact performance. Setting it to `false` improves performance but risks data loss for uncommitted transactions during a crash.
+
+|`journal-sync-non-transactional`
+|`true`
+|Determines if non-transactional message adds and acknowledgements are synchronously flushed to disk. Similar to `journal-sync-transactional`, `true` ensures durability for individual messages but at a performance cost.
+
+|===
+
+When deployed on OpenShift, AMQ Broker operators allow you to configure these settings directly within the Broker Custom Resource (CR). The data directory itself is implicitly managed through Persistent Volume Claims (PVCs) defined in the CR, which the Operator then provisions from your OpenShift cluster's available storage classes.
+
+==== Hands-on Lab: Configuring Addresses and Queues
+
+In this lab, you will deploy an AMQ Broker instance on OpenShift and configure its journal settings to understand their impact. We will focus on `journal-file-size` and `journal-min-files`.
+
+===== Prerequisites
+
+*   An OpenShift cluster with `oc` CLI configured and logged in.
+*   The Red Hat AMQ Broker Operator installed and running in your OpenShift project.
+*   A dedicated OpenShift project (e.g., `amq-broker-storage`) where you have permissions to deploy applications.
+
+===== Lab Steps
+
+.Create a New OpenShift Project
+Ensure you are in the correct project where you want to deploy the broker. If not, create one:
+
+[source,bash]
+----
+oc new-project amq-broker-storage
+----
+
+.Deploy AMQ Broker with Custom Journal Settings
+Create a `broker-storage-cr.yaml` file with the following content. Pay close attention to the `journal-file-size` and `journal-min-files` settings within the `brokerProperties` section.
+
+[source,yaml]
+----
+apiVersion: broker.amq.broker.io/v1beta1
+kind: ActiveMQArtemis
+metadata:
+  name: my-broker-storage
+spec:
+  deploymentPlan:
+    size: 1
+    image: registry.redhat.io/amq7/amq-broker-rhel8:7.11 # Use an appropriate image for your environment
+    persistence:
+      enabled: true
+      storageClassName: standard # Use an appropriate storage class for your cluster (e.g., 'ocs-storagecluster-cephfs')
+      size: 1Gi
+  brokerProperties:
+    - journal-file-size=52428800 # 50 MB (default is 10 MB)
+    - journal-min-files=10 # Minimum 10 files (default is 2)
+    - journal-type=AIO # Explicitly set AIO
+----
+
+.Apply the Custom Resource
+Deploy the broker instance by applying the CR:
+
+[source,bash]
+----
+oc apply -f broker-storage-cr.yaml
+----
+
+.Verify Broker Deployment and Journal Settings
+Monitor the deployment until the broker pod is running:
+
+[source,bash]
+----
+oc get pods -w
+----
+
+Once the pod is running, log into the broker pod and verify the journal configuration files. The journal files are typically located in the `data/journal` directory within the broker's home.
+
+First, get the name of your broker pod:
+[source,bash]
+----
+POD_NAME=$(oc get pods -l app.kubernetes.io/name=my-broker-storage -o jsonpath='{.items[0].metadata.name}')
+echo $POD_NAME
+----
+
+Now, execute a command inside the pod to list the journal directory and check its contents. Note that the actual journal files are binary and not directly readable, but we can infer settings from configuration files or observe the directory. The broker log also typically prints these settings on startup.
+
+Let's check the broker configuration that reflects these properties. The `broker.xml` will show the effective configuration.
+
+[source,bash]
+----
+oc exec -it $POD_NAME -- cat /home/jboss/amq-broker/etc/broker.xml | grep -E "journal-file-size|journal-min-files|journal-type"
+----
+
+You should see output similar to this, confirming your custom settings:
+[source,xml]
+----
+            <journal-file-size>52428800</journal-file-size>
+            <journal-min-files>10</journal-min-files>
+            <journal-type>AIO</journal-type>
+----
+
+.Observe Journal File Creation
+While the broker is running, send some messages to it (e.g., via a simple client application if you have one, or just let it run for a while if it's producing internal logs). Then, list the contents of the journal directory inside the pod:
+
+[source,bash]
+----
+oc exec -it $POD_NAME -- ls -lh /home/jboss/amq-broker/data/journal
+----
+
+You will observe files named `activemq-data-*.amq` and `activemq-bindings-*.amq`, `activemq-messages-*.amq` (or similar), each close to 50MB in size, eventually up to `journal-min-files` number and potentially more as messages are processed.
+
+.Clean Up
+Once you are done with the lab, delete the broker instance and the project:
+
+[source,bash]
+----
+oc delete -f broker-storage-cr.yaml
+oc delete project amq-broker-storage
+----
+
+This lab demonstrates how to explicitly configure key journal settings for an AMQ Broker instance on OpenShift. Adjusting these parameters according to your application's message throughput, message size, and durability requirements is crucial for optimizing the broker's performance and reliability.
+```

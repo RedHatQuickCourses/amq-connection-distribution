@@ -1,0 +1,15 @@
+#  OpenShift Introduction
+
+=== OpenShift Introduction
+
+OpenShift is Red Hat's enterprise Kubernetes platform for container orchestration, automating application deployment, scaling, and management.
+
+Key concepts include:
+
+*   *Projects*: A way to organize and isolate resources for different teams or applications.
+*   *Pods*: The smallest deployable units, representing a single instance of a running process in a cluster.
+*   *Deployments*: Manages the rollout and scaling of application Pods.
+*   *Services*: Provides a stable network endpoint for Pods.
+*   *Routes*: Exposes services externally with a user-friendly hostname.
+
+Deploying applications on OpenShift offers benefits such as simplified development workflows, built-in security features, and robust operational capabilities.

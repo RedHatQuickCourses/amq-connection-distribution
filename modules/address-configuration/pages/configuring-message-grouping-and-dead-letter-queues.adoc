@@ -1,0 +1,513 @@
+#  Configuring message grouping and dead letter queues
+
+[[_message_grouping_and_dlqs]]
+= Configuring Message Grouping and Dead Letter Queues
+
+This section delves into advanced address configurations within Red Hat AMQ Broker, focusing on how to ensure ordered processing of related messages through *message grouping* and how to handle undeliverable messages gracefully using *dead letter queues*. These mechanisms are crucial for building robust and reliable messaging applications that maintain data integrity and prevent message loss.
+
+[[_message_grouping]]
+== Message Grouping
+
+Message grouping is a powerful feature in AMQ Broker that ensures all messages belonging to a specific group are delivered to and processed by *only one* consumer at a time, in the order they were sent. This is vital for scenarios where processing order and transactional integrity for related messages are paramount.
+
+[[_what_is_message_grouping]]
+=== What is Message Grouping?
+
+When a producer sends a message to an AMQ Broker address with a special header, `_AMQ_GROUP_ID`, the broker recognizes this as a grouped message. The value of `_AMQ_GROUP_ID` is an arbitrary string that uniquely identifies the group. The core principle is that all messages carrying the *same* `_AMQ_GROUP_ID` are routed exclusively to the *same* consumer that received the first message of that group.
+
+[[_why_message_grouping]]
+=== Why is Message Grouping Important?
+
+*   *Ordered Processing:* Guarantees that a sequence of related operations (e.g., steps in an order fulfillment process) are always handled in the correct chronological order by a single logical entity.
+*   *Transactional Integrity:* Helps maintain the integrity of complex, multi-message transactions by ensuring all parts are processed together and in sequence.
+*   *Simplified Consumer Logic:* Reduces the need for consumers to implement complex logic for re-ordering messages or coordinating with other consumers for shared tasks.
+*   *Resource Optimization:* For certain workloads, dedicating a single consumer to a group can optimize caching or state management.
+*   *Typical Use Cases:*
+    *   **Order Processing:** All messages pertaining to a single customer order (e.g., `order-received`, `payment-processed`, `item-shipped`) are processed sequentially by the same worker instance to avoid race conditions.
+    *   **Financial Transactions:** Ensuring all stages of a financial transaction, from initiation to completion, are handled by a dedicated process in the correct order.
+    *   **User Session Management:** Directing all messages from a particular user session to a single application instance to maintain session state.
+
+[[_how_message_grouping_works]]
+=== How Message Grouping Works
+
+1.  A producer sends a message to an address/queue, explicitly setting the `_AMQ_GROUP_ID` property in the message header.
+2.  The AMQ Broker receives this message. If it's the first message it has seen for that particular `_AMQ_GROUP_ID`, the broker "assigns" the group to an available consumer that is listening on the target queue.
+3.  All subsequent messages received with the *same* `_AMQ_GROUP_ID` will then be routed exclusively to that initially assigned consumer, ensuring strict ordering within the group.
+4.  If the assigned consumer fails, disconnects, or goes offline, the broker will detect this. It will then re-assign the message group to another available consumer, which will take over processing the remaining messages for that group from where the previous consumer left off. This ensures high availability and fault tolerance for grouped messages.
+
+[[_dead_letter_queues]]
+== Dead Letter Queues (DLQ)
+
+A Dead Letter Queue (DLQ) is a specialized queue where messages are automatically sent if they cannot be successfully delivered to their intended destination or cannot be processed successfully by a consumer after a configured number of retries. DLQs are a critical component for ensuring message reliability, preventing message loss, and building fault-tolerant messaging systems.
+
+[[_what_is_a_dlq]]
+=== What is a Dead Letter Queue?
+
+A DLQ serves as a dedicated holding area for "problematic" messages. Instead of discarding messages that encounter delivery or processing failures, they are moved to a DLQ. This allows administrators or automated processes to inspect these messages, understand the reason for their failure, and potentially reprocess them later, preventing data loss and providing valuable insights into system health.
+
+[[_why_dlq_important]]
+=== Why are Dead Letter Queues Important?
+
+*   *Prevents Message Loss:* Messages that would otherwise be discarded due to transient or permanent failures are preserved, ensuring no data is lost and maintaining audit trails.
+*   *Troubleshooting and Debugging:* DLQs provide a centralized repository for failed messages, making it significantly easier to identify, diagnose, and resolve issues related to producers, consumers, or business logic.
+*   *System Robustness:* Prevents "poison pill" messages (messages that consistently cause consumers to fail) from perpetually blocking main queues and impacting overall system performance.
+*   *Compliance and Auditability:* Helps in meeting compliance requirements by ensuring all messages, even failed ones, are accounted for.
+*   *Typical Use Cases:*
+    *   **Consumer Application Errors:** A consumer consistently fails to process a message due to application bugs, malformed message content, or unavailability of downstream services.
+    *   **Maximum Delivery Attempts Reached:** A message has been redelivered to consumers multiple times (e.g., after temporary network glitches or brief service outages) but still hasn't been acknowledged successfully.
+    *   **Expired Messages:** Messages that are configured with a time-to-live (TTL) might be moved to an expiry DLQ if they are not consumed before their expiration.
+    *   **Unroutable Messages:** Messages sent to an address that has no matching queues or active consumers.
+
+[[_how_dlq_works]]
+=== How Dead Letter Queues Work
+
+The behavior of messages moving to a DLQ is primarily controlled by *address settings* configured on the AMQ Broker. Key parameters that influence DLQ behavior include:
+
+*   `dead-letter-address`: This setting specifies the name of the address to which undeliverable messages should be moved. This address must have a corresponding queue defined (which is the actual DLQ).
+*   `max-delivery-attempts`: Defines the maximum number of times the broker will attempt to deliver a message to a consumer before it is considered "undeliverable." If this limit is reached and the message still hasn't been acknowledged, it is moved to the `dead-letter-address`.
+*   `redelivery-delay`: The time, in milliseconds, the broker waits before attempting to redeliver a message to a consumer after a previous failure.
+*   `redelivery-multiplier`: A factor used with `redelivery-delay` to implement exponential backoff for retries (e.g., `redelivery-delay * redelivery-multiplier^attempt_number`).
+*   `max-redelivery-delay`: The maximum delay in milliseconds for redelivery attempts, preventing excessively long waits.
+*   `expiry-address`: Similar to `dead-letter-address`, but this specifies the address where messages are sent if they expire before being consumed. This often has its own dedicated queue, an "Expiry Queue."
+
+When a message reaches its `max-delivery-attempts` without being successfully acknowledged by a consumer, or if it expires according to its TTL, the broker automatically moves it to the configured `dead-letter-address` or `expiry-address`.
+
+[[_hands_on_lab_configuring_message_grouping_and_dlqs]]
+== Hands-on Lab: Configuring Message Grouping and Dead Letter Queues
+
+In this lab, you will configure an AMQ Broker address to utilize a Dead Letter Queue and demonstrate the functionality of message grouping. This activity builds upon the foundational knowledge of deploying AMQ Broker on OpenShift and basic address/queue configuration.
+
+=== Prerequisites
+
+*   An OpenShift cluster with `oc` CLI access.
+*   An AMQ Broker instance deployed on OpenShift, managed by the AMQ Broker Operator. For this lab, we'll assume a broker named `amq-broker-0` exists in the `amq-broker-project` namespace.
+*   A basic understanding of Custom Resources (CRs) for AMQ Broker.
+
+=== Lab Setup: Create an Address with DLQ and Grouping Settings
+
+First, let's define the address settings for our test scenario. We will update the `Broker` Custom Resource to include these configurations.
+
+. *Open your `Broker` CR for editing.*
++
+Assuming your broker instance is named `amq-broker-0` in the `amq-broker-project` namespace:
+```bash
+oc edit broker amq-broker-0 -n amq-broker-project
+```
+
+. *Add or modify an `addressSettings` entry* within the `spec.deploymentPlan` section. This example configures settings for an address named `example.queue`.
++
+[source,yaml]
+----
+apiVersion: broker.amq.io/v1beta1
+kind: Broker
+metadata:
+  name: amq-broker-0
+  namespace: amq-broker-project
+spec:
+  # ... other broker configurations ...
+  deploymentPlan:
+    # ... other deployment plan settings ...
+    addressSettings:
+      - name: "example.queue" # Apply these settings to 'example.queue' and its children
+        deadLetterAddress: "DLQ"
+        maxDeliveryAttempts: 3
+        expiryAddress: "ExpiryQueue" # Optional, but good practice for messages that expire
+        redeliveryDelay: 1000 # Delay in ms before re-delivering to consumers (1 second)
+        redeliveryMultiplier: 2 # Exponential backoff factor (1s, 2s, 4s, etc.)
+        maxRedeliveryDelay: 30000 # Max redelivery delay (30 seconds)
+        messageCounterHistoryLimit: 50 # Max number of messages to track history for
+    # ... rest of the deploymentPlan ...
+  # ... rest of the Broker CR ...
+----
++
+Save and close the editor. The AMQ Broker Operator will reconcile these changes, applying the `addressSettings` to your broker.
+
+. *Create the actual address and queue resources* if they don't already exist.
++
+Create a file named `example-address.yaml`:
++
+[source,yaml]
+----
+apiVersion: broker.amq.io/v1beta1
+kind: ActiveMQArtemisAddress
+metadata:
+  name: example-address
+  namespace: amq-broker-project
+spec:
+  broker: amq-broker-0 # Link to our broker instance
+  addressName: example.queue
+  routingType: anycast # Suitable for a standard point-to-point queue
+---
+apiVersion: broker.amq.io/v1beta1
+kind: ActiveMQArtemisQueue
+metadata:
+  name: example-queue
+  namespace: amq-broker-project
+spec:
+  broker: amq-broker-0
+  address: example.queue
+  queueName: example.queue
+  durable: true # Ensure messages persist across broker restarts
+  # Message grouping behavior is largely handled by the broker based on _AMQ_GROUP_ID,
+  # but for shared queues, groupRebalance options can fine-tune behavior.
+  # For this lab, default queue settings are sufficient for grouping.
+----
++
+Apply these resources:
+```bash
+oc apply -f example-address.yaml -n amq-broker-project
+```
+
+. *Create the `DLQ` and `ExpiryQueue` resources.* These queues must exist for messages to be moved to them.
++
+Create a file named `dlq-queues.yaml`:
++
+[source,yaml]
+----
+apiVersion: broker.amq.io/v1beta1
+kind: ActiveMQArtemisAddress
+metadata:
+  name: dlq-address
+  namespace: amq-broker-project
+spec:
+  broker: amq-broker-0
+  addressName: DLQ
+  routingType: anycast
+---
+apiVersion: broker.amq.io/v1beta1
+kind: ActiveMQArtemisQueue
+metadata:
+  name: dlq-queue
+  namespace: amq-broker-project
+spec:
+  broker: amq-broker-0
+  address: DLQ
+  queueName: DLQ
+  durable: true
+---
+apiVersion: broker.amq.io/v1beta1
+kind: ActiveMQArtemisAddress
+metadata:
+  name: expiry-address
+  namespace: amq-broker-project
+spec:
+  broker: amq-broker-0
+  addressName: ExpiryQueue
+  routingType: anycast
+---
+apiVersion: broker.amq.io/v1beta1
+kind: ActiveMQArtemisQueue
+metadata:
+  name: expiry-queue
+  namespace: amq-broker-project
+spec:
+  broker: amq-broker-0
+  address: ExpiryQueue
+  queueName: ExpiryQueue
+  durable: true
+----
++
+Apply these resources:
+```bash
+oc apply -f dlq-queues.yaml -n amq-broker-project
+```
+
+=== Hands-on Activity 1: Demonstrating Dead Letter Queues
+
+In this activity, you will send a message to `example.queue` and simulate a consumer failure to observe the message being moved to the `DLQ`.
+
+. *Deploy a simple message consumer application that consistently fails to acknowledge messages.* This will simulate a "poison pill" message scenario.
++
+Create a file named `failing-consumer-pod.yaml`:
++
+[source,yaml]
+----
+apiVersion: v1
+kind: Pod
+metadata:
+  name: failing-consumer
+  namespace: amq-broker-project
+spec:
+  containers:
+    - name: consumer-app
+      image: registry.access.redhat.com/amq7/amq-broker-7-artemis-openshift:7.10 # Use the official AMQ Broker image with Artemis CLI
+      command: ["/bin/bash", "-c"]
+      args:
+        - |
+          echo "Starting failing consumer for example.queue..."
+          # This command uses the internal broker CLI to consume messages.
+          # It attempts to receive, but explicitly fails to acknowledge, simulating a processing error.
+          # Replace 'admin' and 'redhat' with actual credentials if your broker has custom security.
+          artemis consumer \
+            --url tcp://amq-broker-0-hdls-svc.amq-broker-project.svc:61616 \
+            --user admin --password redhat \
+            --destination example.queue \
+            --messages 1 \
+            --receive-timeout 2000 \
+            --fail-acknowledgements true \
+            --verbose
+          echo "Failing consumer finished."
+      restartPolicy: Never # The pod will exit after attempting to consume
+----
++
+Apply the failing consumer:
+```bash
+oc apply -f failing-consumer-pod.yaml -n amq-broker-project
+```
+
+. *Send a test message to `example.queue`.*
++
+We'll use another temporary pod running the `artemis` producer CLI.
++
+Create a file named `producer-pod.yaml`:
++
+[source,yaml]
+----
+apiVersion: v1
+kind: Pod
+metadata:
+  name: producer-app
+  namespace: amq-broker-project
+spec:
+  containers:
+    - name: producer-app-container
+      image: registry.access.redhat.com/amq7/amq-broker-7-artemis-openshift:7.10
+      command: ["/bin/bash", "-c"]
+      args:
+        - |
+          echo "Sending message to example.queue..."
+          artemis producer \
+            --url tcp://amq-broker-0-hdls-svc.amq-broker-project.svc:61616 \
+            --user admin --password redhat \
+            --destination example.queue \
+            --message "Hello from producer - DLQ test!" \
+            --messages 1
+          echo "Producer finished."
+      restartPolicy: Never
+----
++
+Apply the producer:
+```bash
+oc apply -f producer-pod.yaml -n amq-broker-project
+```
+
+. *Monitor the `failing-consumer` pod logs.*
++
+You will observe the consumer attempting to receive the message multiple times. Each time it fails to acknowledge, the broker will redeliver it after the configured `redeliveryDelay`.
+```bash
+oc logs -f failing-consumer -n amq-broker-project
+```
++
+After `maxDeliveryAttempts` (which we set to 3), the message will be moved from `example.queue` to the `DLQ`.
+
+. *Verify the message is in the `DLQ`.*
++
+Deploy a temporary consumer pod to peek into the `DLQ` using the `--browse` option, which reads the message without removing it.
++
+Create a file named `dlq-consumer-pod.yaml`:
++
+[source,yaml]
+----
+apiVersion: v1
+kind: Pod
+metadata:
+  name: dlq-consumer
+  namespace: amq-broker-project
+spec:
+  containers:
+    - name: dlq-consumer-app
+      image: registry.access.redhat.com/amq7/amq-broker-7-artemis-openshift:7.10
+      command: ["/bin/bash", "-c"]
+      args:
+        - |
+          echo "Consuming from DLQ..."
+          artemis consumer \
+            --url tcp://amq-broker-0-hdls-svc.amq-broker-project.svc:61616 \
+            --user admin --password redhat \
+            --destination DLQ \
+            --messages 1 \
+            --browse # Reads without acknowledging/removing
+          echo "DLQ consumer finished."
+      restartPolicy: OnFailure # Will run once and exit
+----
++
+Apply the DLQ consumer:
+```bash
+oc apply -f dlq-consumer-pod.yaml -n amq-broker-project
+oc logs -f dlq-consumer -n amq-broker-project
+```
++
+You should see output similar to: `Received message: "Hello from producer - DLQ test!"`, confirming the message was moved to the `DLQ`.
+
+. *Clean up the consumer and producer pods:*
+```bash
+oc delete pod failing-consumer producer-app dlq-consumer -n amq-broker-project
+```
+
+=== Hands-on Activity 2: Demonstrating Message Grouping
+
+In this activity, you will deploy multiple consumers and send messages with `_AMQ_GROUP_ID` to observe how the broker ensures ordered processing by a single consumer per group.
+
+. *Deploy two consumer applications for `example.queue`.* These consumers will simply receive and acknowledge messages.
++
+Create a file named `group-consumers-pods.yaml`:
++
+[source,yaml]
+----
+apiVersion: v1
+kind: Pod
+metadata:
+  name: group-consumer-1
+  namespace: amq-broker-project
+spec:
+  containers:
+    - name: consumer-app
+      image: registry.access.redhat.com/amq7/amq-broker-7-artemis-openshift:7.10
+      command: ["/bin/bash", "-c"]
+      args:
+        - |
+          echo "Starting group-consumer-1 for example.queue..."
+          artemis consumer \
+            --url tcp://amq-broker-0-hdls-svc.amq-broker-project.svc:61616 \
+            --user admin --password redhat \
+            --destination example.queue \
+            --messages -1 \
+            --sleep 1000 \
+            --verbose \
+            --acknowledge-each 1 \
+            --name group-consumer-1 # A name helps identify the consumer in logs/console
+      restartPolicy: Always # Keep this consumer running indefinitely
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: group-consumer-2
+  namespace: amq-broker-project
+spec:
+  containers:
+    - name: consumer-app
+      image: registry.access.redhat.com/amq7/amq-broker-7-artemis-openshift:7.10
+      command: ["/bin/bash", "-c"]
+      args:
+        - |
+          echo "Starting group-consumer-2 for example.queue..."
+          artemis consumer \
+            --url tcp://amq-broker-0-hdls-svc.amq-broker-project.svc:61616 \
+            --user admin --password redhat \
+            --destination example.queue \
+            --messages -1 \
+            --sleep 1000 \
+            --verbose \
+            --acknowledge-each 1 \
+            --name group-consumer-2 # A name helps identify the consumer in logs/console
+      restartPolicy: Always # Keep this consumer running indefinitely
+----
++
+Apply the consumers:
+```bash
+oc apply -f group-consumers-pods.yaml -n amq-broker-project
+```
+
+. *Monitor the logs for both consumers in separate terminal windows:*
+```bash
+oc logs -f group-consumer-1 -n amq-broker-project
+```
+```bash
+oc logs -f group-consumer-2 -n amq-broker-project
+```
+
+. *Send multiple messages with the *same* group ID.*
++
+Create a file named `group-producer-same-group.yaml`:
++
+[source,yaml]
+----
+apiVersion: v1
+kind: Pod
+metadata:
+  name: group-producer-same-group
+  namespace: amq-broker-project
+spec:
+  containers:
+    - name: producer-app-container
+      image: registry.access.redhat.com/amq7/amq-broker-7-artemis-openshift:7.10
+      command: ["/bin/bash", "-c"]
+      args:
+        - |
+          echo "Sending messages with group-id: Order-XYZ-123"
+          for i in {1..5}; do
+            artemis producer \
+              --url tcp://amq-broker-0-hdls-svc.amq-broker-project.svc:61616 \
+              --user admin --password redhat \
+              --destination example.queue \
+              --message "Order-XYZ-123 Part $i" \
+              --messages 1 \
+              --group-id Order-XYZ-123 # Key for grouping
+            sleep 1
+          done
+          echo "Producer finished."
+      restartPolicy: Never
+----
++
+Apply the producer:
+```bash
+oc apply -f group-producer-same-group.yaml -n amq-broker-project
+```
++
+Observe the logs of `group-consumer-1` and `group-consumer-2`. You should see *all 5 messages* for "Order-XYZ-123" being received by *only one* of the consumers (e.g., `group-consumer-1`). The other consumer (`group-consumer-2`) will remain idle for these specific messages, demonstrating that the entire group is assigned to a single consumer.
+
+. *Send messages with *different* group IDs.*
++
+Create a file named `group-producer-different-groups.yaml`:
++
+[source,yaml]
+----
+apiVersion: v1
+kind: Pod
+metadata:
+  name: group-producer-different-groups
+  namespace: amq-broker-project
+spec:
+  containers:
+    - name: producer-app-container
+      image: registry.access.redhat.com/amq7/amq-broker-7-artemis-openshift:7.10
+      command: ["/bin/bash", "-c"]
+      args:
+        - |
+          echo "Sending messages with different group-ids..."
+          artemis producer --url tcp://amq-broker-0-hdls-svc.amq-broker-project.svc:61616 --user admin --password redhat --destination example.queue --message "GroupA Message 1" --messages 1 --group-id GroupA
+          sleep 1
+          artemis producer --url tcp://amq-broker-0-hdls-svc.amq-broker-project.svc:61616 --user admin --password redhat --destination example.queue --message "GroupB Message 1" --messages 1 --group-id GroupB
+          sleep 1
+          artemis producer --url tcp://amq-broker-0-hdls-svc.amq-broker-project.svc:61616 --user admin --password redhat --destination example.queue --message "GroupA Message 2" --messages 1 --group-id GroupA
+          sleep 1
+          artemis producer --url tcp://amq-broker-0-hdls-svc.amq-broker-project.svc:61616 --user admin --password redhat --destination example.queue --message "GroupC Message 1" --messages 1 --group-id GroupC
+          echo "Producer finished."
+      restartPolicy: Never
+----
++
+Apply the producer:
+```bash
+oc apply -f group-producer-different-groups.yaml -n amq-broker-project
+```
++
+Observe the consumer logs again. You should see `GroupA Message 1` and `GroupA Message 2` being handled by one consumer (the same one that handled `GroupA Message 1`), while `GroupB Message 1` and `GroupC Message 1` might be handled by the *other* consumer, or potentially the same one if it was available when the first message for those groups arrived. The key observation is that messages within the *same group* consistently stick to the *same consumer*.
+
+. *Clean up the consumer and producer pods:*
+```bash
+oc delete pod group-consumer-1 group-consumer-2 group-producer-same-group group-producer-different-groups -n amq-broker-project
+```
+
+. *Optional: Clean up the created Address and Queue resources:*
++
+```bash
+oc delete activemqartemisaddress example-address dlq-address expiry-address -n amq-broker-project
+oc delete activemqartemisqueue example-queue dlq-queue expiry-queue -n amq-broker-project
+```
++
+If you wish to revert the `addressSettings` changes made to your `Broker` CR, open it for editing and remove the `example.queue` entry from the `spec.deploymentPlan.addressSettings` array.
+```bash
+oc edit broker amq-broker-0 -n amq-broker-project # Remove the 'example.queue' entry
+```
+
+This lab demonstrated how to configure dead letter queues to handle undeliverable messages gracefully and how message grouping ensures ordered processing by a single consumer for related messages, significantly enhancing the reliability and consistency of your messaging applications.

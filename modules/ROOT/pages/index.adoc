@@ -1,9 +1,9 @@
-=  Message Oriented Middleware (MOM) with ActiveMQ Artemis on OpenShift
+=  Red Hat AMQ Broker on OpenShift: Deployment and Configuration
 :navtitle: Home
 
 == Introduction
 
-Course Title:  Message Oriented Middleware (MOM) with ActiveMQ Artemis on OpenShift
+Course Title:  Red Hat AMQ Broker on OpenShift: Deployment and Configuration
 
 Description:
 Course description FIXME
@@ -13,15 +13,21 @@ Duration: FIXME hours
 == Topics covered in this course
 
 
-*  MOM Overview
+*  AMQ Introduction
 
-*  ActiveMQ Artemis Broker Overview
+*  OpenShift Introduction
 
-*  ActiveMQ Artemis Deployment on OpenShift
+*  AMQ On OpenShift
 
-*  The Problem with a Multi-Node Broker
+*  Address Configuration
 
-*  The Client-Side Solution
+*  Security Configuration
+
+*  Acceptor Configuration
+
+*  Storage Configuration
+
+*  External Access
 
 
 

@@ -1,0 +1,83 @@
+#  Understanding network acceptors and connectors
+
+```asciidoc
+= Understanding Network Acceptors and Connectors
+
+ifeval::[{doctype} == 'page']
+:description: Learn about network acceptors and connectors in Red Hat AMQ Broker, their roles in message routing, and how they facilitate client and broker communication.
+:keywords: AMQ Broker, OpenShift, network, acceptors, connectors, messaging, protocols, client connections
+endif::[]
+
+In the world of message-oriented middleware, specifically with Red Hat AMQ Broker, *network acceptors* and *network connectors* are fundamental components that govern how the broker communicates with external clients and other brokers. They are essentially the communication endpoints that enable the flow of messages in and out of the broker instance. Understanding their distinct roles and functionalities is crucial for designing robust and secure messaging architectures.
+
+== What are Network Acceptors?
+
+A *network acceptor* (often simply referred to as an "acceptor") is a server-side component of the AMQ Broker that listens for incoming client connections. When a client application wants to send or receive messages from the broker, it establishes a connection to an address and port exposed by an acceptor. The acceptor's primary role is to accept these connection requests and then manage the established communication link according to the configured protocol and security settings.
+
+Think of an acceptor as a "door" to the AMQ Broker. Each door can be configured to use a specific protocol (e.g., AMQP, MQTT, OpenWire) and security mechanism (e.g., SSL/TLS, SASL authentication).
+
+=== Key Characteristics of Acceptors:
+
+*   *Server-Side Listening:* Acceptors operate in a listening mode, waiting for clients to initiate connections.
+*   *Protocol-Specific:* Each acceptor is typically configured to handle a specific messaging protocol. While a single acceptor can sometimes support multiple protocols (depending on the broker's capabilities and configuration), it's common to define separate acceptors for distinct protocols or use cases.
+*   *Port Binding:* An acceptor binds to a specific network interface and port number on the host where the broker is running. Clients connect to this IP address and port.
+*   *Security Configuration:* Acceptors are the primary point for enforcing network-level security, including SSL/TLS for encrypted communication and authentication mechanisms for validating client identities.
+*   *Client Connectivity:* All client applications (producers and consumers) connect to the broker through an acceptor.
+
+[NOTE]
+====
+When deploying AMQ Broker on OpenShift, the acceptor's bound port must be exposed through an OpenShift `Service` resource to allow external or internal clients to reach it.
+====
+
+== What are Network Connectors?
+
+While acceptors handle incoming connections, *network connectors* (often simply "connectors") are client-side components of the AMQ Broker that initiate outgoing connections to other brokers. They are used when an AMQ Broker instance needs to connect to another AMQ Broker (or a compatible messaging system) to form a network of brokers, facilitate message federation, or implement high availability features like master-slave replication.
+
+Imagine a connector as a "bridge" or an "outbound tunnel" from one AMQ Broker instance to another.
+
+=== Key Characteristics of Connectors:
+
+*   *Client-Side Initiating:* Connectors actively initiate connections to remote broker instances.
+*   *Broker-to-Broker Communication:* Their primary use case is enabling communication between different AMQ Broker instances.
+*   *Protocol-Specific:* Similar to acceptors, connectors are configured to use a specific messaging protocol to establish the connection with the remote broker.
+*   *Remote Address Specification:* A connector must be configured with the network address (IP/hostname) and port of the remote broker's acceptor it intends to connect to.
+*   *Security Configuration:* Connectors can also be configured with SSL/TLS and authentication credentials if the remote broker's acceptor requires secure and authenticated connections.
+*   *Use Cases:* Common scenarios for using connectors include:
+    *   **Clustering:** Forming a network of brokers for load balancing, high availability, or distributing message processing.
+    *   **Bridge/Federation:** Connecting independent broker instances to allow messages to flow between them.
+    *   **Replication:** In high-availability configurations, a master broker might use a connector to replicate data to a slave broker.
+
+[IMPORTANT]
+====
+It's crucial to understand that while an acceptor listens for connections and a connector initiates them, they are inherently complementary. For two brokers to communicate, one broker's connector initiates a connection to the other broker's acceptor.
+====
+
+== Acceptors vs. Connectors: A Summary
+
+The following table summarizes the key differences between acceptors and connectors:
+
+|===
+| Feature | Network Acceptor | Network Connector
+
+| *Role* | Listens for incoming connections | Initiates outgoing connections
+| *Endpoint* | Server-side (Broker listens) | Client-side (Broker connects out)
+| *Primary Use* | Client applications connecting to broker | Broker instances connecting to other brokers
+| *Direction* | Inbound to the broker | Outbound from the broker
+| *Configuration* | Binds to local IP/port | Specifies remote IP/port
+| *Example* | Client connects to `tcp://broker-host:61616` | Broker A connects to Broker B at `tcp://brokerB-host:61616`
+|===
+
+=== Interaction within AMQ Broker Architecture
+
+In a typical AMQ Broker deployment:
+
+.  **Clients connect to Acceptors:** Client applications (written in Java, Python, Node.js, etc.) use a messaging client library (e.g., JMS, Proton, Paho) to connect to a specific URL that points to an AMQ Broker's acceptor. The acceptor then handles the session negotiation, authentication, and message routing for that client.
+.  **Brokers connect to Brokers via Connectors:** If you have multiple AMQ Broker instances that need to share messages or form a cluster, you configure connectors on each broker to establish connections to the acceptors of other brokers in the network. This creates a bridge over which messages can flow between the broker instances.
+
+[TIP]
+====
+Effective management of acceptors and connectors is vital for network segmentation, security, and performance tuning. You might have multiple acceptors for different protocols or security requirements, and multiple connectors for connecting to various remote brokers or different network segments.
+====
+
+Understanding these foundational components prepares you for configuring specific messaging protocols, implementing robust security, and managing external access to your Red Hat AMQ Broker deployments on OpenShift. The subsequent sections will delve into the practical configuration steps for these elements.
+```

@@ -1,18 +1,24 @@
 name: amq-connection-distribution
-title:  Message Oriented Middleware (MOM) with ActiveMQ Artemis on OpenShift
+title:  Red Hat AMQ Broker on OpenShift: Deployment and Configuration
 version: 1.0.0
 nav:
 - modules/ROOT/nav.adoc
 - modules/LABENV/nav.adoc
 
-- modules/mom-overview/nav.adoc
+- modules/amq-introduction/nav.adoc
 
-- modules/activemq-artemis-broker-overview/nav.adoc
+- modules/openshift-introduction/nav.adoc
 
-- modules/activemq-artemis-deployment-on-openshift/nav.adoc
+- modules/amq-on-openshift/nav.adoc
 
-- modules/the-problem-with-a-multi-node-broker/nav.adoc
+- modules/address-configuration/nav.adoc
 
-- modules/the-client-side-solution/nav.adoc
+- modules/security-configuration/nav.adoc
+
+- modules/acceptor-configuration/nav.adoc
+
+- modules/storage-configuration/nav.adoc
+
+- modules/external-access/nav.adoc
 
 - modules/appendix/nav.adoc

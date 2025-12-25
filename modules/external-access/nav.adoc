@@ -1,0 +1,6 @@
+* xref:external-access.adoc[]
+** xref:exposing-amq-broker-services-on-openshift.adoc[]
+** xref:configuring-openshift-routes-for-external-client-access.adoc[]
+** xref:utilizing-load-balancers-and-nodeports-for-connectivity.adoc[]
+** xref:securing-external-access-with-ssltls-and-network-policies.adoc[]
+** xref:hands-on-lab-exposing-amq-broker-externally.adoc[]

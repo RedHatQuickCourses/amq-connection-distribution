@@ -1,0 +1,312 @@
+#  Hands-on Lab: Managing Storage for AMQ Broker
+
+[#_managing_storage_for_amq_broker_lab]
+= Hands-on Lab: Managing Storage for AMQ Broker
+
+This lab guides you through configuring and managing persistent storage for Red Hat AMQ Broker instances deployed on OpenShift. You will learn how to leverage OpenShift's Persistent Volume Claims (PVCs) to ensure message persistence and data integrity for your AMQ Broker deployments, a crucial aspect for any reliable messaging system.
+
+[[_prerequisites]]
+== Prerequisites
+To successfully complete this lab, you will need:
+
+*   **Access to a Red Hat OpenShift Container Platform cluster** (version 4.x or later).
+*   **The `oc` command-line tool** configured and authenticated to your OpenShift cluster.
+*   **The AMQ Broker Operator** installed in your OpenShift cluster (e.g., from OperatorHub).
+*   **A dedicated OpenShift project (namespace)** for this lab.
+
+[[_technical_explanation_storage]]
+== Technical Explanation: AMQ Broker Storage on OpenShift
+
+Message brokers like Red Hat AMQ Broker are often critical components in an application architecture, handling vital business messages that must not be lost. Ensuring these messages are retained, even if a broker instance restarts, fails, or is scaled, is paramount. This capability is known as *message persistence*.
+
+=== Message Persistence and Journaling in AMQ Broker
+AMQ Broker achieves high levels of message persistence primarily through its *journal*. The journal is a transaction log that meticulously records all incoming messages, outgoing message deliveries, acknowledgments, and other critical state changes. When a message is sent to a persistent queue, it is first written to this journal on disk before being delivered to consumers. This design ensures that if the broker experiences an unexpected shutdown or crashes, the journal can be replayed upon restart to accurately recover the broker's last known state and all undelivered, persistent messages.
+
+Beyond the message journal, the broker also utilizes persistent storage for other operational data, such as configuration files, security store (if using embedded mechanisms), and sometimes larger messages that might be stored directly on disk rather than in memory.
+
+=== OpenShift Persistent Volumes (PVs) and Persistent Volume Claims (PVCs)
+OpenShift, being a Kubernetes distribution, provides robust and flexible mechanisms for managing persistent storage for stateful applications like AMQ Broker. These mechanisms abstract the underlying storage infrastructure, making it easier for applications to consume storage.
+
+*   *Persistent Volume (PV)*: A PV represents a piece of storage in the cluster that has been provisioned. It is an independent cluster resource, managed by the OpenShift administrator or a storage provisioner, and is not tied to any single pod's lifecycle. PVs can be provisioned using various technologies (e.g., NFS, iSCSI, cloud-provider specific storage like AWS EBS, Azure Disk, Google Persistent Disk, Ceph Rook).
+*   *Persistent Volume Claim (PVC)*: A PVC is a request for storage by a user or application (in our case, the AMQ Broker Operator on behalf of the broker instance). It specifies the desired amount of storage (e.g., 2Gi), the access mode (e.g., `ReadWriteOnce` for a single pod), and optionally a `StorageClass`. The Kubernetes master attempts to bind a suitable PV to the PVC that matches the requested properties.
+
+When you deploy AMQ Broker on OpenShift using the AMQ Broker Operator, you define your storage requirements directly within the `Broker` Custom Resource (CR). The Operator then acts as an orchestrator:
+. It creates the necessary PVCs for each broker instance based on the `storage` specification in the `Broker` CR.
+. These PVCs then bind to available PVs. Depending on your cluster's configuration, these PVs might be pre-provisioned by an administrator or dynamically provisioned on demand by a `StorageClass` (e.g., a cloud-provider plugin creates a new disk volume).
+. Once bound, the broker pod automatically mounts the storage represented by the PV/PVC to its data directory (typically `/opt/amq/broker/data`), enabling it to read and write persistent data.
+
+Using PVCs ensures that:
+*   Broker data persists across pod restarts, scaling operations, and even node failures (as long as the underlying PV is resilient).
+*   The storage lifecycle is decoupled from the broker pod's lifecycle, meaning you can delete and recreate broker pods without losing data.
+*   Different types of storage, optimized for various performance and cost profiles, can be consumed by applications via *StorageClasses*.
+
+[[_hands_on_lab_steps]]
+== Hands-on Lab: Configuring and Managing Persistent Storage
+
+In this lab, you will deploy an AMQ Broker instance configured to use OpenShift Persistent Volumes for message persistence, and then verify its functionality by demonstrating message resilience across pod restarts.
+
+[[_step_1_create_a_new_project]]
+=== Step 1: Create a New Project
+
+First, create a dedicated OpenShift project (namespace) for this lab to keep your resources organized.
+
+.Log in to your OpenShift cluster using the `oc` CLI:
++
+[source,bash]
+----
+oc login -u <your_username> -p <your_password> <your_openshift_api_url>
+----
++
+.Create a new project named `amq-broker-storage-lab`:
++
+[source,bash]
+----
+oc new-project amq-broker-storage-lab
+----
++
+You should see output similar to:
++
+[source,text]
+----
+Now using project "amq-broker-storage-lab" on server "https://api.your-cluster.example.com:6443".
+----
+
+[[_step_2_verify_available_storage_classes]]
+=== Step 2: Verify Available Storage Classes
+
+It's good practice to know which storage classes are available in your cluster, as you might need to specify one for your persistent volumes. If you don't specify a `storageClassName` in the Broker CR, OpenShift will attempt to use the cluster's default storage class.
+
+.List the available storage classes in your OpenShift cluster:
++
+[source,bash]
+----
+oc get sc
+----
++
+You should see output similar to this (names and types may vary based on your cluster configuration and cloud provider):
++
+[source,text]
+----
+NAME                PROVISIONER                     RECLAIMPOLICY   VOLUMEBINDINGMODE   ALLOWVOLUMEEXPANSION   AGE
+gp2 (default)       kubernetes.io/aws-ebs           Delete          Immediate           true                   2d1h
+standard            kubernetes.io/gce-pd            Delete          Immediate           true                   2d1h
+thin-csi            csi.vsphere.vmware.com          Delete          Immediate           true                   2d1h
+----
++
+Note the `NAME` of the default storage class (indicated by `(default)`) or any other specific storage class you might want to use. We will use `standard` in our example, but you should adjust it to a valid storage class in your environment.
+
+[[_step_3_deploy_amq_broker_with_persistent_storage]]
+=== Step 3: Deploy AMQ Broker with Persistent Storage
+
+Now, you will create a `Broker` Custom Resource that configures an AMQ Broker instance to use persistent storage. We will request a Persistent Volume Claim of 2 GiB for the broker's data.
+
+.Create a YAML file named `amq-broker-persistent.yaml` with the following content. Replace `registry.redhat.io/amq7/amq-broker-rhel8:7.12` with the latest stable AMQ Broker image available to you. Ensure you adjust the `storageClassName` to a valid storage class from Step 2, or omit it to rely on your cluster's default.
++
+[source,yaml]
+----
+apiVersion: broker.amq.io/v1beta1
+kind: Broker
+metadata:
+  name: my-broker-persistent
+spec:
+  deploymentPlan:
+    size: 1 # Deploy a single broker instance
+    image: registry.redhat.io/amq7/amq-broker-rhel8:7.12 # Use the latest stable AMQ Broker image
+    resources:
+      limits:
+        memory: 1Gi
+      requests:
+        memory: 512Mi
+  acceptors:
+    - name: amqp
+      port: 5672
+      protocols:
+        - AMQP
+      expose: true # Expose the AMQP acceptor via an OpenShift Route
+      sslEnabled: false
+  addresses:
+    - name: myqueue # Define a durable queue for testing persistence
+      queue:
+        routingType: ANYCAST
+        durability: true # Ensure messages sent to this queue are persistent
+        maxConsumers: 1
+  storage: # <1> This section defines the persistent storage configuration.
+    size: 2Gi # <2> Request 2 GiB of storage for the broker's journal and data.
+    storageClassName: standard # <3> Specify the StorageClass to use. Replace with your preferred class or omit for default.
+----
+<1> The `storage` section is crucial for enabling persistence.
+<2> `size` specifies the desired capacity for the Persistent Volume Claim (PVC) that will be created.
+<3> `storageClassName` explicitly names the StorageClass to be used. If omitted, OpenShift will use the cluster's default StorageClass.
+
+.Apply the `Broker` Custom Resource to your OpenShift cluster:
++
+[source,bash]
+----
+oc apply -f amq-broker-persistent.yaml
+----
++
+You should see output similar to:
++
+[source,text]
+----
+broker.amq.io/my-broker-persistent created
+----
+
+.Monitor the broker deployment until it's ready. The Operator will provision resources, pull the image, and start the broker. This process might take a few minutes.
++
+[source,bash]
+----
+oc get broker my-broker-persistent -w
+----
++
+Wait until the `STATUS` changes to `Running`.
+
+[[_step_4_verify_pvc_and_pv_creation]]
+=== Step 4: Verify PVC and PV Creation
+
+Once the broker instance is running, the AMQ Broker Operator should have automatically created a Persistent Volume Claim (PVC) and potentially a new Persistent Volume (PV) for your broker instance, depending on your `StorageClass` configuration.
+
+.Check for the Persistent Volume Claim (PVC) created by the Operator:
++
+[source,bash]
+----
+oc get pvc
+----
++
+You should see a PVC with a name like `my-broker-persistent-data-0` (the `-0` suffix indicates the first pod in a StatefulSet). It should show `STATUS` as `Bound` and `CAPACITY` matching your requested 2Gi.
++
+[source,text]
+----
+NAME                          STATUS   VOLUME                                     CAPACITY   ACCESS MODES   STORAGECLASS   AGE
+my-broker-persistent-data-0   Bound    pvc-f1234567-89ab-cdef-1234-567890abcdef   2Gi        RWO            standard       2m
+----
+
+.Examine the details of the created PVC to see which PV it's bound to and its configuration:
++
+[source,bash]
+----
+oc describe pvc my-broker-persistent-data-0
+----
++
+Look for the `Volume:` field, which indicates the PV it's bound to, and other details like `StorageClass` and `Access Modes`.
+
+.Optionally, inspect the corresponding Pod to confirm where the PVC is mounted within the broker container:
++
+[source,bash]
+----
+oc describe pod my-broker-persistent-ss-0
+----
++
+Under the `Volumes:` section, you will find an entry for the data volume, pointing to the created PVC. Under `Mounts:`, you'll see it mounted at `/opt/amq/broker/data`, which is the default data directory for AMQ Broker where the journal and other persistent data are stored.
+
+[[_step_5_test_message_persistence]]
+=== Step 5: Test Message Persistence
+
+Now, let's verify that messages sent to the broker are indeed persisted across broker restarts. This is the core demonstration of persistent storage.
+
+.First, ensure the broker's AMQP acceptor is accessible externally via an OpenShift Route. Get the hostname of this route:
++
+[source,bash]
+----
+oc get route my-broker-persistent-amqp -o jsonpath='{.spec.host}'
+----
++
+Copy the output hostname. For example, it might be `my-broker-persistent-amqp-amq-broker-storage-lab.apps.your-cluster.example.com`. We'll refer to this as `YOUR_BROKER_HOST`.
+
+.We'll use a temporary pod containing AMQP client tools to send and receive messages. Create a YAML file named `amqp-sender-pod.yaml`:
++
+[source,yaml]
+----
+apiVersion: v1
+kind: Pod
+metadata:
+  name: amqp-sender
+spec:
+  containers:
+    - name: sender
+      image: registry.redhat.io/amq7/amq-interconnect-rhel8:1.12 # A lightweight image with AMQP tools like qpid-send
+      command: ["/bin/bash", "-c", "sleep infinity"] # Keep the pod running indefinitely
+  restartPolicy: Never
+----
++
+.Apply the sender pod:
++
+[source,bash]
+----
+oc apply -f amqp-sender-pod.yaml
+----
+
+.Wait for the `amqp-sender` pod to be `Running`. Then, execute a command inside it to send 10 persistent messages to the `myqueue` address. Replace `YOUR_BROKER_HOST` with the route hostname obtained earlier.
++
+[source,bash,subs="attributes+"]
+----
+oc exec amqp-sender -- bash -c "qpid-send -b YOUR_BROKER_HOST:5672 -a myqueue --messages 10 --content 'Persistent Test Message #{}' --properties durable=true"
+----
++
+You should see output indicating messages were sent, for example: `Sent 10 messages`.
+
+.Now, let's simulate a broker restart by deleting the broker pod. The AMQ Broker Operator will automatically detect this and recreate the pod. Crucially, the new pod will re-attach to the *existing* Persistent Volume Claim, recovering the stored data.
++
+[source,bash]
+----
+oc delete pod my-broker-persistent-ss-0
+----
++
+Wait for the new pod `my-broker-persistent-ss-0` to come back up. You can monitor its status:
++
+[source,bash]
+----
+oc get pod -w
+----
++
+Wait until the new pod is `Running`.
+
+.Once the new broker pod is `Running`, use the `amqp-sender` pod again to receive the messages from `myqueue`.
++
+[source,bash,subs="attributes+"]
+----
+oc exec amqp-sender -- bash -c "qpid-receive -b YOUR_BROKER_HOST:5672 -a myqueue --messages 10 --print-content --timeout 5"
+----
++
+You should receive all 10 messages, with content like `Persistent Test Message #1`, `Persistent Test Message #2`, etc. This clearly demonstrates that the messages persisted through the broker's restart because they were written to the persistent storage managed by the PVC, and the new broker pod successfully recovered them from that storage.
+
+[[_step_6_clean_up]]
+=== Step 6: Clean Up
+
+To remove all resources created during this lab and free up cluster resources:
+
+.Delete the AMQ Broker instance. This will delete the `Broker` Custom Resource, the associated Deployment, Services, Routes, and importantly, the Persistent Volume Claim (PVC).
++
+[source,bash]
+----
+oc delete broker my-broker-persistent
+----
++
+You should see output similar to: `broker.amq.io "my-broker-persistent" deleted`.
+
+.Delete the AMQP sender pod:
++
+[source,bash]
+----
+oc delete pod amqp-sender
+----
+
+.Verify that the PVC has been deleted by checking if `my-broker-persistent-data-0` is no longer present:
++
+[source,bash]
+----
+oc get pvc
+----
++
+You should see no PVCs or the specific `my-broker-persistent-data-0` PVC should be gone. The underlying PV might be retained or deleted based on its `reclaimPolicy` (often `Delete` for dynamically provisioned PVs).
+
+.Finally, delete the project you created for this lab:
++
+[source,bash]
+----
+oc delete project amq-broker-storage-lab
+----
++
+Confirm deletion if prompted.
+
+This concludes the lab on managing storage for AMQ Broker on OpenShift. You have successfully deployed a persistent broker instance, verified its storage configuration, and confirmed message persistence through a simulated broker restart. This knowledge is fundamental for deploying robust and reliable messaging solutions on OpenShift.

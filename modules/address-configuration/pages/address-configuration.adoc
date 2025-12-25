@@ -1,0 +1,9 @@
+#  Address Configuration
+
+xref:amq-on-openshift:addresses-and-queues.adoc[Address Configuration] in AMQ Broker involves defining virtual destinations for messages.
+
+*   **Addresses and Queues:** Create logical endpoints (addresses) where producers send messages, and consumers retrieve them from queues.
+*   **Routing Types:** Determine how messages are delivered to queues, such as `anycast` (point-to-point) or `multicast` (publish-subscribe).
+*   **Message Grouping:** Configure messages with a specific `groupID` to ensure sequential processing by a single consumer.
+*   **Dead Letter Queues (DLQ):** Set up a dedicated queue where messages are sent if they cannot be delivered or processed successfully.
+*   **Address Settings:** Apply various configurations like expiry, max delivery attempts, and message retention policies to addresses.

@@ -1,0 +1,384 @@
+#  Configuring different messaging protocols: AMQP, MQTT, OpenWire, STOMP
+
+= Configuring Different Messaging Protocols: AMQP, MQTT, OpenWire, STOMP
+
+This module explores the diverse world of messaging protocols supported by Red Hat AMQ Broker and provides detailed guidance on how to configure them using network acceptors on an OpenShift Container Platform. Understanding these protocols is crucial for enabling a wide range of client applications to connect and exchange messages with your AMQ Broker instances.
+
+== Introduction to Messaging Protocols
+
+Message brokers like Red Hat AMQ Broker act as intermediaries, facilitating communication between different applications, often referred to as producers and consumers. To achieve this, brokers must "speak" various languages, or protocols, that clients understand. Each protocol has its strengths, target use cases, and design philosophies.
+
+Red Hat AMQ Broker, being based on Apache ActiveMQ Artemis, is a multi-protocol broker by design, offering native support for:
+
+*   **AMQP (Advanced Message Queuing Protocol)**: A robust, open standard for high-performance, interoperable enterprise messaging.
+*   **MQTT (Message Queuing Telemetry Transport)**: A lightweight, publish/subscribe protocol ideal for IoT and constrained environments.
+*   **OpenWire**: ActiveMQ Classic's native protocol, primarily used for compatibility with existing ActiveMQ Classic clients.
+*   **STOMP (Streaming Text Oriented Messaging Protocol)**: A simple, text-based protocol often favored for web messaging.
+
+By configuring specific *network acceptors* on your AMQ Broker instance, you define which protocols the broker will listen for and on which ports. This flexibility allows a single broker instance to serve a diverse ecosystem of client applications simultaneously.
+
+== Advanced Message Queuing Protocol (AMQP)
+
+=== What is AMQP?
+
+AMQP (Advanced Message Queuing Protocol) is an open standard application layer protocol for message-oriented middleware. It provides a standardized wire-level protocol that allows heterogeneous systems to communicate reliably and efficiently. AMQP is designed to be robust, secure, and interoperable across different messaging products.
+
+Key characteristics of AMQP:
+
+*   **Reliability**: Supports various delivery guarantees, including "at-most-once," "at-least-once," and "exactly-once" (with transactions).
+*   **Transactions**: Allows messages to be sent and received as part of atomic operations.
+*   **Routing and Exchanges**: Provides sophisticated routing capabilities through exchanges, which distribute messages to queues based on defined rules (e.g., direct, topic, fanout).
+*   **Security**: Built-in mechanisms for authentication and authorization.
+*   **Interoperability**: Designed to work across different vendor implementations.
+
+AMQP is widely used in enterprise integration scenarios, microservices communication, and anywhere reliable, high-throughput messaging is required. The AMQ Broker's core is based on AMQP 1.0, offering a highly performant and compliant implementation.
+
+=== Configuring AMQP Acceptors
+
+In Red Hat AMQ Broker on OpenShift, you configure AMQP acceptors by defining them within the `acceptors` array of the `brokerProperties` in your `ActiveMQArtemis` Custom Resource (CR). An AMQP acceptor typically listens on port 5672 (standard AMQP port) or 5671 for SSL/TLS connections.
+
+Here's how you define a basic AMQP acceptor:
+
+.AMQP Acceptor Configuration
+[source,yaml]
+----
+apiVersion: broker.amq.io/v1beta1
+kind: ActiveMQArtemis
+metadata:
+  name: my-broker
+spec:
+  brokerProperties:
+    # ... other broker properties ...
+    acceptors:
+      - name: my-amqp-acceptor
+        port: 5672
+        protocols: [AMQP]
+        # Optional: Configure the host if binding to a specific network interface
+        # host: 0.0.0.0
+        # Optional: Add any protocol-specific configuration parameters
+        # acceptorProperties:
+        #   amqpCredits: 1000
+        #   amqpLowCredits: 300
+----
+
+*   `name`: A unique identifier for the acceptor.
+*   `port`: The network port the acceptor will listen on.
+*   `protocols`: An array specifying the protocols this acceptor will handle. For AMQP, you use `[AMQP]`.
+*   `host`: (Optional) Specifies the network interface to bind to. `0.0.0.0` binds to all available interfaces.
+*   `acceptorProperties`: (Optional) A map for protocol-specific configuration. For AMQP, you might configure flow control parameters like `amqpCredits` and `amqpLowCredits` to manage message flow and prevent client overload.
+
+== Message Queuing Telemetry Transport (MQTT)
+
+=== What is MQTT?
+
+MQTT (Message Queuing Telemetry Transport) is an extremely lightweight publish/subscribe messaging protocol designed for constrained devices and low-bandwidth, high-latency, or unreliable networks. It's an ideal choice for Internet of Things (IoT) applications, mobile applications, and embedded systems where resource efficiency is paramount.
+
+Key characteristics of MQTT:
+
+*   **Lightweight**: Minimal overhead due to a small code footprint and efficient use of network bandwidth.
+*   **Publish/Subscribe**: Decouples message producers (publishers) from consumers (subscribers) through topics.
+*   **Quality of Service (QoS)**: Supports three levels of QoS to balance reliability and performance:
+    *   QoS 0: At most once (fire and forget)
+    *   QoS 1: At least once (acknowledged delivery)
+    *   QoS 2: Exactly once (assured delivery)
+*   **Last Will and Testament**: Allows a client to inform the broker of a message to be sent to subscribers if the client disconnects unexpectedly.
+*   **Session Persistence**: Allows a client to resume a session after disconnection, receiving messages published while it was offline.
+
+MQTT is the de facto standard for IoT communication, powering smart homes, industrial sensors, automotive telematics, and more.
+
+=== Configuring MQTT Acceptors
+
+MQTT acceptors are configured similarly to AMQP acceptors within the `acceptors` array of the `ActiveMQArtemis` CR. The standard MQTT port is 1883, and 8883 for secure connections (MQTTS).
+
+.MQTT Acceptor Configuration
+[source,yaml]
+----
+apiVersion: broker.amq.io/v1beta1
+kind: ActiveMQArtemis
+metadata:
+  name: my-broker
+spec:
+  brokerProperties:
+    # ... other broker properties ...
+    acceptors:
+      - name: my-mqtt-acceptor
+        port: 1883
+        protocols: [MQTT]
+        # Optional: MQTT specific properties
+        # acceptorProperties:
+        #   mqttKeepAlive: 60000 # 60 seconds keep-alive interval
+        #   mqttMessageExpiry: -1 # Messages do not expire
+----
+
+*   `protocols`: For MQTT, you specify `[MQTT]`.
+*   `acceptorProperties`: For MQTT, common properties include `mqttKeepAlive` (client inactivity timeout) and `mqttMessageExpiry` (default expiry for MQTT messages).
+
+== OpenWire Protocol
+
+=== What is OpenWire?
+
+OpenWire is the native wire protocol for Apache ActiveMQ Classic. When Red Hat AMQ Broker was developed based on Apache ActiveMQ Artemis, it maintained compatibility with OpenWire clients to facilitate migration from ActiveMQ Classic deployments. While AMQ Broker's core is AMQP 1.0, the OpenWire acceptor allows existing ActiveMQ Classic applications to connect to AMQ Broker without requiring code changes.
+
+Key characteristics of OpenWire:
+
+*   **ActiveMQ Classic Compatibility**: Its primary purpose is to provide seamless connectivity for applications written against ActiveMQ Classic.
+*   **Rich Feature Set**: Supports features like transactions, message acknowledgment, durable subscriptions, and various messaging patterns found in ActiveMQ Classic.
+*   **Proprietary**: Unlike AMQP, OpenWire is a proprietary protocol specific to ActiveMQ implementations.
+
+If you are migrating applications from ActiveMQ Classic to Red Hat AMQ Broker on OpenShift, configuring an OpenWire acceptor is often a critical first step to ensure backward compatibility.
+
+=== Configuring OpenWire Acceptors
+
+OpenWire acceptors are also defined in the `acceptors` array. The default port for OpenWire is 61616.
+
+.OpenWire Acceptor Configuration
+[source,yaml]
+----
+apiVersion: broker.amq.io/v1beta1
+kind: ActiveMQArtemis
+metadata:
+  name: my-broker
+spec:
+  brokerProperties:
+    # ... other broker properties ...
+    acceptors:
+      - name: my-openwire-acceptor
+        port: 61616
+        protocols: [OPENWIRE]
+        # Optional: OpenWire specific properties
+        # acceptorProperties:
+        #   connectionTTL: 60000 # Connection Time To Live in ms
+        #   wireFormat.maxFrameSize: 104857600 # Max frame size in bytes
+----
+
+*   `protocols`: For OpenWire, you use `[OPENWIRE]`.
+*   `acceptorProperties`: OpenWire has numerous properties for fine-tuning, such as `connectionTTL` (how long a connection can be idle), `wireFormat.maxFrameSize` (maximum message size), and `cacheEnabled` for performance.
+
+== Streaming Text Oriented Messaging Protocol (STOMP)
+
+=== What is STOMP?
+
+STOMP (Streaming Text Oriented Messaging Protocol) is a simple, text-based wire protocol designed for working with message brokers. It provides an interoperable wire format that allows STOMP clients to communicate with any STOMP-compliant message broker. Its simplicity makes it easy to implement in various languages and environments, particularly web applications.
+
+Key characteristics of STOMP:
+
+*   **Simplicity**: Uses a frame-based, text-oriented format, making it easy to parse and generate.
+*   **Web-Friendly**: Often used with WebSockets for real-time messaging in web browsers, enabling bidirectional communication between web clients and message brokers.
+*   **Basic Messaging Patterns**: Supports send (publish), subscribe, and acknowledge operations.
+*   **Lightweight**: Less complex than protocols like AMQP, suitable for simpler messaging needs.
+
+STOMP is commonly found in web-based chat applications, notification services, and other scenarios where browser-based clients need to interact with a messaging system.
+
+=== Configuring STOMP Acceptors
+
+STOMP acceptors are configured using the `acceptors` array. The standard port for STOMP is 61613, and 61614 for secure STOMP over SSL/TLS.
+
+.STOMP Acceptor Configuration
+[source,yaml]
+----
+apiVersion: broker.amq.io/v1beta1
+kind: ActiveMQArtemis
+metadata:
+  name: my-broker
+spec:
+  brokerProperties:
+    # ... other broker properties ...
+    acceptors:
+      - name: my-stomp-acceptor
+        port: 61613
+        protocols: [STOMP]
+        # Optional: STOMP specific properties
+        # acceptorProperties:
+        #   maxFrameSize: 1048576 # Max frame size in bytes
+        #   autoGroup: true # Enable automatic message grouping for STOMP clients
+----
+
+*   `protocols`: For STOMP, you specify `[STOMP]`.
+*   `acceptorProperties`: Common STOMP properties include `maxFrameSize` (maximum size of a STOMP frame) and `autoGroup` (to enable automatic message grouping for STOMP clients).
+
+== Hands-on Lab: Configuring Network Acceptors for Multiple Protocols
+
+This lab guides you through configuring multiple messaging protocols (AMQP, MQTT, STOMP) on an existing AMQ Broker instance deployed on OpenShift. You will modify the AMQ Broker Custom Resource (CR) to expose these protocols through dedicated network acceptors, making your broker accessible to a wider range of client applications.
+
+=== Prerequisites
+
+*   An OpenShift cluster with the AMQ Broker Operator installed and running.
+*   An existing `ActiveMQArtemis` instance named `my-broker` (or your preferred name) deployed in a project. If you don't have one, deploy a basic instance first:
+    [source,bash]
+    ----
+    oc new-project amq-broker-protocols
+    oc apply -f - <<EOF
+    apiVersion: broker.amq.io/v1beta1
+    kind: ActiveMQArtemis
+    metadata:
+      name: my-broker
+    spec:
+      deploymentPlan:
+        size: 1
+        image: placeholder # The operator will inject the correct image
+      console:
+        expose: true
+    EOF
+    ----
+*   The `oc` command-line tool configured to access your OpenShift cluster.
+
+=== Step 1: Log in to OpenShift and Select Your Project
+
+Ensure you are logged in to OpenShift and switch to the project where your AMQ Broker instance is deployed.
+
+[source,bash]
+----
+oc login -u <your_username> -p <your_password> <your_openshift_api_url>
+oc project amq-broker-protocols # Or your project name
+----
+
+=== Step 2: Retrieve the Existing AMQ Broker Custom Resource (CR)
+
+First, retrieve the current configuration of your `ActiveMQArtemis` instance. This allows you to safely modify it.
+
+[source,bash]
+----
+oc get ActiveMQArtemis my-broker -o yaml > my-broker-protocols-cr.yaml
+----
+
+Open `my-broker-protocols-cr.yaml` in your preferred text editor.
+
+=== Step 3: Add Acceptors for AMQP, MQTT, and STOMP
+
+Locate the `spec.brokerProperties` section in the `my-broker-protocols-cr.yaml` file. You will add or modify the `acceptors` array within this section. If an `acceptors` array already exists, append the new acceptor definitions. If not, create it.
+
+Add the following acceptor configurations. We will use standard ports for each protocol.
+
+.Modified my-broker-protocols-cr.yaml
+[source,yaml]
+----
+apiVersion: broker.amq.io/v1beta1
+kind: ActiveMQArtemis
+metadata:
+  name: my-broker
+spec:
+  deploymentPlan:
+    size: 1
+    image: placeholder
+  console:
+    expose: true
+  brokerProperties:
+    acceptors: # Ensure this block exists or add it
+      # Default Core acceptor (often implicitly added by operator if not specified,
+      # but good practice to define explicitly for control)
+      - name: core
+        port: 61616 # ActiveMQ Artemis's default core protocol port, also used by OpenWire by convention
+        protocols: [CORE, OPENWIRE] # Explicitly define Core and OpenWire for this port
+        # Optional: Can add specific OpenWire properties here if needed.
+
+      # AMQP Acceptor
+      - name: amqp
+        port: 5672
+        protocols: [AMQP]
+        # Uncomment and configure if specific AMQP properties are needed
+        # acceptorProperties:
+        #   amqpCredits: 1000
+
+      # MQTT Acceptor
+      - name: mqtt
+        port: 1883
+        protocols: [MQTT]
+        # Uncomment and configure if specific MQTT properties are needed
+        # acceptorProperties:
+        #   mqttKeepAlive: 60000
+
+      # STOMP Acceptor
+      - name: stomp
+        port: 61613
+        protocols: [STOMP]
+        # Uncomment and configure if specific STOMP properties are needed
+        # acceptorProperties:
+        #   maxFrameSize: 1048576
+
+      # If you need SSL/TLS, define separate acceptors with 'sslEnabled: true'
+      # and reference a secret for the key store.
+      # - name: amqps
+      #   port: 5671
+      #   protocols: [AMQP]
+      #   sslEnabled: true
+      #   sslEnabled: true
+      #   sslProvider: JDK # or OPENSSL
+      #   keyStorePath: /etc/broker/secret/broker.ks
+      #   keyStorePassword: mypassword
+----
+
+.Explanation:
+*   We've added three new acceptors: `amqp`, `mqtt`, and `stomp` on their respective standard non-SSL ports.
+*   The existing (or default) `core` acceptor is also explicitly defined, typically handling `CORE` (Artemis native) and often `OPENWIRE` protocols.
+*   For a production environment, you would also define *secure* versions of these acceptors (e.g., `amqps` on port 5671) with `sslEnabled: true` and proper `keyStorePath`/`keyStorePassword` referencing a Kubernetes Secret. This lab focuses on the protocol configuration itself.
+
+=== Step 4: Apply the Updated Custom Resource
+
+Save the `my-broker-protocols-cr.yaml` file and apply the changes to your OpenShift cluster. The AMQ Broker Operator will detect the modification and reconfigure the broker pod.
+
+[source,bash]
+----
+oc apply -f my-broker-protocols-cr.yaml
+----
+
+Wait a few moments for the operator to reconcile the changes. You can monitor the broker pod's status:
+
+[source,bash]
+----
+oc get pod -l app.kubernetes.io/name=my-broker
+oc logs $(oc get pod -l app.kubernetes.io/name=my-broker -o jsonpath='{.items[0].metadata.name}') -f
+----
+
+Look for messages in the logs indicating that the new acceptors are starting successfully.
+
+=== Step 5: Verify the Acceptors
+
+After the broker pod has restarted or reconciled, verify that the new ports are listening and that routes (if any are exposed by the operator) are created.
+
+.Check Broker Service Ports
+[source,bash]
+----
+oc get service my-broker-hdls-svc -o yaml | grep "port:"
+----
+You should see entries for ports 5672, 1883, and 61613, in addition to the core port (e.g., 61616).
+
+.Check Broker Logs for Acceptor Startup
+[source,bash]
+----
+oc logs $(oc get pod -l app.kubernetes.io/name=my-broker -o jsonpath='{.items[0].metadata.name}') | grep "Started acceptor"
+----
+You should see lines similar to:
+`INFO  [org.apache.activemq.artemis.core.server] AMQ221007: Started acceptor 'amqp'`
+`INFO  [org.apache.activemq.artemis.core.server] AMQ221007: Started acceptor 'mqtt'`
+`INFO  [org.apache.activemq.artemis.core.server] AMQ221007: Started acceptor 'stomp'`
+
+=== Step 6: Test Client Connectivity (Optional)
+
+To fully verify, you would typically use client applications (e.g., Python `pika` for AMQP, `paho-mqtt` for MQTT, `stomp.py` for STOMP) to connect and send/receive messages.
+
+For a quick port check from within the OpenShift cluster, you can temporarily exec into the broker pod:
+
+[source,bash]
+----
+oc exec -it $(oc get pod -l app.kubernetes.io/name=my-broker -o jsonpath='{.items[0].metadata.name}') -- /bin/bash
+----
+
+Once inside the pod, you can use `netstat` or `ss` to confirm listening ports:
+
+[source,bash]
+----
+netstat -tulpn | grep LISTEN
+# Or for a more readable output:
+ss -tuln
+----
+
+You should see entries for `0.0.0.0:5672`, `0.0.0.0:1883`, `0.0.0.0:61613`, and `0.0.0.0:61616` (or similar, depending on the host binding).
+
+Exit the pod shell when done:
+
+[source,bash]
+----
+exit
+----
+
+You have successfully configured AMQ Broker on OpenShift to accept connections from AMQP, MQTT, and STOMP clients, demonstrating the broker's multi-protocol capabilities.

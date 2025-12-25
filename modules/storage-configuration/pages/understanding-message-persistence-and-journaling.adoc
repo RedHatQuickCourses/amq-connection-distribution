@@ -1,0 +1,60 @@
+#  Understanding message persistence and journaling
+
+= Understanding Message Persistence and Journaling
+
+This section delves into the critical concepts of message persistence and journaling within Red Hat AMQ Broker, explaining why they are essential for reliable messaging and how AMQ Broker implements them.
+
+[#_message_persistence]
+== Message Persistence
+
+Message persistence is a fundamental concept in message-oriented middleware (MOM) that ensures messages are not lost even if the messaging broker or its underlying system experiences a failure, such as a crash, restart, or power outage. Without persistence, messages residing only in volatile memory would be irretrievably lost if the broker went offline, leading to data loss and potential application failures in critical systems.
+
+=== Why Message Persistence is Crucial
+
+*   **Guaranteed Delivery:** Persistence enables "at least once" or "exactly once" delivery semantics, crucial for transactional systems where every message must be processed.
+*   **Fault Tolerance:** It allows the broker to recover its state upon restart, reloading unacknowledged messages, transaction states, and subscription information from durable storage.
+*   **Data Integrity:** Prevents the loss of valuable business data that flows through the messaging system.
+*   **System Reliability:** Enhances the overall reliability and robustness of distributed applications by ensuring messaging operations can withstand transient or permanent broker failures.
+
+AMQ Broker achieves message persistence primarily through its high-performance *journaling* mechanism, which records all critical broker operations to disk.
+
+[#_journaling_in_amq_broker]
+== Journaling in AMQ Broker
+
+Journaling is the core mechanism AMQ Broker uses to persist messages and broker state. It involves writing sequential log entries (journal entries) to a series of files on durable storage. This append-only approach is highly efficient for write operations, which is critical for high-throughput messaging systems.
+
+=== How AMQ Broker's Journal Works
+
+The AMQ Broker journal operates on a set of fixed-size files, typically stored in a designated data directory. When the broker needs to persist a message, record a transaction, or store any other critical state change, it appends a new entry to the current active journal file.
+
+1.  **Append-Only Writes:** All operations (message writes, acknowledgements, transaction commits, queue creation) are appended to the end of the current journal file. This sequential writing pattern minimizes disk seek times and maximizes write throughput.
+2.  **Circular Logging:** AMQ Broker employs a circular logging strategy. It uses a pool of journal files. Once a file is filled, the broker moves to the next available file. When all files in the pool are used, it can reuse older files whose contents are no longer needed (e.g., all messages within that file have been acknowledged and consumed). This prevents unbounded disk usage.
+3.  **Asynchronous Disk Synchronization:** While entries are written to the journal files, the actual synchronization to the physical disk can be asynchronous (`fsync`). The broker balances between immediate durability (slower) and high performance (faster, but with a tiny window of data loss if a crash occurs *before* sync). You can configure the `journal-sync-period` to control this behavior.
+4.  **Recovery:** In the event of a broker crash or restart, the broker reads through its journal files to reconstruct its exact state at the time of the last successful synchronization. It re-adds unacknowledged messages to queues, rolls back incomplete transactions, and restores consumer subscriptions.
+
+=== Types of Journal Files
+
+The AMQ Broker journal consists of several types of files:
+
+*   **Data Files (or Message Journal Files):** These are the primary files where messages, acknowledgements, and most transaction-related operations are recorded. They are typically named `activemq-data-x.log`.
+*   **Large Message Files:** For messages exceeding a certain configurable size threshold (e.g., 100KB), AMQ Broker stores the message body in separate "large message" files (`activemq-largemessage-x.log`) and only records a reference to it in the main data journal. This optimizes performance by preventing very large messages from fragmenting the main journal and reducing the impact on regular message processing.
+*   **Configuration/Internal Files:** Other smaller files might store internal broker state or configuration details that need to persist across restarts.
+
+=== Key Journal Configuration Parameters
+
+When configuring AMQ Broker, especially on OpenShift, understanding these parameters is crucial for optimizing performance and storage usage:
+
+*   `journal-type`: Specifies the journal implementation. Common options include `NIO` (Non-blocking I/O, default and recommended) or `AIO` (Asynchronous I/O, Linux-specific, potentially faster for certain workloads, but requires native libraries).
+*   `journal-file-size`: Defines the size of each individual journal file in bytes (e.g., `10485760` for 10MB). A larger file size can reduce the frequency of file switching but might increase recovery time.
+*   `journal-min-files`: Sets the minimum number of journal files the broker will maintain. This helps ensure there's enough space for incoming messages and improves performance by pre-allocating files.
+*   `journal-compact-min-files`: The minimum number of journal files that must be available for compaction to start. Compaction reclaims space from old, unused journal entries.
+*   `journal-compact-percentage`: The percentage of "dead" or unused data within a journal file that triggers compaction. For example, if 70% of a file's entries are no longer needed, it might be compacted.
+*   `journal-max-attempte-compacts`: The maximum number of journal files to attempt to compact at once.
+*   `journal-max-aio`: (For `AIO` journal type) The maximum number of asynchronous I/O operations that can be queued.
+
+These parameters are typically set within the `broker.xml` configuration file or, more commonly when deploying with the AMQ Broker Operator on OpenShift, through the Custom Resource (CR) definition.
+
+[#_connecting_to_openshift_storage]
+=== Connecting to OpenShift Storage
+
+When deploying AMQ Broker on OpenShift, the journal files are stored on Persistent Volumes (PVs). A Persistent Volume Claim (PVC) is used by the AMQ Broker pod to request a specific amount of storage from the underlying OpenShift storage infrastructure. This decouples the broker's storage from the lifecycle of its pod, ensuring that the persistent messages and state remain available even if the pod is rescheduled, restarted, or moved to a different node. This integration with OpenShift's storage mechanisms is critical for achieving high availability and data durability for AMQ Broker instances in a containerized environment.

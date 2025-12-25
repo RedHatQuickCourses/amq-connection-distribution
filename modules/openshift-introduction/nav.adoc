@@ -1,0 +1,5 @@
+* xref:openshift-introduction.adoc[]
+** xref:understanding-container-orchestration-and-kubernetes.adoc[]
+** xref:overview-of-red-hat-openshift-container-platform.adoc[]
+** xref:key-openshift-concepts-projects-pods-deployments-services-routes.adoc[]
+** xref:benefits-of-deploying-applications-on-openshift.adoc[]

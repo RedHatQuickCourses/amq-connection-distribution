@@ -1,0 +1,281 @@
+#  Implementing user authentication mechanisms (e.g., JAAS, LDAP)
+
+= Implementing User Authentication Mechanisms
+
+This module delves into the critical aspect of securing your Red Hat AMQ Broker instances on OpenShift by implementing robust user authentication mechanisms. We will explore how AMQ Broker leverages Java Authentication and Authorization Service (JAAS) to integrate with various authentication backends, focusing on common methods like properties files and external LDAP directories.
+
+[[authentication-introduction]]
+== Introduction to Authentication in AMQ Broker
+
+In any messaging system, ensuring that only authorized users and applications can connect and exchange messages is paramount for data integrity, confidentiality, and system stability. Red Hat AMQ Broker provides flexible and powerful authentication capabilities to achieve this.
+
+=== Why Authentication is Essential
+
+*   *Security:* Prevents unauthorized access to message queues, topics, and sensitive data, protecting sensitive business information.
+*   *Accountability:* Allows for tracking of user actions and message flows, which is crucial for auditing, compliance, and troubleshooting.
+*   *Resource Protection:* Safeguards broker resources (e.g., memory, CPU, disk) from malicious or erroneous usage that could lead to denial of service.
+*   *Compliance:* Helps meet various industry and regulatory requirements for data access control and security.
+
+=== Java Authentication and Authorization Service (JAAS)
+
+Red Hat AMQ Broker, being a Java-based application, primarily relies on the **Java Authentication and Authorization Service (JAAS)** for its authentication and authorization framework. JAAS is a standard Java API that provides a way to authenticate and authorize users, enabling services to determine who is making a request and whether they have permission to perform it, regardless of the underlying security mechanism.
+
+.How JAAS Works with AMQ Broker
+*   When a client (e.g., a producer, consumer, or the web console) attempts to connect to an AMQ Broker instance, the broker initiates an authentication process through JAAS.
+*   The broker invokes a JAAS `LoginContext`, which is configured with one or more *Login Modules*.
+*   Each `Login Module` is responsible for authenticating the user using its specific backend. For example, a `PropertiesLoginModule` checks against a local file, while an `LDAPLoginModule` queries an LDAP server.
+*   If a `Login Module` successfully authenticates the user, it populates a `Subject` object with *principals*. These principals represent the authenticated user and any associated roles or groups they belong to.
+*   AMQ Broker then uses these principals for subsequent authorization checks (which will be covered in the "Configuring authorization and access control lists (ACLs)" section) to determine what actions the user is allowed to perform.
+
+=== Common Authentication Mechanisms
+
+AMQ Broker supports several standard JAAS Login Modules, allowing integration with a wide range of authentication sources common in enterprise environments:
+
+*   `PropertiesLoginModule`: This module uses a simple properties file (typically `users.properties`) to store usernames, hashed passwords, and assigned roles. It's excellent for development, testing, or smaller deployments where an external identity provider is not required.
+*   `LDAPLoginModule`: Integrates with external Lightweight Directory Access Protocol (LDAP) servers, such as Red Hat Directory Server or Microsoft Active Directory. This is the preferred method for enterprise deployments due to its ability to leverage centralized user management, providing single sign-on capabilities and simplifying administration.
+*   `KerberosLoginModule`: For integrating with Kerberos authentication systems, commonly found in large-scale enterprise environments.
+*   `DatabaseLoginModule`: Allows authentication against user credentials stored in a SQL database.
+*   *Custom Login Modules*: For highly specific or unique authentication requirements, developers can create and plug in their own JAAS Login Modules.
+
+For this module, we will focus on the `PropertiesLoginModule` for our hands-on lab, as it provides a straightforward way to demonstrate authentication. We will then discuss the configuration aspects for `LDAPLoginModule`.
+
+[[hands-on-lab-authentication]]
+== Hands-on Lab: Configuring Basic Authentication with a Properties File
+
+In this lab, you will configure an AMQ Broker instance on OpenShift to use a JAAS `PropertiesLoginModule` for user authentication. This involves creating a Kubernetes Secret to hold your user credentials and then updating the broker's Custom Resource (CR) to reference this secret for JAAS configuration.
+
+=== Prerequisites
+
+*   An OpenShift cluster with the `oc` CLI configured and logged in.
+*   The Red Hat AMQ Broker Operator installed and running in your project.
+*   An existing AMQ Broker instance deployed (e.g., named `my-broker`). If you don't have one, please refer to the "Deploying AMQ Broker instances using the Operator" objective to deploy a basic instance.
+
+=== Steps
+
+[#lab-step-1-create-secret]
+.Create a Secret for User Credentials
+First, we'll create a Kubernetes `Secret` to store our `users.properties` file. This secret will then be mounted into the AMQ Broker pod by the Operator, making the user credentials available to the `PropertiesLoginModule`.
+
+. Create a file named `users.properties` with the following content. This file defines two users: `amq_user` (with `admin` and `developer` roles) and `guest_user` (with `guest` role).
+
+```properties
+# Format: username=password[,role1,role2,...]
+amq_user=amq_password,admin,developer
+guest_user=guest_password,guest
+```
+
+. Create a secret from this file in your OpenShift project:
++
+```bash
+oc create secret generic amq-broker-users --from-file=users.properties
+```
+
+. Verify that the secret has been created successfully:
++
+```bash
+oc describe secret amq-broker-users
+```
++
+You should see output similar to this, confirming the `users.properties` key:
++
+```
+Name:         amq-broker-users
+Namespace:    your-project-name
+Labels:       <none>
+Annotations:  <none>
+
+Type:  Opaque
+
+Data
+====
+users.properties:  58 bytes
+```
+
+[#lab-step-2-update-broker-cr]
+.Update the AMQ Broker Custom Resource (CR)
+Now, we need to instruct the AMQ Broker instance to use this secret for JAAS authentication. We'll achieve this by editing the `ActiveMQArtemis` custom resource that defines your broker instance.
+
+. Edit your broker instance. Replace `my-broker` with the actual name of your AMQ Broker instance:
++
+```bash
+oc edit activemqartemis my-broker
+```
+
+. Locate the `spec` section and add a `jaas` block. Within this block, define the `config` using the `PropertiesLoginModule` and reference the secret created in the previous step. The `spec` section of your CR should look something like this (focus on adding the `jaas` block):
++
+```yaml
+# ... other parts of your ActiveMQArtemis CR
+spec:
+  deploymentPlan:
+    size: 1
+    image: registry.redhat.io/amq7/amq-broker-rhel8:7.10
+  console:
+    expose: true
+  jaas:
+    config: |
+      activemq {
+        org.apache.activemq.artemis.spi.core.security.jaas.PropertiesLoginModule required
+        users.properties="secret:amq-broker-users/users.properties";
+      };
+  # ... other parts of your CR
+```
++
+.Explanation of the `jaas` configuration:
+*   `activemq`: This defines a security domain name. AMQ Broker can be configured with multiple security domains, each with its own JAAS configuration.
+*   `org.apache.activemq.artemis.spi.core.security.jaas.PropertiesLoginModule`: This specifies the fully qualified class name of the JAAS login module to be used.
+*   `required`: This flag indicates that this particular login module must succeed for the authentication to be considered successful. Other flags like `requisite`, `sufficient`, and `optional` exist for more complex scenarios with multiple login modules.
+*   `users.properties="secret:amq-broker-users/users.properties"`: This crucial parameter instructs the `PropertiesLoginModule` to load user credentials from the file named `users.properties`. The `secret:` prefix tells the AMQ Broker Operator to look for this file *inside* the Kubernetes secret named `amq-broker-users` and mount it into the broker pod. The Operator handles the intricate details of mounting the secret as a volume.
+
+. Save the changes to the CR. The AMQ Broker Operator will detect the modification and automatically perform a rolling restart of your broker pod(s) to apply the new configuration.
+. Monitor the rollout until the broker pod(s) return to a `Running` state:
++
+```bash
+oc get pods -w
+```
+
+[#lab-step-3-test-authentication]
+.Test the Authentication
+Once the broker pod is `Running` and the new configuration is active, you can test the authentication.
+
+. If you have a Route exposed for your AMQ Broker console (configured with `console.expose: true` in your CR), try accessing it in your web browser. You should now be prompted for a username and password before being able to log in.
+. Use `amq_user` with password `amq_password` to log in. You should gain access to the console.
+. Log out and try with `guest_user` and `guest_password`.
+
+. Alternatively, you can use a simple `amq-client` pod to test the connection via the command line.
+
+. Create a client pod:
++
+```bash
+oc run amq-client --image=registry.redhat.io/amq7/amq-broker-rhel8:7.10 --command -- sleep infinity
+```
+
+. Get a shell into the client pod:
++
+```bash
+oc exec -it amq-client -- bash
+```
+
+. Inside the client pod, try to send a message using the `artemis` CLI. You'll need the internal service name of your broker. You can find this by running `oc get svc | grep my-broker`. It's typically `my-broker-hdls-svc` or `my-broker-amqp-0-svc` (for AMQP) on port `61616`.
++
+```bash
+/home/jboss/artemis/bin/artemis producer --user amq_user --password amq_password --url tcp://my-broker-hdls-svc:61616 --destination queue://testQueue --message "Hello from authenticated user!"
+```
++
+If successful, you will see output indicating messages were sent:
++
+```
+Producer ActiveMQQueue[testQueue] has produced 1000 messages.
+```
+
+. Now, try to send a message with incorrect credentials:
++
+```bash
+/home/jboss/artemis/bin/artemis producer --user wrong_user --password wrong_password --url tcp://my-broker-hdls-svc:61616 --destination queue://testQueue --message "This should fail"
+```
++
+You should see an error indicating an authentication failure, such as:
++
+```
+Failed to connect to server(s). Check your connection parameters.
+Authentication failure for user 'wrong_user'
+```
++
+This confirms that your AMQ Broker instance is now enforcing authentication.
+. Exit the client pod:
++
+```bash
+exit
+```
+
+[#lab-step-4-cleanup]
+.Clean Up (Optional)
+To remove the secret and revert the authentication changes:
+
+. Delete the secret:
++
+```bash
+oc delete secret amq-broker-users
+```
+
+. Edit your broker CR and remove the entire `jaas` block from the `spec` section:
++
+```bash
+oc edit activemqartemis my-broker
+```
++
+The broker will restart, reverting to its previous configuration (e.g., no authentication by default, depending on your initial setup).
+. Delete the client pod:
++
+```bash
+oc delete pod amq-client
+```
+
+[[ldap-integration]]
+== Integrating with LDAP for Authentication
+
+For large-scale enterprise environments, integrating AMQ Broker with an existing LDAP (Lightweight Directory Access Protocol) directory is the standard and recommended practice. This approach centralizes user management, eliminates the need to manage users directly within the broker, and allows for consistent identity management across multiple applications.
+
+=== How LDAP Authentication Works
+
+When the `LDAPLoginModule` is configured in AMQ Broker:
+
+1.  A client attempts to connect to the AMQ Broker, providing a username and password.
+2.  The `LDAPLoginModule` takes these credentials and attempts to perform a bind operation to the configured LDAP server.
+3.  If the LDAP server successfully validates the credentials and the bind operation succeeds, the user is authenticated.
+4.  Optionally, the module can also perform searches in the LDAP directory to retrieve the user's group memberships and add them as roles to the JAAS `Subject`. These roles are then used by AMQ Broker for authorization.
+
+=== Configuring `LDAPLoginModule` in AMQ Broker CR
+
+Configuring `LDAPLoginModule` is similar to `PropertiesLoginModule`, in that it's done within the `jaas` block of your `ActiveMQArtemis` Custom Resource. However, the configuration is more extensive due to the various parameters required to connect to and query an LDAP server.
+
+Here's an example of an `LDAPLoginModule` configuration:
+
+```yaml
+spec:
+  # ... other parts of your ActiveMQArtemis CR
+  jaas:
+    config: |
+      activemq {
+        org.apache.activemq.artemis.spi.core.security.jaas.LDAPLoginModule required
+          java.naming.factory.initial="com.sun.jndi.ldap.LdapCtxFactory"
+          java.naming.provider.url="ldap://ldap.example.com:389" # <1>
+          java.naming.security.authentication="simple"
+          java.naming.security.principal="cn=broker_bind_user,ou=serviceaccounts,dc=example,dc=com" # <2>
+          java.naming.security.credentials="secret:ldap-bind-secret/password" # <3>
+          userBase="ou=users,dc=example,dc=com" # <4>
+          userSearchMatching="uid={0}" # <5>
+          userSearchSubtree="true"
+          roleBase="ou=groups,dc=example,dc=com" # <6>
+          roleName="cn" # <7>
+          roleSearchMatching="(member={1})" # <8>
+          roleSearchSubtree="true"
+          debug="false";
+      };
+  # ...
+```
+<1> `java.naming.provider.url`: The URL of your LDAP server. Use `ldap://` for unencrypted connections (port 389) or `ldaps://` for secure, TLS-encrypted connections (port 636). Always prefer `ldaps://` in production.
+<2> `java.naming.security.principal`: An optional bind Distinguished Name (DN) that the broker uses to initially connect to the LDAP server and perform user searches. This is often a service account with read-only permissions on user and group objects. If your LDAP allows anonymous searches, this might not be required.
+<3> `java.naming.security.credentials`: The password for the bind DN. *Crucially, this should always be referenced from a Kubernetes `Secret` using the `secret:` prefix, similar to our `users.properties` example.* For example, you would create a secret like `oc create secret generic ldap-bind-secret --from-literal=password='your_secure_password'`.
+<4> `userBase`: The base DN in your LDAP directory where user accounts are located. The broker will search for users under this DN.
+<5> `userSearchMatching`: The filter used to find a user based on the provided username. `{0}` is a placeholder for the username provided by the client. For example, `(uid={0})` searches for a user whose `uid` attribute matches the username.
+<6> `roleBase`: (Optional) The base DN where user groups (roles) are located. If roles are in the same `userBase`, this might not be needed.
+<7> `roleName`: The attribute in the group object that holds the role name (e.g., `cn` for common name).
+<8> `roleSearchMatching`: (Optional) The filter used to find groups a user belongs to. `{1}` is a placeholder for the user's full DN after successful authentication. For example, `(member={1})` finds groups where the user's DN is listed in the `member` attribute.
+
+=== Considerations for LDAP Integration on OpenShift
+
+*   *Secrets for Credentials:* As highlighted, never hardcode sensitive LDAP credentials (like `java.naming.security.credentials`) directly in the `ActiveMQArtemis` CR. Always store them securely in Kubernetes `Secrets` and reference them using the `secret:` prefix.
+*   *Network Connectivity:* Ensure your AMQ Broker pods have network connectivity to your LDAP server. This might involve configuring OpenShift Network Policies, ensuring proper firewall rules, or establishing direct routing if the LDAP server is outside the OpenShift cluster.
+*   *LDAPS (SSL/TLS for LDAP):* For production environments, it is imperative to use LDAPS (`ldaps://...` on port 636) to encrypt communication between the broker and the LDAP server. This requires configuring TLS/SSL truststores in the broker pod, which typically involves:
+    *   Creating a Kubernetes `Secret` containing the CA certificate chain of your LDAP server.
+    *   Mounting this secret into the broker pod using `extraMounts` in the `ActiveMQArtemis` CR.
+    *   Configuring Java system properties (`JAVA_ARGS`) in the CR to point to the truststore file. This is an advanced topic often covered in the "Setting up SSL/TLS for secure communication" section.
+*   *Performance:* Large LDAP directories or complex search filters can impact authentication performance. Optimize your LDAP schema and queries as needed.
+*   *High Availability:* For production, ensure your LDAP server setup is highly available to prevent authentication outages.
+
+By carefully configuring the `LDAPLoginModule` and adhering to security best practices, you can integrate your AMQ Broker with enterprise-grade identity management solutions, streamlining user management, enhancing security, and ensuring compliance.
+
+[[summary-authentication]]
+== Summary
+
+You have learned about the importance of authentication in AMQ Broker and how it leverages JAAS to integrate with various backends. You performed a hands-on lab to configure basic authentication using a properties file on OpenShift and gained a comprehensive understanding of how to configure `LDAPLoginModule` for enterprise-grade authentication, along with key considerations for deploying it in an OpenShift environment.
