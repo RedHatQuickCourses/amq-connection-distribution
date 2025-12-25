@@ -1,4 +1,0 @@
-* xref:the-problem-with-a-multi-node-broker.adoc[]
-** xref:uneven-message-distribution-across-brokers.adoc[]
-** xref:connection-pooling-issues-and-their-impact-on-message-distribution.adoc[]
-** xref:the-problem-of-uneven-load-distribution-and-its-consequences.adoc[]

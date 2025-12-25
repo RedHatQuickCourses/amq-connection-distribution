@@ -1,6 +1,0 @@
-* xref:acceptor-configuration.adoc[]
-** xref:understanding-network-acceptors-and-connectors.adoc[]
-** xref:configuring-different-messaging-protocols-amqp-mqtt-openwire-stomp.adoc[]
-** xref:setting-up-ssltls-for-secure-client-connections.adoc[]
-** xref:configuring-network-settings-and-binding-addresses.adoc[]
-** xref:hands-on-lab-configuring-network-acceptors.adoc[]

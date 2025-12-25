@@ -1,6 +1,0 @@
-* xref:storage-configuration.adoc[]
-** xref:understanding-message-persistence-and-journaling.adoc[]
-** xref:configuring-data-directories-and-journal-settings.adoc[]
-** xref:integrating-with-openshift-persistent-volumes-pvs-and-persistent-volume-claims-pvcs.adoc[]
-** xref:managing-storage-for-broker-data-and-message-logs.adoc[]
-** xref:hands-on-lab-managing-storage-for-amq-broker.adoc[]

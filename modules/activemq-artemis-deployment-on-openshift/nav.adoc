@@ -1,4 +1,0 @@
-* xref:activemq-artemis-deployment-on-openshift.adoc[]
-** xref:overview-of-openshift-and-its-benefits-for-deploying-mom.adoc[]
-** xref:steps-to-deploy-activemq-artemis-on-openshift.adoc[]
-** xref:configuring-services-and-routes-for-load-balancing.adoc[]

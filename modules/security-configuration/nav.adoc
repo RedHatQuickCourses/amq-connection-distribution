@@ -1,6 +1,0 @@
-* xref:security-configuration.adoc[]
-** xref:implementing-user-authentication-mechanisms-eg-jaas-ldap.adoc[]
-** xref:configuring-authorization-and-access-control-lists-acls.adoc[]
-** xref:setting-up-ssltls-for-secure-communication.adoc[]
-** xref:integrating-with-openshift-authentication-mechanisms.adoc[]
-** xref:hands-on-lab-implementing-security-for-amq-broker.adoc[]

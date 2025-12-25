@@ -1,5 +1,0 @@
-* xref:amq-introduction.adoc[]
-** xref:understanding-message-queuing-and-event-streaming.adoc[]
-** xref:overview-of-red-hat-amq-broker.adoc[]
-** xref:key-features-and-use-cases-of-amq-broker.adoc[]
-** xref:core-components-and-architecture-of-amq-broker.adoc[]

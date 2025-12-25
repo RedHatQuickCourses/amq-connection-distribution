@@ -1,8 +1,0 @@
-#  AMQ On OpenShift
-
-.AMQ Broker on OpenShift leverages the OpenShift Container Platform for deploying and managing message brokers.
-
-*   **AMQ Broker Operator**: Automates the deployment, scaling, and management of AMQ Broker instances.
-*   **Custom Resources (CRs)**: Define and configure AMQ Broker instances and their properties using OpenShift's API.
-*   **Simplified Deployment**: Instances are deployed by creating CRs, which the Operator uses to provision and maintain the broker.
-*   **Lifecycle Management**: The Operator handles updates, upgrades, scaling, and self-healing of AMQ Broker deployments on OpenShift.

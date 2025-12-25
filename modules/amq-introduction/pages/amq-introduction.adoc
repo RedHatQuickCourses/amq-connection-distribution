@@ -1,8 +1,0 @@
-#  AMQ Introduction
-
-=== AMQ Introduction
-
-* xref:amq-intro.adoc#_understanding_message_queuing_and_event_streaming[Message Queuing and Event Streaming] concepts are foundational for asynchronous communication.
-* xref:amq-intro.adoc#_overview_of_red_hat_amq_broker[Red Hat AMQ Broker] is a flexible, high-performance messaging platform based on Apache ActiveMQ Artemis.
-* It offers xref:amq-intro.adoc#_key_features_and_use_cases_of_amq_broker[key features] like persistence, high availability, and support for various messaging patterns, suitable for microservices and integration.
-* Understanding xref:amq-intro.adoc#_core_components_and_architecture_of_amq_broker[core components and architecture] is crucial for effective deployment and management.

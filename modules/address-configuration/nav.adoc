@@ -1,5 +1,0 @@
-* xref:address-configuration.adoc[]
-** xref:defining-addresses-and-queues-in-amq-broker.adoc[]
-** xref:understanding-address-settings-and-routing-types.adoc[]
-** xref:configuring-message-grouping-and-dead-letter-queues.adoc[]
-** xref:hands-on-lab-configuring-addresses-and-queues.adoc[]

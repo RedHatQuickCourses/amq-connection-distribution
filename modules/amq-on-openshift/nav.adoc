@@ -1,5 +1,0 @@
-* xref:amq-on-openshift.adoc[]
-** xref:introduction-to-amq-broker-operator-on-openshift.adoc[]
-** xref:deploying-amq-broker-instances-using-the-operator.adoc[]
-** xref:understanding-custom-resources-crs-for-amq-broker.adoc[]
-** xref:managing-amq-broker-lifecycle-on-openshift.adoc[]

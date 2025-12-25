@@ -1,9 +1,0 @@
-#  Acceptor Configuration
-
-=== Acceptor Configuration
-
-Acceptor configuration defines how AMQ Broker accepts incoming client connections. It involves:
-
-*   Setting up network listeners (acceptors) for various messaging protocols like AMQP, MQTT, OpenWire, and STOMP.
-*   Configuring network settings, binding addresses, and ports.
-*   Implementing SSL/TLS to secure client-broker communication.
