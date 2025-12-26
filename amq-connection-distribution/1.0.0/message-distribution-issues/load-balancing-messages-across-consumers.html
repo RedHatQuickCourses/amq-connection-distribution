@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Load balancing messages across consumers :: Building Resilient Messaging Applications with ActiveMQ Artemis and OpenShift</title>
+    <link rel="prev" href="understanding-distributed-messaging-patterns.html">
+    <link rel="next" href="message-routing-strategies-and-challenges.html">
+    <meta name="generator" content="Antora 3.1.3">
+    <link rel="stylesheet" href="../../../_/css/site.css">
+    <script>var uiRootPath = '../../../_'</script>
+  </head>
+  <body class="article">
+<header class="header">
+  <nav class="navbar">
+    <div class="navbar-brand">
+      <a class="navbar-item" href="https://www.redhat.com" target="_blank"><img src="../../../_/img/redhat-logo.png" height="40px" alt="Red Hat"></a>
+      <a class="navbar-item" style="font-size: 24px; color: white" href="../../..">Building Resilient Messaging Applications with ActiveMQ Artemis and OpenShift</a>
+      <button class="navbar-burger" data-target="topbar-nav">
+        <span></span>
+        <span></span>
+        <span></span>
+      </button>
+    </div>
+    <div id="topbar-nav" class="navbar-menu">
+      <div class="navbar-end">
+        <a class="navbar-item" href="https://github.com/RedHatQuickCourses/REPLACEREPONAME/issues" target="_blank">Report Issues</a>
+      </div>
+    </div>
+  </nav>
+</header>
+<div class="body">
+<div class="nav-container" data-component="amq-connection-distribution" data-version="1.0.0">
+  <aside class="nav">
+    <div class="panels">
+<div class="nav-panel-menu is-active" data-panel="menu">
+  <nav class="nav-menu">
+    <h3 class="title"><a href="../index.html">Building Resilient Messaging Applications with ActiveMQ Artemis and OpenShift</a></h3>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="../index.html">Home</a>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../deploying-activemq-artemis-on-openshift/deploying-activemq-artemis-on-openshift.html">Deploying ActiveMQ Artemis on OpenShift</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../deploying-activemq-artemis-on-openshift/introduction-to-openshift-for-messaging-applications.html">Introduction to OpenShift for messaging applications</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../deploying-activemq-artemis-on-openshift/understanding-activemq-artemis-on-openshift.html">Understanding ActiveMQ Artemis on OpenShift</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../deploying-activemq-artemis-on-openshift/using-the-activemq-artemis-operator.html">Using the ActiveMQ Artemis Operator</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../deploying-activemq-artemis-on-openshift/custom-resource-definitions-crds-for-artemis.html">Custom Resource Definitions (CRDs) for Artemis</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../deploying-activemq-artemis-on-openshift/configuring-persistent-storage-for-artemis.html">Configuring persistent storage for Artemis</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../deploying-activemq-artemis-on-openshift/scaling-artemis-brokers-on-openshift.html">Scaling Artemis brokers on OpenShift</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../deploying-activemq-artemis-on-openshift/monitoring-artemis-instances-on-openshift.html">Monitoring Artemis instances on OpenShift</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../deploying-activemq-artemis-on-openshift/hands-on-lab-deploying-a-highly-available-activemq-artemis-cluster-on-openshift.html">Hands-on Lab: Deploying a highly available ActiveMQ Artemis cluster on OpenShift</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="message-distribution-issues.html">Message distribution issues</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="understanding-distributed-messaging-patterns.html">Understanding distributed messaging patterns</a>
+  </li>
+  <li class="nav-item is-current-page" data-depth="2">
+    <a class="nav-link" href="load-balancing-messages-across-consumers.html">Load balancing messages across consumers</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="message-routing-strategies-and-challenges.html">Message routing strategies and challenges</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="consumer-groups-and-shared-subscriptions.html">Consumer groups and shared subscriptions</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="ensuring-message-ordering-in-distributed-systems.html">Ensuring message ordering in distributed systems</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="handling-message-durability-and-reliability.html">Handling message durability and reliability</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="addressing-fault-tolerance-and-high-availability-for-messages.html">Addressing fault tolerance and high availability for messages</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../client-side-solution/client-side-solution.html">Client Side Solution</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../client-side-solution/client-side-connection-management-and-pooling.html">Client-side connection management and pooling</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../client-side-solution/implementing-client-failover-mechanisms.html">Implementing client failover mechanisms</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../client-side-solution/client-side-load-balancing-for-message-consumption.html">Client-side load balancing for message consumption</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../client-side-solution/message-acknowledgment-patterns-auto_acknowledge-client_acknowledge.html">Message acknowledgment patterns (AUTO_ACKNOWLEDGE, CLIENT_ACKNOWLEDGE)</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../client-side-solution/transaction-management-for-message-producers-and-consumers.html">Transaction management for message producers and consumers</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../client-side-solution/best-practices-for-client-integration-with-distributed-brokers.html">Best practices for client integration with distributed brokers</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../quarkus-example/quarkus-example.html">Quarkus Example</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../quarkus-example/integrating-jmsamqp-clients-with-quarkus.html">Integrating JMS/AMQP clients with Quarkus</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../quarkus-example/configuring-quarkus-for-activemq-artemis-connectivity.html">Configuring Quarkus for ActiveMQ Artemis connectivity</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../quarkus-example/implementing-message-producers-in-quarkus.html">Implementing message producers in Quarkus</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../quarkus-example/implementing-message-consumers-in-quarkus.html">Implementing message consumers in Quarkus</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../quarkus-example/reactive-messaging-with-quarkus-and-artemis.html">Reactive messaging with Quarkus and Artemis</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../quarkus-example/deploying-quarkus-messaging-applications-on-openshift.html">Deploying Quarkus messaging applications on OpenShift</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../quarkus-example/hands-on-lab-developing-a-quarkus-microservice-with-distributed-messaging.html">Hands-on Lab: Developing a Quarkus microservice with distributed messaging</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../spring-boot-example/spring-boot-example.html">Spring Boot Example</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../spring-boot-example/integrating-jmsamqp-clients-with-spring-boot.html">Integrating JMS/AMQP clients with Spring Boot</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../spring-boot-example/configuring-spring-boot-for-activemq-artemis-connectivity.html">Configuring Spring Boot for ActiveMQ Artemis connectivity</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../spring-boot-example/using-spring-jmsamqp-templates-for-messaging.html">Using Spring JMS/AMQP templates for messaging</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../spring-boot-example/implementing-message-producers-in-spring-boot.html">Implementing message producers in Spring Boot</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../spring-boot-example/implementing-message-consumers-in-spring-boot.html">Implementing message consumers in Spring Boot</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../spring-boot-example/configuring-listener-containers-and-concurrency.html">Configuring listener containers and concurrency</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../spring-boot-example/deploying-spring-boot-messaging-applications-on-openshift.html">Deploying Spring Boot messaging applications on OpenShift</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../spring-boot-example/hands-on-lab-developing-a-spring-boot-microservice-with-distributed-messaging.html">Hands-on Lab: Developing a Spring Boot microservice with distributed messaging</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+</ul>
+  </nav>
+</div>
+<div class="nav-panel-explore" data-panel="explore">
+  <div class="context">
+    <span class="title">Building Resilient Messaging Applications with ActiveMQ Artemis and OpenShift</span>
+    <span class="version">1.0.0</span>
+  </div>
+  <ul class="components">
+    <li class="component is-current">
+      <a class="title" href="../index.html">Building Resilient Messaging Applications with ActiveMQ Artemis and OpenShift</a>
+      <ul class="versions">
+        <li class="version is-current is-latest">
+          <a href="../index.html">1.0.0</a>
+        </li>
+      </ul>
+    </li>
+  </ul>
+</div>
+    </div>
+  </aside>
+</div>
+<main class="article">
+<div class="toolbar" role="navigation">
+<button class="nav-toggle"></button>
+  <a href="../index.html" class="home-link"></a>
+<nav class="breadcrumbs" aria-label="breadcrumbs">
+  <ul>
+    <li><a href="../index.html">Building Resilient Messaging Applications with ActiveMQ Artemis and OpenShift</a></li>
+    <li><a href="message-distribution-issues.html">Message distribution issues</a></li>
+    <li><a href="load-balancing-messages-across-consumers.html">Load balancing messages across consumers</a></li>
+  </ul>
+</nav>
+</div>
+  <div class="content">
+<aside class="toc sidebar" data-title="Contents" data-levels="2">
+  <div class="toc-menu"></div>
+</aside>
+<article class="doc">
+<h1 class="page">Load balancing messages across consumers</h1>
+<div id="preamble">
+<div class="sectionbody">
+<div class="paragraph">
+<p>The following content provides a detailed explanation of load balancing messages across consumers within a distributed messaging system, particularly focusing on ActiveMQ Artemis.</p>
+</div>
+</div>
+</div>
+<h1 id="_load_balancing_messages_across_consumers" class="sect0"><a class="anchor" href="#_load_balancing_messages_across_consumers"></a>Load Balancing Messages Across Consumers</h1>
+<div class="paragraph">
+<p>In a distributed messaging system, efficiently distributing messages to multiple consumers is crucial for achieving high throughput, scalability, and resilience. Load balancing messages across consumers ensures that no single consumer becomes a bottleneck, resources are utilized effectively, and the system can gracefully handle increasing message volumes and consumer failures.</p>
+</div>
+<div class="sect1">
+<h2 id="_understanding_message_distribution_challenges"><a class="anchor" href="#_understanding_message_distribution_challenges"></a>Understanding Message Distribution Challenges</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>When multiple consumers are subscribed to the same destination (queue or topic), the messaging broker&#8217;s responsibility is to distribute messages among them. Without proper load balancing, messages might be unevenly processed, leading to:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>Hotspots</strong>: A single consumer or a small subset of consumers processing the majority of messages, leading to resource exhaustion for those consumers.</p>
+</li>
+<li>
+<p><strong>Underutilization</strong>: Other consumers remaining idle or underutilized, wasting compute resources.</p>
+</li>
+<li>
+<p><strong>Reduced Throughput</strong>: The overall message processing rate being limited by the slowest or most burdened consumer.</p>
+</li>
+<li>
+<p><strong>Scalability Issues</strong>: Difficulty in scaling the system by simply adding more consumers, as the new consumers may not receive messages effectively.</p>
+</li>
+<li>
+<p><strong>Fault Tolerance Concerns</strong>: If a heavily loaded consumer fails, it could lead to a significant backlog of unacknowledged messages or processing delays, impacting the entire system.</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_activemq_artemiss_approach_to_load_balancing"><a class="anchor" href="#_activemq_artemiss_approach_to_load_balancing"></a>ActiveMQ Artemis&#8217;s Approach to Load Balancing</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>ActiveMQ Artemis, by design, incorporates robust mechanisms for load balancing messages across multiple consumers subscribed to a queue or a shared subscription on a topic.</p>
+</div>
+<div class="sect2">
+<h3 id="_queues_automatic_load_balancing"><a class="anchor" href="#_queues_automatic_load_balancing"></a>Queues: Automatic Load Balancing</h3>
+<div class="paragraph">
+<p>For queues, Artemis inherently distributes messages in a load-balanced fashion to all active consumers subscribed to that queue. When a new message arrives at a queue with multiple consumers, Artemis employs a distribution strategy to decide which consumer should receive the message. The most common and default strategy is a variation of round-robin.</p>
+</div>
+<div class="paragraph">
+<p>Consider a scenario with a single queue <code>/my-queue</code> and three active consumers (<code>C1</code>, <code>C2</code>, <code>C3</code>) subscribing to it.
+. A message <code>M1</code> arrives. Artemis sends <code>M1</code> to <code>C1</code>.
+. A message <code>M2</code> arrives. Artemis sends <code>M2</code> to <code>C2</code>.
+. A message <code>M3</code> arrives. Artemis sends <code>M3</code> to <code>C3</code>.
+. A message <code>M4</code> arrives. Artemis sends <code>M4</code> to <code>C1</code>.</p>
+</div>
+<div class="paragraph">
+<p>This ensures that messages are spread out, assuming all consumers are equally capable and acknowledge messages at similar rates.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>ActiveMQ Artemis prioritizes delivering messages to consumers that are ready to accept them, often considering factors like prefetch limits and current outstanding messages for a consumer. This intelligent distribution ensures consumers aren&#8217;t overwhelmed and messages are delivered efficiently.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_shared_subscriptions_for_topics_scalable_consumption"><a class="anchor" href="#_shared_subscriptions_for_topics_scalable_consumption"></a>Shared Subscriptions for Topics: Scalable Consumption</h3>
+<div class="paragraph">
+<p>While traditional topics deliver each message to <strong>all</strong> subscribers, ActiveMQ Artemis supports <strong>shared subscriptions</strong> (or <strong>consumer groups</strong>) which enable topic messages to be load-balanced among a group of consumers. This is a powerful feature for scaling consumption of topic messages.</p>
+</div>
+<div class="paragraph">
+<p>A shared subscription allows multiple consumers to subscribe to the same topic using a common subscription name. When messages are published to the topic, Artemis treats this group of consumers as a single logical subscriber and load balances the messages among them, similar to how it handles messages on a queue.</p>
+</div>
+<div class="listingblock">
+<div class="title">Example: Configuring a Shared Subscription on a Topic (Client Side - JMS)</div>
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-xml hljs" data-lang="xml">// Consumer 1
+Topic topic = session.createTopic("myTopic");
+MessageConsumer consumer1 = session.createSharedConsumer(topic, "mySharedSubscriptionGroup");
+consumer1.setMessageListener(message -&gt; {
+    System.out.println("Consumer 1 received: " + message.getBody(String.class));
+    try {
+        message.acknowledge();
+    } catch (JMSException e) {
+        e.printStackTrace();
+    }
+});
+
+// Consumer 2 (same application or different application, but with the same shared subscription name)
+// This consumer will join the "mySharedSubscriptionGroup" and receive a share of the messages
+MessageConsumer consumer2 = session.createSharedConsumer(topic, "mySharedSubscriptionGroup");
+consumer2.setMessageListener(message -&gt; {
+    System.out.println("Consumer 2 received: " + message.getBody(String.class));
+    try {
+        message.acknowledge();
+    } catch (JMSException e) {
+        e.printStackTrace();
+    }
+});</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>In this example, <code>consumer1</code> and <code>consumer2</code> are part of <code>mySharedSubscriptionGroup</code>. Any message sent to <code>myTopic</code> will be delivered to <strong>either</strong> <code>consumer1</code> <strong>or</strong> <code>consumer2</code>, but not both, thus achieving load balancing across the group. If more consumers join the same shared subscription group, messages will be further distributed among them.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_distribution_strategies"><a class="anchor" href="#_distribution_strategies"></a>Distribution Strategies</h3>
+<div class="paragraph">
+<p>While the default is often a form of round-robin, ActiveMQ Artemis&#8217;s internal distribution algorithm is optimized for performance and fairness. It considers factors such as:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>Consumer Availability</strong>: Only delivers messages to consumers that are active and not currently saturated (e.g., have not reached their prefetch limit).</p>
+</li>
+<li>
+<p><strong>Acknowledgement Status</strong>: Prioritizes consumers that are actively acknowledging messages, indicating they are processing effectively.</p>
+</li>
+<li>
+<p><strong>Message Prioritization</strong>: If message priority is used, higher priority messages might be routed to available consumers first.</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_advanced_load_balancing_considerations"><a class="anchor" href="#_advanced_load_balancing_considerations"></a>Advanced Load Balancing Considerations</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>While Artemis handles the core load balancing, certain factors influence its effectiveness:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>Consumer Concurrency</strong>: The number of threads or instances a single consumer application uses to process messages. Configuring more concurrent listeners or threads can increase a consumer&#8217;s capacity.</p>
+</li>
+<li>
+<p><strong>Message Prefetch/Window Size</strong>: This setting controls how many messages a consumer can receive from the broker before acknowledging them. A larger prefetch can increase throughput but also increases the risk of message loss if the consumer crashes before acknowledging. A smaller prefetch ensures more even distribution if consumers have varying processing speeds.</p>
+</li>
+<li>
+<p><strong>Exclusive Consumers</strong>: For certain critical tasks where only <strong>one</strong> consumer should process messages at a time from a queue, Artemis supports exclusive consumers. While not strictly load balancing (as only one consumer gets messages), it&#8217;s a form of controlled distribution where a single active consumer is designated. If it fails, another in the group takes over.
+[source,java]
+.Example: Creating an Exclusive Consumer (JMS)
+----
+// Create an exclusive consumer on a queue named "myExclusiveQueue"
+Queue exclusiveQueue = session.createQueue("myExclusiveQueue?exclusive=true");
+MessageConsumer exclusiveConsumer = session.createConsumer(exclusiveQueue);
+----
+When <code>exclusive=true</code> is appended to the queue name, only one consumer will receive messages at any given time. Other consumers for that queue will be "backup" consumers, becoming active if the primary exclusive consumer fails.</p>
+</li>
+<li>
+<p><strong>Client-Side Load Balancing</strong>: While the broker handles distribution, client applications can also implement strategies, especially when connecting to multiple brokers in a cluster. This is covered in detail in the "Client-Side Solution" section, where client failover and connection pooling become important for ensuring continuous connection to <strong>any</strong> available broker that can serve messages.</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_troubleshooting_load_balancing"><a class="anchor" href="#_troubleshooting_load_balancing"></a>Troubleshooting Load Balancing</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>If you suspect messages are not being load balanced effectively, consider the following:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>Consumer Liveness</strong>: Are all consumers truly active and connected to the broker? Check broker logs and management consoles.</p>
+</li>
+<li>
+<p><strong>Consumer Performance</strong>: Is one consumer significantly slower at processing and acknowledging messages? This can cause Artemis to favor faster consumers or back up messages on the slower one.</p>
+</li>
+<li>
+<p><strong>Prefetch Settings</strong>: Review the client&#8217;s prefetch configuration. If it&#8217;s too high for a slow consumer, that consumer might hoard messages, appearing busy even if it&#8217;s processing slowly.</p>
+</li>
+<li>
+<p><strong>Shared Subscription Names</strong>: For topics, ensure all consumers intended to share messages use <strong>exactly</strong> the same shared subscription name. Mismatched names will create separate subscriptions, leading to duplicate message delivery to different groups.</p>
+</li>
+<li>
+<p><strong>Resource Constraints</strong>: Is the consumer application itself resource-constrained (CPU, memory, database connections)? This can impede message processing and indirectly affect load balancing.</p>
+</li>
+<li>
+<p><strong>Poison Messages</strong>: A consumer might get stuck on a "poison message" that repeatedly fails processing, blocking further messages for that consumer until the issue is resolved or the message is moved to a dead-letter queue.</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>By understanding these mechanisms and configurations, developers can build highly scalable and resilient messaging applications that effectively distribute the processing load across multiple consumers using ActiveMQ Artemis.</p>
+</div>
+</div>
+</div>
+<nav class="pagination">
+  <span class="prev"><a href="understanding-distributed-messaging-patterns.html">Understanding distributed messaging patterns</a></span>
+  <span class="next"><a href="message-routing-strategies-and-challenges.html">Message routing strategies and challenges</a></span>
+</nav>
+</article>
+  </div>
+</main>
+</div>
+<footer class="footer">
+  <img src="../../../_/img/rhl-logo-red.png" height="40px" alt="Red Hat"  href="https://redhat.com" >
+</footer><script id="site-script" src="../../../_/js/site.js" data-ui-root-path="../../../_"></script>
+<script async src="../../../_/js/vendor/highlight.js"></script>
+  </body>
+</html>

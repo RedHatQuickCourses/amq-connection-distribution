@@ -1,0 +1,708 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Reactive messaging with Quarkus and Artemis :: Building Resilient Messaging Applications with ActiveMQ Artemis and OpenShift</title>
+    <link rel="prev" href="implementing-message-consumers-in-quarkus.html">
+    <link rel="next" href="deploying-quarkus-messaging-applications-on-openshift.html">
+    <meta name="generator" content="Antora 3.1.3">
+    <link rel="stylesheet" href="../../../_/css/site.css">
+    <script>var uiRootPath = '../../../_'</script>
+  </head>
+  <body class="article">
+<header class="header">
+  <nav class="navbar">
+    <div class="navbar-brand">
+      <a class="navbar-item" href="https://www.redhat.com" target="_blank"><img src="../../../_/img/redhat-logo.png" height="40px" alt="Red Hat"></a>
+      <a class="navbar-item" style="font-size: 24px; color: white" href="../../..">Building Resilient Messaging Applications with ActiveMQ Artemis and OpenShift</a>
+      <button class="navbar-burger" data-target="topbar-nav">
+        <span></span>
+        <span></span>
+        <span></span>
+      </button>
+    </div>
+    <div id="topbar-nav" class="navbar-menu">
+      <div class="navbar-end">
+        <a class="navbar-item" href="https://github.com/RedHatQuickCourses/REPLACEREPONAME/issues" target="_blank">Report Issues</a>
+      </div>
+    </div>
+  </nav>
+</header>
+<div class="body">
+<div class="nav-container" data-component="amq-connection-distribution" data-version="1.0.0">
+  <aside class="nav">
+    <div class="panels">
+<div class="nav-panel-menu is-active" data-panel="menu">
+  <nav class="nav-menu">
+    <h3 class="title"><a href="../index.html">Building Resilient Messaging Applications with ActiveMQ Artemis and OpenShift</a></h3>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="../index.html">Home</a>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../deploying-activemq-artemis-on-openshift/deploying-activemq-artemis-on-openshift.html">Deploying ActiveMQ Artemis on OpenShift</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../deploying-activemq-artemis-on-openshift/introduction-to-openshift-for-messaging-applications.html">Introduction to OpenShift for messaging applications</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../deploying-activemq-artemis-on-openshift/understanding-activemq-artemis-on-openshift.html">Understanding ActiveMQ Artemis on OpenShift</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../deploying-activemq-artemis-on-openshift/using-the-activemq-artemis-operator.html">Using the ActiveMQ Artemis Operator</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../deploying-activemq-artemis-on-openshift/custom-resource-definitions-crds-for-artemis.html">Custom Resource Definitions (CRDs) for Artemis</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../deploying-activemq-artemis-on-openshift/configuring-persistent-storage-for-artemis.html">Configuring persistent storage for Artemis</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../deploying-activemq-artemis-on-openshift/scaling-artemis-brokers-on-openshift.html">Scaling Artemis brokers on OpenShift</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../deploying-activemq-artemis-on-openshift/monitoring-artemis-instances-on-openshift.html">Monitoring Artemis instances on OpenShift</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../deploying-activemq-artemis-on-openshift/hands-on-lab-deploying-a-highly-available-activemq-artemis-cluster-on-openshift.html">Hands-on Lab: Deploying a highly available ActiveMQ Artemis cluster on OpenShift</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../message-distribution-issues/message-distribution-issues.html">Message distribution issues</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../message-distribution-issues/understanding-distributed-messaging-patterns.html">Understanding distributed messaging patterns</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../message-distribution-issues/load-balancing-messages-across-consumers.html">Load balancing messages across consumers</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../message-distribution-issues/message-routing-strategies-and-challenges.html">Message routing strategies and challenges</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../message-distribution-issues/consumer-groups-and-shared-subscriptions.html">Consumer groups and shared subscriptions</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../message-distribution-issues/ensuring-message-ordering-in-distributed-systems.html">Ensuring message ordering in distributed systems</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../message-distribution-issues/handling-message-durability-and-reliability.html">Handling message durability and reliability</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../message-distribution-issues/addressing-fault-tolerance-and-high-availability-for-messages.html">Addressing fault tolerance and high availability for messages</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../client-side-solution/client-side-solution.html">Client Side Solution</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../client-side-solution/client-side-connection-management-and-pooling.html">Client-side connection management and pooling</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../client-side-solution/implementing-client-failover-mechanisms.html">Implementing client failover mechanisms</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../client-side-solution/client-side-load-balancing-for-message-consumption.html">Client-side load balancing for message consumption</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../client-side-solution/message-acknowledgment-patterns-auto_acknowledge-client_acknowledge.html">Message acknowledgment patterns (AUTO_ACKNOWLEDGE, CLIENT_ACKNOWLEDGE)</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../client-side-solution/transaction-management-for-message-producers-and-consumers.html">Transaction management for message producers and consumers</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../client-side-solution/best-practices-for-client-integration-with-distributed-brokers.html">Best practices for client integration with distributed brokers</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="quarkus-example.html">Quarkus Example</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="integrating-jmsamqp-clients-with-quarkus.html">Integrating JMS/AMQP clients with Quarkus</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="configuring-quarkus-for-activemq-artemis-connectivity.html">Configuring Quarkus for ActiveMQ Artemis connectivity</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="implementing-message-producers-in-quarkus.html">Implementing message producers in Quarkus</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="implementing-message-consumers-in-quarkus.html">Implementing message consumers in Quarkus</a>
+  </li>
+  <li class="nav-item is-current-page" data-depth="2">
+    <a class="nav-link" href="reactive-messaging-with-quarkus-and-artemis.html">Reactive messaging with Quarkus and Artemis</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="deploying-quarkus-messaging-applications-on-openshift.html">Deploying Quarkus messaging applications on OpenShift</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="hands-on-lab-developing-a-quarkus-microservice-with-distributed-messaging.html">Hands-on Lab: Developing a Quarkus microservice with distributed messaging</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../spring-boot-example/spring-boot-example.html">Spring Boot Example</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../spring-boot-example/integrating-jmsamqp-clients-with-spring-boot.html">Integrating JMS/AMQP clients with Spring Boot</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../spring-boot-example/configuring-spring-boot-for-activemq-artemis-connectivity.html">Configuring Spring Boot for ActiveMQ Artemis connectivity</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../spring-boot-example/using-spring-jmsamqp-templates-for-messaging.html">Using Spring JMS/AMQP templates for messaging</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../spring-boot-example/implementing-message-producers-in-spring-boot.html">Implementing message producers in Spring Boot</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../spring-boot-example/implementing-message-consumers-in-spring-boot.html">Implementing message consumers in Spring Boot</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../spring-boot-example/configuring-listener-containers-and-concurrency.html">Configuring listener containers and concurrency</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../spring-boot-example/deploying-spring-boot-messaging-applications-on-openshift.html">Deploying Spring Boot messaging applications on OpenShift</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../spring-boot-example/hands-on-lab-developing-a-spring-boot-microservice-with-distributed-messaging.html">Hands-on Lab: Developing a Spring Boot microservice with distributed messaging</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+</ul>
+  </nav>
+</div>
+<div class="nav-panel-explore" data-panel="explore">
+  <div class="context">
+    <span class="title">Building Resilient Messaging Applications with ActiveMQ Artemis and OpenShift</span>
+    <span class="version">1.0.0</span>
+  </div>
+  <ul class="components">
+    <li class="component is-current">
+      <a class="title" href="../index.html">Building Resilient Messaging Applications with ActiveMQ Artemis and OpenShift</a>
+      <ul class="versions">
+        <li class="version is-current is-latest">
+          <a href="../index.html">1.0.0</a>
+        </li>
+      </ul>
+    </li>
+  </ul>
+</div>
+    </div>
+  </aside>
+</div>
+<main class="article">
+<div class="toolbar" role="navigation">
+<button class="nav-toggle"></button>
+  <a href="../index.html" class="home-link"></a>
+<nav class="breadcrumbs" aria-label="breadcrumbs">
+  <ul>
+    <li><a href="../index.html">Building Resilient Messaging Applications with ActiveMQ Artemis and OpenShift</a></li>
+    <li><a href="quarkus-example.html">Quarkus Example</a></li>
+    <li><a href="reactive-messaging-with-quarkus-and-artemis.html">Reactive messaging with Quarkus and Artemis</a></li>
+  </ul>
+</nav>
+</div>
+  <div class="content">
+<aside class="toc sidebar" data-title="Contents" data-levels="2">
+  <div class="toc-menu"></div>
+</aside>
+<article class="doc">
+<h1 class="page">Reactive messaging with Quarkus and Artemis</h1>
+<h1 id="_reactive_messaging_with_quarkus_and_artemis" class="sect0"><a class="anchor" href="#_reactive_messaging_with_quarkus_and_artemis"></a>Reactive Messaging with Quarkus and Artemis</h1>
+<div class="paragraph">
+<p>This section delves into how Quarkus leverages its reactive capabilities, specifically with the SmallRye Reactive Messaging extension, to build efficient and scalable messaging applications integrated with ActiveMQ Artemis.</p>
+</div>
+<div class="sect1">
+<h2 id="_introduction_to_reactive_messaging_in_quarkus"><a class="anchor" href="#_introduction_to_reactive_messaging_in_quarkus"></a>Introduction to Reactive Messaging in Quarkus</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Reactive programming is an asynchronous programming paradigm concerned with data streams and the propagation of change. It&#8217;s particularly well-suited for modern microservices architectures where applications need to be highly responsive, resilient, elastic, and message-driven. Quarkus embraces this paradigm, providing a reactive foundation that allows developers to build non-blocking, event-driven applications efficiently.</p>
+</div>
+<div class="paragraph">
+<p>Quarkus&#8217;s reactive messaging capabilities are powered by the <code>SmallRye Reactive Messaging</code> project, which implements the Eclipse MicroProfile Reactive Messaging specification. This specification provides a common set of APIs and concepts for building reactive, message-driven microservices.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_why_reactive_messaging"><a class="anchor" href="#_why_reactive_messaging"></a>Why Reactive Messaging?</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Traditional synchronous blocking I/O models can lead to inefficient resource utilization, especially when dealing with external services or message brokers that might introduce latency. Reactive messaging addresses these challenges by:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>Improved Responsiveness:</strong> Applications can respond to events immediately without waiting for long-running operations to complete.</p>
+</li>
+<li>
+<p><strong>Better Resource Utilization:</strong> Non-blocking I/O allows a small number of threads to handle a large number of concurrent operations, leading to more efficient use of CPU and memory.</p>
+</li>
+<li>
+<p><strong>Enhanced Resilience:</strong> Reactive systems are designed to handle failures gracefully, allowing for easier implementation of retry mechanisms, backpressure, and circuit breakers.</p>
+</li>
+<li>
+<p><strong>Scalability:</strong> The asynchronous nature makes it easier to scale horizontally and handle increased message throughput.</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_quarkus_smallrye_reactive_messaging_overview"><a class="anchor" href="#_quarkus_smallrye_reactive_messaging_overview"></a>Quarkus SmallRye Reactive Messaging Overview</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>SmallRye Reactive Messaging provides a powerful and flexible way to connect to various messaging systems, including Kafka, AMQP (which ActiveMQ Artemis supports), MQTT, and more. It abstracts away the low-level details of message broker interactions, allowing developers to focus on the business logic.</p>
+</div>
+<div class="paragraph">
+<p>Key concepts include:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>Channels:</strong> Logical names for data streams that messages flow through.</p>
+</li>
+<li>
+<p><strong><code>@Incoming</code>:</strong> Annotates methods that consume messages from a specific channel.</p>
+</li>
+<li>
+<p><strong><code>@Outgoing</code>:</strong> Annotates methods that produce messages to a specific channel.</p>
+</li>
+<li>
+<p><strong><code>Message&lt;T&gt;</code>:</strong> A wrapper around the payload <code>T</code> that also provides access to metadata and acknowledgment mechanisms.</p>
+</li>
+<li>
+<p><strong><code>Emitter&lt;T&gt;</code>:</strong> An injectable component used to programmatically send messages to an <code>@Outgoing</code> channel.</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_integrating_reactive_messaging_with_activemq_artemis"><a class="anchor" href="#_integrating_reactive_messaging_with_activemq_artemis"></a>Integrating Reactive Messaging with ActiveMQ Artemis</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Quarkus can easily integrate with ActiveMQ Artemis using the <code>quarkus-smallrye-reactive-messaging-amqp</code> extension. This extension provides the necessary connectors to send and receive messages over AMQP 1.0, which is the preferred protocol for modern messaging.</p>
+</div>
+<div class="paragraph">
+<p>To use ActiveMQ Artemis with Quarkus Reactive Messaging, you&#8217;ll need to add the following dependency to your <code>pom.xml</code>:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-xml hljs" data-lang="xml">&lt;dependency&gt;
+    &lt;groupId&gt;io.quarkus&lt;/groupId&gt;
+    &lt;artifactId&gt;quarkus-smallrye-reactive-messaging-amqp&lt;/artifactId&gt;
+&lt;/dependency&gt;</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>With this dependency, Quarkus automatically configures an AMQP client connection based on your <code>application.properties</code>.</p>
+</div>
+<div class="sect2">
+<h3 id="_configuring_quarkus_for_activemq_artemis_connectivity"><a class="anchor" href="#_configuring_quarkus_for_activemq_artemis_connectivity"></a>Configuring Quarkus for ActiveMQ Artemis Connectivity</h3>
+<div class="paragraph">
+<p>Configuration for the AMQP connector is typically done in <code>src/main/resources/application.properties</code>. You define named AMQP brokers, and then link your channels to these brokers.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-properties hljs" data-lang="properties"># AMQP Broker Configuration
+# Define a named AMQP broker connection
+amqp-brokers.my-artemis.host=localhost
+amqp-brokers.my-artemis.port=5672
+amqp-brokers.my-artemis.username=artemis
+amqp-brokers.my-artemis.password=artemis
+amqp-brokers.my-artemis.tracing-enabled=true # Enable OpenTracing integration if desired
+
+# Outgoing channel configuration
+mp.messaging.outgoing.my-outgoing-channel.connector=smallrye-amqp
+mp.messaging.outgoing.my-outgoing-channel.broker-name=my-artemis # Link to the named broker
+mp.messaging.outgoing.my-outgoing-channel.address=my-queue # Target queue/topic on Artemis
+mp.messaging.outgoing.my-outgoing-channel.durable=true
+mp.messaging.outgoing.my-outgoing-channel.persistent=true
+
+# Incoming channel configuration
+mp.messaging.incoming.my-incoming-channel.connector=smallrye-amqp
+mp.messaging.incoming.my-incoming-channel.broker-name=my-artemis # Link to the named broker
+mp.messaging.incoming.my-incoming-channel.address=my-queue # Source queue/topic on Artemis
+mp.messaging.incoming.my-incoming-channel.durable=true
+mp.messaging.incoming.my-incoming-channel.auto-acknowledgement=false # We'll acknowledge manually</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>In the above configuration:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><code>amqp-brokers.my-artemis.*</code>: Defines a named AMQP broker connection <code>my-artemis</code>.</p>
+</li>
+<li>
+<p><code>mp.messaging.outgoing.my-outgoing-channel.*</code>: Configures an outgoing channel named <code>my-outgoing-channel</code>. It uses the <code>smallrye-amqp</code> connector and targets the <code>my-queue</code> address on the <code>my-artemis</code> broker.</p>
+</li>
+<li>
+<p><code>mp.messaging.incoming.my-incoming-channel.*</code>: Configures an incoming channel named <code>my-incoming-channel</code>, also connected to <code>my-queue</code> on <code>my-artemis</code>. <code>auto-acknowledgement=false</code> is set for manual acknowledgment.</p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_hands_on_activity_implementing_a_reactive_producer"><a class="anchor" href="#_hands_on_activity_implementing_a_reactive_producer"></a>Hands-on Activity: Implementing a Reactive Producer</h3>
+<div class="paragraph">
+<p>Let&#8217;s create a Quarkus service that periodically sends messages to an ActiveMQ Artemis queue using reactive messaging.</p>
+</div>
+<div class="ulist">
+<div class="title">Prerequisites:</div>
+<ul>
+<li>
+<p>A running ActiveMQ Artemis instance (e.g., deployed on OpenShift or locally).</p>
+</li>
+<li>
+<p>A Quarkus project set up with the <code>quarkus-smallrye-reactive-messaging-amqp</code> dependency.</p>
+</li>
+</ul>
+</div>
+<div class="olist arabic">
+<div class="title">Steps:</div>
+<ol class="arabic">
+<li>
+<p><strong>Create a simple Message POJO</strong> (optional, but good practice):
+[source,java]
+----
+// src/main/java/org/acme/quarkus/artemis/MessageData.java
+package org.acme.quarkus.artemis;</p>
+<div class="literalblock">
+<div class="content">
+<pre>public class MessageData {
+    public String content;
+    public long timestamp;</pre>
+</div>
+</div>
+<div class="literalblock">
+<div class="content">
+<pre>public MessageData() {
+}</pre>
+</div>
+</div>
+<div class="literalblock">
+<div class="content">
+<pre>public MessageData(String content, long timestamp) {
+    this.content = content;
+    this.timestamp = timestamp;
+}</pre>
+</div>
+</div>
+<div class="literalblock">
+<div class="content">
+<pre>    @Override
+    public String toString() {
+        return "MessageData{" +
+               "content='" + content + '\'' +
+               ", timestamp=" + timestamp +
+               '}';
+    }
+}
+----</pre>
+</div>
+</div>
+</li>
+<li>
+<p><strong>Implement the Reactive Producer Service:</strong>
+[source,java]
+----
+// src/main/java/org/acme/quarkus/artemis/ReactiveProducerService.java
+package org.acme.quarkus.artemis;</p>
+<div class="literalblock">
+<div class="content">
+<pre>import io.quarkus.runtime.StartupEvent;
+import io.smallrye.mutiny.Multi;
+import io.smallrye.reactive.messaging.annotations.Emitter;
+import io.smallrye.reactive.messaging.annotations.Channel;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.event.Observes;</pre>
+</div>
+</div>
+<div class="literalblock">
+<div class="content">
+<pre>import java.time.Duration;
+import java.util.Random;
+import java.util.concurrent.atomic.AtomicInteger;</pre>
+</div>
+</div>
+<div class="literalblock">
+<div class="content">
+<pre>@ApplicationScoped
+public class ReactiveProducerService {</pre>
+</div>
+</div>
+<div class="literalblock">
+<div class="content">
+<pre>private static final Random RANDOM = new Random();
+private AtomicInteger counter = new AtomicInteger();</pre>
+</div>
+</div>
+<div class="literalblock">
+<div class="content">
+<pre>// Inject an Emitter for the 'my-outgoing-channel'
+@Channel("my-outgoing-channel")
+Emitter&lt;MessageData&gt; messageEmitter; // Emitter for our POJO</pre>
+</div>
+</div>
+<div class="literalblock">
+<div class="content">
+<pre>// Or if you prefer to emit raw strings/JSON:
+// @Channel("my-outgoing-channel")
+// Emitter&lt;String&gt; stringEmitter;</pre>
+</div>
+</div>
+<div class="literalblock">
+<div class="content">
+<pre>void onStart(@Observes StartupEvent ev) {
+    // Schedule sending messages every 5 seconds
+    Multi.interval(Duration.ofSeconds(5))
+        .onItem().transform(tick -&gt; {
+            int id = counter.incrementAndGet();
+            String content = "Hello from Quarkus reactive producer #" + id;
+            long timestamp = System.currentTimeMillis();
+            MessageData data = new MessageData(content, timestamp);
+            System.out.println("Producing message: " + data);
+            return data;
+        })
+        .subscribe().with(messageData -&gt; {
+            // Send the MessageData object. Quarkus will serialize it to JSON/AMQP message.
+            messageEmitter.send(messageData);
+        });
+}</pre>
+</div>
+</div>
+<div class="literalblock">
+<div class="content">
+<pre>    // Alternative method using @Outgoing annotation for producing
+    // @Outgoing("my-outgoing-channel")
+    // public Multi&lt;MessageData&gt; generateMessages() {
+    //     return Multi.interval(Duration.ofSeconds(5))
+    //         .onItem().transform(tick -&gt; {
+    //             int id = counter.incrementAndGet();
+    //             String content = "Hello from Quarkus reactive producer (via @Outgoing) #" + id;
+    //             long timestamp = System.currentTimeMillis();
+    //             MessageData data = new MessageData(content, timestamp);
+    //             System.out.println("Producing message via @Outgoing: " + data);
+    //             return data;
+    //         });
+    // }
+}
+----
+In this example, `ReactiveProducerService` uses `@Channel("my-outgoing-channel") Emitter&lt;MessageData&gt; messageEmitter;` to inject an `Emitter`. Upon application startup, it schedules an interval using `Multi.interval` and sends `MessageData` objects to the `my-outgoing-channel`. Quarkus will automatically serialize `MessageData` to a format suitable for AMQP (typically JSON by default).</pre>
+</div>
+</div>
+</li>
+</ol>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_hands_on_activity_implementing_a_reactive_consumer"><a class="anchor" href="#_hands_on_activity_implementing_a_reactive_consumer"></a>Hands-on Activity: Implementing a Reactive Consumer</h3>
+<div class="paragraph">
+<p>Now, let&#8217;s create a service that consumes messages from the same ActiveMQ Artemis queue reactively.</p>
+</div>
+<div class="olist arabic">
+<div class="title">Steps:</div>
+<ol class="arabic">
+<li>
+<p><strong>Implement the Reactive Consumer Service:</strong>
+[source,java]
+----
+// src/main/java/org/acme/quarkus/artemis/ReactiveConsumerService.java
+package org.acme.quarkus.artemis;</p>
+<div class="literalblock">
+<div class="content">
+<pre>import io.smallrye.reactive.messaging.annotations.Channel;
+import io.smallrye.reactive.messaging.annotations.Incoming;
+import io.smallrye.reactive.messaging.annotations.Acknowledgment;
+import jakarta.enterprise.context.ApplicationScoped;
+import org.eclipse.microprofile.reactive.messaging.Message;
+import io.smallrye.mutiny.Uni;</pre>
+</div>
+</div>
+<div class="literalblock">
+<div class="content">
+<pre>@ApplicationScoped
+public class ReactiveConsumerService {</pre>
+</div>
+</div>
+<div class="literalblock">
+<div class="content">
+<pre>// Method to consume messages from 'my-incoming-channel'
+// Acknowledgment.Completion is used for manual acknowledgment after processing.
+@Incoming("my-incoming-channel")
+@Acknowledgment(Acknowledgment.Strategy.POST_PROCESSING)
+public Uni&lt;Void&gt; consume(Message&lt;MessageData&gt; message) { // Consume Message&lt;MessageData&gt;
+    MessageData data = message.getPayload();
+    System.out.println("Reactive Consumer received message: " + data.content + " at " + data.timestamp);</pre>
+</div>
+</div>
+<div class="literalblock">
+<div class="content">
+<pre>    // Simulate some asynchronous processing
+    return Uni.createFrom().item(data)
+        .onItem().delayIt().by(java.time.Duration.ofMillis(RANDOM.nextInt(100) + 50)) // Random delay
+        .onItem().invoke(processedData -&gt; {
+            System.out.println("Processed message successfully: " + processedData.content);
+        })
+        .onFailure().invoke(failure -&gt; {
+            System.err.println("Failed to process message: " + data.content + " - " + failure.getMessage());
+            // NACK the message if processing fails, depends on broker capabilities and connector configuration
+            // return message.nack(failure); // nack() is available on Message interface for certain connectors
+        })
+        .onItem().ignoreAsUni() // Return Uni&lt;Void&gt; to signal completion
+        .chain(() -&gt; message.ack()); // Acknowledge the message only after successful processing
+}</pre>
+</div>
+</div>
+<div class="literalblock">
+<div class="content">
+<pre>    // You can also consume raw payloads directly if you don't need Message metadata
+    // @Incoming("my-incoming-channel")
+    // @Acknowledgment(Acknowledgment.Strategy.POST_PROCESSING)
+    // public Uni&lt;Void&gt; consumePayload(MessageData data) {
+    //     System.out.println("Reactive Consumer received direct payload: " + data.content);
+    //     return Uni.createFrom().item(data)
+    //             .onItem().delayIt().by(java.time.Duration.ofMillis(50))
+    //             .onItem().ignoreAsUni();
+    // }
+}
+----</pre>
+</div>
+</div>
+<div class="literalblock">
+<div class="content">
+<pre>In `ReactiveConsumerService`:</pre>
+</div>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>The <code>@Incoming("my-incoming-channel")</code> annotation indicates that this method consumes messages from the <code>my-incoming-channel</code>.</p>
+</li>
+<li>
+<p><code>@Acknowledgment(Acknowledgment.Strategy.POST_PROCESSING)</code> specifies that the message should be acknowledged <strong>after</strong> the <code>consume</code> method has successfully processed it and the returned <code>Uni&lt;Void&gt;</code> completes.</p>
+</li>
+<li>
+<p>The method signature <code>public Uni&lt;Void&gt; consume(Message&lt;MessageData&gt; message)</code> allows us to receive the full <code>Message</code> object, giving access to its payload (<code>message.getPayload()</code>) and providing fine-grained control over acknowledgment (<code>message.ack()</code> or <code>message.nack()</code>).</p>
+</li>
+<li>
+<p>The <code>Uni</code> return type allows for asynchronous processing of the message payload. We simulate some processing with a delay and then explicitly acknowledge the message with <code>message.ack()</code>.</p>
+</li>
+</ul>
+</div>
+</li>
+</ol>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_running_the_example"><a class="anchor" href="#_running_the_example"></a>Running the Example</h3>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>Ensure ActiveMQ Artemis is running and accessible at <code>localhost:5672</code> (or adjust <code>application.properties</code>).</p>
+</li>
+<li>
+<p>Compile and run the Quarkus application:
+[source,bash]
+----
+mvn clean compile quarkus:dev
+----</p>
+</li>
+<li>
+<p>Observe the console output:</p>
+<div class="ulist">
+<ul>
+<li>
+<p>The <code>ReactiveProducerService</code> will log messages it&#8217;s sending.</p>
+</li>
+<li>
+<p>The <code>ReactiveConsumerService</code> will log messages it receives and processes.</p>
+</li>
+</ul>
+</div>
+</li>
+</ol>
+</div>
+<div class="paragraph">
+<p>You should see messages flowing from the producer, through ActiveMQ Artemis, and then consumed by the reactive consumer.</p>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_advanced_considerations"><a class="anchor" href="#_advanced_considerations"></a>Advanced Considerations</h2>
+<div class="sectionbody">
+<div class="ulist">
+<ul>
+<li>
+<p><strong>Backpressure:</strong> SmallRye Reactive Messaging automatically applies backpressure mechanisms to prevent consumers from being overwhelmed by producers. This is handled internally by the reactive streams specification.</p>
+</li>
+<li>
+<p><strong>Error Handling:</strong> You can define error handling strategies, such as retries or dead-letter queues, either via connector configurations or by handling exceptions within your <code>@Incoming</code> methods. For <code>Uni&lt;Void&gt;</code> methods, an unhandled exception would typically lead to a NACK (negative acknowledgment) to the broker, potentially triggering redelivery.</p>
+</li>
+<li>
+<p><strong>Message Transformations:</strong> Use intermediate <code>@Outgoing</code> and <code>@Incoming</code> methods to transform messages between channels before they reach the final consumer or leave the application.</p>
+</li>
+<li>
+<p><strong>Concurrency:</strong> Quarkus handles concurrency for <code>@Incoming</code> methods. By default, messages are processed sequentially by a single consumer instance per channel, but you can configure worker pools or use <code>io.smallrye.reactive.messaging.annotations.Blocking</code> to delegate processing to a separate thread pool for blocking operations.</p>
+</li>
+<li>
+<p><strong>Tracing and Metrics:</strong> Quarkus and SmallRye Reactive Messaging integrate well with OpenTelemetry for distributed tracing and Micrometer for metrics, providing deep observability into your messaging flows.</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>Reactive messaging with Quarkus and ActiveMQ Artemis provides a robust and efficient foundation for building high-performance, resilient, and scalable message-driven microservices. By leveraging the AMQP connector and the power of SmallRye Reactive Messaging, developers can easily integrate with Artemis while benefiting from Quarkus&#8217;s development velocity and runtime efficiency.</p>
+</div>
+</div>
+</div>
+<nav class="pagination">
+  <span class="prev"><a href="implementing-message-consumers-in-quarkus.html">Implementing message consumers in Quarkus</a></span>
+  <span class="next"><a href="deploying-quarkus-messaging-applications-on-openshift.html">Deploying Quarkus messaging applications on OpenShift</a></span>
+</nav>
+</article>
+  </div>
+</main>
+</div>
+<footer class="footer">
+  <img src="../../../_/img/rhl-logo-red.png" height="40px" alt="Red Hat"  href="https://redhat.com" >
+</footer><script id="site-script" src="../../../_/js/site.js" data-ui-root-path="../../../_"></script>
+<script async src="../../../_/js/vendor/highlight.js"></script>
+  </body>
+</html>

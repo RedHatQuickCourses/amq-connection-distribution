@@ -1,0 +1,793 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Using Spring JMS/AMQP templates for messaging :: Building Resilient Messaging Applications with ActiveMQ Artemis and OpenShift</title>
+    <link rel="prev" href="configuring-spring-boot-for-activemq-artemis-connectivity.html">
+    <link rel="next" href="implementing-message-producers-in-spring-boot.html">
+    <meta name="generator" content="Antora 3.1.3">
+    <link rel="stylesheet" href="../../../_/css/site.css">
+    <script>var uiRootPath = '../../../_'</script>
+  </head>
+  <body class="article">
+<header class="header">
+  <nav class="navbar">
+    <div class="navbar-brand">
+      <a class="navbar-item" href="https://www.redhat.com" target="_blank"><img src="../../../_/img/redhat-logo.png" height="40px" alt="Red Hat"></a>
+      <a class="navbar-item" style="font-size: 24px; color: white" href="../../..">Building Resilient Messaging Applications with ActiveMQ Artemis and OpenShift</a>
+      <button class="navbar-burger" data-target="topbar-nav">
+        <span></span>
+        <span></span>
+        <span></span>
+      </button>
+    </div>
+    <div id="topbar-nav" class="navbar-menu">
+      <div class="navbar-end">
+        <a class="navbar-item" href="https://github.com/RedHatQuickCourses/REPLACEREPONAME/issues" target="_blank">Report Issues</a>
+      </div>
+    </div>
+  </nav>
+</header>
+<div class="body">
+<div class="nav-container" data-component="amq-connection-distribution" data-version="1.0.0">
+  <aside class="nav">
+    <div class="panels">
+<div class="nav-panel-menu is-active" data-panel="menu">
+  <nav class="nav-menu">
+    <h3 class="title"><a href="../index.html">Building Resilient Messaging Applications with ActiveMQ Artemis and OpenShift</a></h3>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="../index.html">Home</a>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../deploying-activemq-artemis-on-openshift/deploying-activemq-artemis-on-openshift.html">Deploying ActiveMQ Artemis on OpenShift</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../deploying-activemq-artemis-on-openshift/introduction-to-openshift-for-messaging-applications.html">Introduction to OpenShift for messaging applications</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../deploying-activemq-artemis-on-openshift/understanding-activemq-artemis-on-openshift.html">Understanding ActiveMQ Artemis on OpenShift</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../deploying-activemq-artemis-on-openshift/using-the-activemq-artemis-operator.html">Using the ActiveMQ Artemis Operator</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../deploying-activemq-artemis-on-openshift/custom-resource-definitions-crds-for-artemis.html">Custom Resource Definitions (CRDs) for Artemis</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../deploying-activemq-artemis-on-openshift/configuring-persistent-storage-for-artemis.html">Configuring persistent storage for Artemis</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../deploying-activemq-artemis-on-openshift/scaling-artemis-brokers-on-openshift.html">Scaling Artemis brokers on OpenShift</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../deploying-activemq-artemis-on-openshift/monitoring-artemis-instances-on-openshift.html">Monitoring Artemis instances on OpenShift</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../deploying-activemq-artemis-on-openshift/hands-on-lab-deploying-a-highly-available-activemq-artemis-cluster-on-openshift.html">Hands-on Lab: Deploying a highly available ActiveMQ Artemis cluster on OpenShift</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../message-distribution-issues/message-distribution-issues.html">Message distribution issues</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../message-distribution-issues/understanding-distributed-messaging-patterns.html">Understanding distributed messaging patterns</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../message-distribution-issues/load-balancing-messages-across-consumers.html">Load balancing messages across consumers</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../message-distribution-issues/message-routing-strategies-and-challenges.html">Message routing strategies and challenges</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../message-distribution-issues/consumer-groups-and-shared-subscriptions.html">Consumer groups and shared subscriptions</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../message-distribution-issues/ensuring-message-ordering-in-distributed-systems.html">Ensuring message ordering in distributed systems</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../message-distribution-issues/handling-message-durability-and-reliability.html">Handling message durability and reliability</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../message-distribution-issues/addressing-fault-tolerance-and-high-availability-for-messages.html">Addressing fault tolerance and high availability for messages</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../client-side-solution/client-side-solution.html">Client Side Solution</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../client-side-solution/client-side-connection-management-and-pooling.html">Client-side connection management and pooling</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../client-side-solution/implementing-client-failover-mechanisms.html">Implementing client failover mechanisms</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../client-side-solution/client-side-load-balancing-for-message-consumption.html">Client-side load balancing for message consumption</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../client-side-solution/message-acknowledgment-patterns-auto_acknowledge-client_acknowledge.html">Message acknowledgment patterns (AUTO_ACKNOWLEDGE, CLIENT_ACKNOWLEDGE)</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../client-side-solution/transaction-management-for-message-producers-and-consumers.html">Transaction management for message producers and consumers</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../client-side-solution/best-practices-for-client-integration-with-distributed-brokers.html">Best practices for client integration with distributed brokers</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../quarkus-example/quarkus-example.html">Quarkus Example</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../quarkus-example/integrating-jmsamqp-clients-with-quarkus.html">Integrating JMS/AMQP clients with Quarkus</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../quarkus-example/configuring-quarkus-for-activemq-artemis-connectivity.html">Configuring Quarkus for ActiveMQ Artemis connectivity</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../quarkus-example/implementing-message-producers-in-quarkus.html">Implementing message producers in Quarkus</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../quarkus-example/implementing-message-consumers-in-quarkus.html">Implementing message consumers in Quarkus</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../quarkus-example/reactive-messaging-with-quarkus-and-artemis.html">Reactive messaging with Quarkus and Artemis</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../quarkus-example/deploying-quarkus-messaging-applications-on-openshift.html">Deploying Quarkus messaging applications on OpenShift</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../quarkus-example/hands-on-lab-developing-a-quarkus-microservice-with-distributed-messaging.html">Hands-on Lab: Developing a Quarkus microservice with distributed messaging</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="spring-boot-example.html">Spring Boot Example</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="integrating-jmsamqp-clients-with-spring-boot.html">Integrating JMS/AMQP clients with Spring Boot</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="configuring-spring-boot-for-activemq-artemis-connectivity.html">Configuring Spring Boot for ActiveMQ Artemis connectivity</a>
+  </li>
+  <li class="nav-item is-current-page" data-depth="2">
+    <a class="nav-link" href="using-spring-jmsamqp-templates-for-messaging.html">Using Spring JMS/AMQP templates for messaging</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="implementing-message-producers-in-spring-boot.html">Implementing message producers in Spring Boot</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="implementing-message-consumers-in-spring-boot.html">Implementing message consumers in Spring Boot</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="configuring-listener-containers-and-concurrency.html">Configuring listener containers and concurrency</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="deploying-spring-boot-messaging-applications-on-openshift.html">Deploying Spring Boot messaging applications on OpenShift</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="hands-on-lab-developing-a-spring-boot-microservice-with-distributed-messaging.html">Hands-on Lab: Developing a Spring Boot microservice with distributed messaging</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+</ul>
+  </nav>
+</div>
+<div class="nav-panel-explore" data-panel="explore">
+  <div class="context">
+    <span class="title">Building Resilient Messaging Applications with ActiveMQ Artemis and OpenShift</span>
+    <span class="version">1.0.0</span>
+  </div>
+  <ul class="components">
+    <li class="component is-current">
+      <a class="title" href="../index.html">Building Resilient Messaging Applications with ActiveMQ Artemis and OpenShift</a>
+      <ul class="versions">
+        <li class="version is-current is-latest">
+          <a href="../index.html">1.0.0</a>
+        </li>
+      </ul>
+    </li>
+  </ul>
+</div>
+    </div>
+  </aside>
+</div>
+<main class="article">
+<div class="toolbar" role="navigation">
+<button class="nav-toggle"></button>
+  <a href="../index.html" class="home-link"></a>
+<nav class="breadcrumbs" aria-label="breadcrumbs">
+  <ul>
+    <li><a href="../index.html">Building Resilient Messaging Applications with ActiveMQ Artemis and OpenShift</a></li>
+    <li><a href="spring-boot-example.html">Spring Boot Example</a></li>
+    <li><a href="using-spring-jmsamqp-templates-for-messaging.html">Using Spring JMS/AMQP templates for messaging</a></li>
+  </ul>
+</nav>
+</div>
+  <div class="content">
+<aside class="toc sidebar" data-title="Contents" data-levels="2">
+  <div class="toc-menu"></div>
+</aside>
+<article class="doc">
+<h1 class="page">Using Spring JMS/AMQP templates for messaging</h1>
+<div class="paragraph">
+<p>Here is the detailed educational content for "Using Spring JMS/AMQP templates for messaging" in Antora AsciiDoc format.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-asciidoc hljs" data-lang="asciidoc">[[spring-jms-amqp-templates]]
+= Using Spring JMS/AMQP Templates for Messaging
+
+Spring Framework provides powerful abstractions for integrating with messaging systems, simplifying the development of message-driven applications. This section explores how to leverage Spring's `JmsTemplate` for Java Message Service (JMS) and `AmqpTemplate` for Advanced Message Queuing Protocol (AMQP) to interact with ActiveMQ Artemis. These templates handle the boilerplate code associated with connection management, session creation, and resource cleanup, allowing developers to focus on the business logic of sending and receiving messages.
+
+== Understanding Spring Messaging Templates
+
+Messaging templates in Spring are a core component for simplifying interaction with message brokers. They encapsulate common messaging operations, provide consistent exception handling, and manage underlying resources (like connections, sessions, and producers/consumers). This approach significantly reduces the code complexity and potential for resource leaks compared to directly using the native JMS or AMQP APIs.
+
+=== Spring JmsTemplate
+
+The `JmsTemplate` is Spring's central class for synchronous JMS operations. It handles the details of obtaining a JMS connection, creating sessions, producers, and consumers, and releasing these resources properly. It works with any JMS 1.1 or 2.0 compliant broker, including ActiveMQ Artemis.
+
+[[jms-template-configuration]]
+==== Configuration for JmsTemplate
+
+To use `JmsTemplate`, you typically need to configure a `ConnectionFactory` (which points to your ActiveMQ Artemis broker) and then create a `JmsTemplate` bean that uses this factory.
+
+.Example: JmsTemplate Configuration (Java)
+[source,java]
+----
+import jakarta.jms.ConnectionFactory; // Use jakarta.jms for Spring Boot 3+
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.jms.core.JmsTemplate;
+import org.springframework.jms.support.converter.MappingJackson2MessageConverter;
+import org.springframework.jms.support.converter.MessageConverter;
+import org.springframework.jms.support.converter.MessageType;
+import org.apache.activemq.artemis.jms.client.ActiveMQConnectionFactory; // Artemis specific
+
+@Configuration
+public class JmsConfig {
+
+    @Bean
+    public ConnectionFactory jmsConnectionFactory() {
+        // Configure ActiveMQ Artemis connection factory
+        // Replace with your ActiveMQ Artemis broker URL
+        return new ActiveMQConnectionFactory("tcp://localhost:61616");
+    }
+
+    @Bean
+    public JmsTemplate jmsTemplate(ConnectionFactory jmsConnectionFactory) {
+        JmsTemplate jmsTemplate = new JmsTemplate(jmsConnectionFactory);
+        // Optionally configure a message converter for automatic object serialization/deserialization
+        jmsTemplate.setMessageConverter(jacksonJmsMessageConverter());
+        // Configure specific settings, e.g., pub-sub domain
+        // jmsTemplate.setPubSubDomain(true); // For topics
+        return jmsTemplate;
+    }
+
+    // Optional: Configure a message converter for JSON payload handling
+    @Bean
+    public MessageConverter jacksonJmsMessageConverter() {
+        MappingJackson2MessageConverter converter = new MappingJackson2MessageConverter();
+        converter.setTargetType(MessageType.TEXT);
+        converter.setTypeIdPropertyName("_type"); // Custom property for type identification
+        return converter;
+    }
+}
+----
+
+[[jms-template-send]]
+==== Sending Messages with JmsTemplate
+
+The `JmsTemplate` provides various `send` and `convertAndSend` methods for dispatching messages. `send` methods allow you to create the `Message` object yourself, offering fine-grained control, while `convertAndSend` methods automatically convert a Java object into a JMS `Message` using a configured `MessageConverter`.
+
+.Hands-on Activity: Sending a Text Message to an Artemis Queue
+Execute the following steps to send a simple text message using `JmsTemplate`.
+
+. Create a new Spring Boot project or use an existing one.
+. Add the necessary dependencies to your `pom.xml`:
++
+[source,xml]
+----
+&lt;dependencies&gt;
+    &lt;dependency&gt;
+        &lt;groupId&gt;org.springframework.boot&lt;/groupId&gt;
+        &lt;artifactId&gt;spring-boot-starter-activemq&lt;/artifactId&gt;
+    &lt;/dependency&gt;
+    &lt;dependency&gt;
+        &lt;groupId&gt;org.springframework.boot&lt;/groupId&gt;
+        &lt;artifactId&gt;spring-boot-starter-json&lt;/artifactId&gt; &lt;!-- For Jackson converter --&gt;
+    &lt;/dependency&gt;
+    &lt;dependency&gt;
+        &lt;groupId&gt;org.springframework.boot&lt;/groupId&gt;
+        &lt;artifactId&gt;spring-boot-starter-web&lt;/artifactId&gt; &lt;!-- Optional, for REST endpoint --&gt;
+    &lt;/dependency&gt;
+    &lt;!-- Add ActiveMQ Artemis client dependency explicitly if not brought in by starter --&gt;
+    &lt;dependency&gt;
+        &lt;groupId&gt;org.apache.activemq&lt;/groupId&gt;
+        &lt;artifactId&gt;artemis-jms-client-jakarta&lt;/artifactId&gt;
+    &lt;/dependency&gt;
+&lt;/dependencies&gt;
+----
+. Create the `JmsConfig` class as shown in the configuration example above.
+. Create a service class to send messages:
++
+[source,java]
+----
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.jms.core.JmsTemplate;
+import org.springframework.stereotype.Service;
+
+@Service
+public class JmsProducer {
+
+    private final JmsTemplate jmsTemplate;
+
+    @Autowired
+    public JmsProducer(JmsTemplate jmsTemplate) {
+        this.jmsTemplate = jmsTemplate;
+    }
+
+    public void sendMessage(String destinationName, String message) {
+        System.out.println("Sending message: '" + message + "' to destination: " + destinationName);
+        jmsTemplate.convertAndSend(destinationName, message);
+    }
+
+    public void sendObjectMessage(String destinationName, MyCustomObject object) {
+        System.out.println("Sending object: '" + object + "' to destination: " + destinationName);
+        jmsTemplate.convertAndSend(destinationName, object);
+    }
+}
+----
+. Define a simple custom object (e.g., `MyCustomObject.java`) if you want to test `sendObjectMessage`:
++
+[source,java]
+----
+import java.io.Serializable;
+
+public class MyCustomObject implements Serializable {
+    private String name;
+    private int value;
+
+    // Constructors, getters, setters, toString()
+    public MyCustomObject() {}
+
+    public MyCustomObject(String name, int value) {
+        this.name = name;
+        this.value = value;
+    }
+
+    public String getName() { return name; }
+    public void setName(String name) { this.name = name; }
+    public int getValue() { return value; }
+    public void setValue(int value) { this.value = value; }
+
+    @Override
+    public String toString() {
+        return "MyCustomObject{" +
+               "name='" + name + '\'' +
+               ", value=" + value +
+               '}';
+    }
+}
+----
+. Add a runner or a REST controller to trigger message sending:
++
+[source,java]
+----
+import org.springframework.boot.CommandLineRunner;
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.context.annotation.Bean;
+
+@SpringBootApplication
+public class JmsApplication {
+
+    public static void main(String[] args) {
+        SpringApplication.run(JmsApplication.class, args);
+    }
+
+    @Bean
+    public CommandLineRunner run(JmsProducer producer) {
+        return args -&gt; {
+            producer.sendMessage("myQueue", "Hello from JmsTemplate!");
+            producer.sendObjectMessage("myQueue", new MyCustomObject("TestObject", 123));
+        };
+    }
+}
+----
+. Run your Spring Boot application. You should see output indicating the message being sent. You can verify this by connecting to your ActiveMQ Artemis broker's console (e.g., http://localhost:8161/console) and inspecting the "myQueue" queue.
+
+[[jms-template-receive]]
+==== Receiving Messages with JmsTemplate
+
+While listener containers (like `DefaultMessageListenerContainer` or `@JmsListener`) are the preferred way for asynchronous message consumption, `JmsTemplate` also provides methods for synchronous message reception, such as `receive` and `receiveAndConvert`. These are useful for scenarios like request-reply patterns or batch processing.
+
+.Hands-on Activity: Synchronously Receiving a Message from an Artemis Queue
+Expand on the previous project to synchronously receive a message.
+
+. Modify your `JmsApplication` or add a new service to receive messages.
++
+[source,java]
+----
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.jms.core.JmsTemplate;
+import org.springframework.jms.support.converter.MessageConverter;
+import org.springframework.stereotype.Component;
+
+import jakarta.jms.JMSException;
+import jakarta.jms.Message;
+import jakarta.jms.TextMessage;
+
+@Component
+public class JmsConsumer {
+
+    private final JmsTemplate jmsTemplate;
+    private final MessageConverter messageConverter; // Inject the converter
+
+    @Autowired
+    public JmsConsumer(JmsTemplate jmsTemplate, MessageConverter messageConverter) {
+        this.jmsTemplate = jmsTemplate;
+        this.messageConverter = messageConverter;
+    }
+
+    public String receiveMessage(String destinationName) {
+        System.out.println("Attempting to receive message from: " + destinationName);
+        // receive() blocks until a message is available or timeout occurs
+        Message message = jmsTemplate.receive(destinationName); // Blocking call with default timeout
+        if (message instanceof TextMessage) {
+            try {
+                String text = ((TextMessage) message).getText();
+                System.out.println("Received message: " + text);
+                return text;
+            } catch (JMSException e) {
+                System.err.println("Error reading message: " + e.getMessage());
+                return null;
+            }
+        } else if (message != null) {
+            System.out.println("Received non-text message: " + message.getClass().getName());
+             try {
+                // Use the converter to convert the message back to an object
+                Object convertedObject = messageConverter.fromMessage(message);
+                System.out.println("Converted object: " + convertedObject);
+                return convertedObject.toString();
+            } catch (JMSException e) {
+                 System.err.println("Error converting received message: " + e.getMessage());
+                 return null;
+            }
+        } else {
+            System.out.println("No message received within timeout.");
+            return null;
+        }
+    }
+}
+----
+. Modify the `CommandLineRunner` in `JmsApplication` to send a message first, then immediately try to receive it.
++
+[source,java]
+----
+import org.springframework.boot.CommandLineRunner;
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.context.annotation.Bean;
+
+@SpringBootApplication
+public class JmsApplication {
+
+    public static void main(String[] args) {
+        SpringApplication.run(JmsApplication.class, args);
+    }
+
+    @Bean
+    public CommandLineRunner run(JmsProducer producer, JmsConsumer consumer) {
+        return args -&gt; {
+            String queueName = "myQueue";
+            String textMessage = "Hello from JmsTemplate!";
+            MyCustomObject customObject = new MyCustomObject("TestObject", 123);
+
+            // Send a text message
+            producer.sendMessage(queueName, textMessage);
+            // Synchronously receive the text message
+            consumer.receiveMessage(queueName);
+
+            // Send an object message
+            producer.sendObjectMessage(queueName, customObject);
+            // Synchronously receive the object message
+            consumer.receiveMessage(queueName);
+        };
+    }
+}
+----
+. Run your Spring Boot application. You should observe the messages being sent and then immediately received and printed to the console.
+
+=== Spring AmqpTemplate
+
+The `AmqpTemplate` is Spring's core abstraction for sending and receiving messages via AMQP protocols, commonly used with RabbitMQ but also fully compatible with ActiveMQ Artemis when its AMQP acceptor is enabled. Similar to `JmsTemplate`, it handles connection management, channel creation, and resource cleanup.
+
+[[amqp-template-configuration]]
+==== Configuration for AmqpTemplate
+
+To use `AmqpTemplate` with ActiveMQ Artemis, you need to configure an AMQP `ConnectionFactory` (provided by Spring AMQP or a specific client library like Apache Qpid JMS/AMQP) and then create an `AmqpTemplate` bean.
+
+.Example: AmqpTemplate Configuration (Java)
+[source,java]
+----
+import org.springframework.amqp.core.AmqpTemplate;
+import org.springframework.amqp.rabbit.connection.CachingConnectionFactory; // Or use org.apache.qpid.jms.JmsConnectionFactory
+import org.springframework.amqp.rabbit.core.RabbitTemplate; // RabbitMQ specific, but implements AmqpTemplate
+import org.springframework.amqp.support.converter.Jackson2JsonMessageConverter;
+import org.springframework.amqp.support.converter.MessageConverter;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+
+@Configuration
+public class AmqpConfig {
+
+    @Bean
+    public CachingConnectionFactory amqpConnectionFactory() {
+        // Configure ConnectionFactory for ActiveMQ Artemis AMQP
+        // This example uses RabbitMQ's CachingConnectionFactory,
+        // which can connect to any AMQP 0-9-1/1.0 broker if configured correctly.
+        // For Artemis specifically, ensure its AMQP acceptor is enabled (default port 5672).
+        CachingConnectionFactory connectionFactory = new CachingConnectionFactory("localhost");
+        connectionFactory.setPort(5672); // ActiveMQ Artemis AMQP default port
+        connectionFactory.setUsername("admin");
+        connectionFactory.setPassword("admin");
+        return connectionFactory;
+    }
+
+    @Bean
+    public AmqpTemplate amqpTemplate(org.springframework.amqp.rabbit.connection.ConnectionFactory amqpConnectionFactory) {
+        RabbitTemplate rabbitTemplate = new RabbitTemplate(amqpConnectionFactory);
+        rabbitTemplate.setMessageConverter(jsonMessageConverter()); // Use JSON converter
+        // If you need to specify default exchange and routing key
+        // rabbitTemplate.setExchange("myExchange");
+        // rabbitTemplate.setRoutingKey("myRoutingKey");
+        return rabbitTemplate;
+    }
+
+    // Configure a message converter for JSON payload handling
+    @Bean
+    public MessageConverter jsonMessageConverter() {
+        return new Jackson2JsonMessageConverter();
+    }
+}
+----
+NOTE: While `RabbitTemplate` is typically for RabbitMQ, it implements `AmqpTemplate` and can be used to connect to any AMQP 0-9-1 or 1.0 broker (like ActiveMQ Artemis) if the underlying `ConnectionFactory` is correctly configured for the target broker. For AMQP 1.0 specific connections, you might consider using an `AmqpConnectionFactory` from a dedicated AMQP 1.0 client library wrapper if `CachingConnectionFactory` is insufficient. ActiveMQ Artemis's AMQP support is robust.
+
+[[amqp-template-send]]
+==== Sending Messages with AmqpTemplate
+
+The `AmqpTemplate` provides `send` and `convertAndSend` methods. `convertAndSend` is particularly useful as it automatically converts Java objects to AMQP messages, typically using a `MessageConverter` to serialize them into JSON or byte arrays.
+
+.Hands-on Activity: Sending an AMQP Message to an Artemis Exchange/Queue
+Execute the following steps to send a simple message using `AmqpTemplate`.
+
+. Create a new Spring Boot project or use an existing one.
+. Add the necessary dependencies to your `pom.xml`:
++
+[source,xml]
+----
+&lt;dependencies&gt;
+    &lt;dependency&gt;
+        &lt;groupId&gt;org.springframework.boot&lt;/groupId&gt;
+        &lt;artifactId&gt;spring-boot-starter-amqp&lt;/artifactId&gt;
+    &lt;/dependency&gt;
+    &lt;dependency&gt;
+        &lt;groupId&gt;org.springframework.boot&lt;/groupId&gt;
+        &lt;artifactId&gt;spring-boot-starter-json&lt;/artifactId&gt; &lt;!-- For Jackson converter --&gt;
+    &lt;/dependency&gt;
+    &lt;dependency&gt;
+        &lt;groupId&gt;org.springframework.boot&lt;/groupId&gt;
+        &lt;artifactId&gt;spring-boot-starter-web&lt;/artifactId&gt; &lt;!-- Optional, for REST endpoint --&gt;
+    &lt;/dependency&gt;
+    &lt;!-- No specific Artemis AMQP client dependency is usually needed for Spring AMQP,
+         as the RabbitMQ client (which Spring AMQP starter pulls) is AMQP 0-9-1 compatible.
+         Artemis also supports AMQP 1.0. For AMQP 1.0, you might need qpid-jms.
+         For simple usage, the default spring-boot-starter-amqp with Artemis AMQP acceptor works. --&gt;
+&lt;/dependencies&gt;
+----
+. Create the `AmqpConfig` class as shown in the configuration example above.
+. Create a service class to send messages:
++
+[source,java]
+----
+import org.springframework.amqp.core.AmqpTemplate;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+@Service
+public class AmqpProducer {
+
+    private final AmqpTemplate amqpTemplate;
+
+    @Autowired
+    public AmqpProducer(AmqpTemplate amqpTemplate) {
+        this.amqpTemplate = amqpTemplate;
+    }
+
+    public void sendMessage(String exchange, String routingKey, String message) {
+        System.out.println("Sending message: '" + message + "' to exchange: " + exchange + ", routingKey: " + routingKey);
+        amqpTemplate.convertAndSend(exchange, routingKey, message);
+    }
+
+    public void sendObjectMessage(String exchange, String routingKey, MyCustomObject object) {
+        System.out.println("Sending object: '" + object + "' to exchange: " + exchange + ", routingKey: " + routingKey);
+        amqpTemplate.convertAndSend(exchange, routingKey, object);
+    }
+}
+----
+. Reuse the `MyCustomObject` class from the JMS example.
+. Add a runner or a REST controller to trigger message sending:
++
+[source,java]
+----
+import org.springframework.boot.CommandLineRunner;
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.context.annotation.Bean;
+
+@SpringBootApplication
+public class AmqpApplication {
+
+    public static void main(String[] args) {
+        SpringApplication.run(AmqpApplication.class, args);
+    }
+
+    @Bean
+    public CommandLineRunner runAmqp(AmqpProducer producer) {
+        return args -&gt; {
+            String exchangeName = ""; // Default exchange for direct queue routing
+            String routingKey = "myAmqpQueue"; // Acts as queue name for default exchange
+
+            producer.sendMessage(exchangeName, routingKey, "Hello from AmqpTemplate!");
+            producer.sendObjectMessage(exchangeName, routingKey, new MyCustomObject("AMQP_Object", 456));
+        };
+    }
+}
+----
+. Run your Spring Boot application. Ensure ActiveMQ Artemis is running with its AMQP acceptor enabled (default port 5672). You can verify messages in the Artemis console under the "myAmqpQueue" queue.
+
+[[amqp-template-receive]]
+==== Receiving Messages with AmqpTemplate
+
+Similar to JMS, while listener containers (`@RabbitListener` or `SimpleMessageListenerContainer`) are standard for asynchronous AMQP consumption, `AmqpTemplate` offers synchronous `receive` and `receiveAndConvert` methods.
+
+.Hands-on Activity: Synchronously Receiving an AMQP Message
+Expand on the previous project to synchronously receive an AMQP message.
+
+. Modify your `AmqpApplication` or add a new service to receive messages.
++
+[source,java]
+----
+import org.springframework.amqp.core.AmqpTemplate;
+import org.springframework.amqp.core.Message;
+import org.springframework.amqp.support.converter.MessageConverter;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
+
+@Component
+public class AmqpConsumer {
+
+    private final AmqpTemplate amqpTemplate;
+    private final MessageConverter messageConverter;
+
+    @Autowired
+    public AmqpConsumer(AmqpTemplate amqpTemplate, MessageConverter messageConverter) {
+        this.amqpTemplate = amqpTemplate;
+        this.messageConverter = messageConverter;
+    }
+
+    public Object receiveMessage(String queueName) {
+        System.out.println("Attempting to receive message from queue: " + queueName);
+        // receiveAndConvert() blocks until a message is available or timeout occurs
+        Object receivedObject = amqpTemplate.receiveAndConvert(queueName); // Blocking call
+        if (receivedObject != null) {
+            System.out.println("Received AMQP message/object: " + receivedObject);
+            return receivedObject;
+        } else {
+            System.out.println("No AMQP message received within timeout.");
+            return null;
+        }
+    }
+}
+----
+. Modify the `CommandLineRunner` in `AmqpApplication` to send a message first, then immediately try to receive it.
++
+[source,java]
+----
+import org.springframework.boot.CommandLineRunner;
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.context.annotation.Bean;
+
+@SpringBootApplication
+public class AmqpApplication {
+
+    public static void main(String[] args) {
+        SpringApplication.run(AmqpApplication.class, args);
+    }
+
+    @Bean
+    public CommandLineRunner runAmqp(AmqpProducer producer, AmqpConsumer consumer) {
+        return args -&gt; {
+            String exchangeName = "";
+            String queueName = "myAmqpQueue";
+            String textMessage = "Hello from AmqpTemplate!";
+            MyCustomObject customObject = new MyCustomObject("AMQP_Object", 456);
+
+            // Send a text message
+            producer.sendMessage(exchangeName, queueName, textMessage);
+            // Synchronously receive the text message
+            consumer.receiveMessage(queueName);
+
+            // Send an object message
+            producer.sendObjectMessage(exchangeName, queueName, customObject);
+            // Synchronously receive the object message
+            consumer.receiveMessage(queueName);
+        };
+    }
+}
+----
+. Run your Spring Boot application. Observe the AMQP messages being sent and then immediately received.
+
+== Advantages of Using Spring Messaging Templates
+
+Using `JmsTemplate` and `AmqpTemplate` offers several benefits:
+
+*   **Simplified API**: Abstracts away the complexities of native JMS/AMQP APIs, making messaging code cleaner and more readable.
+*   **Resource Management**: Automatically handles the creation and closing of connections, sessions, producers, and consumers, preventing resource leaks.
+*   **Exception Handling**: Translates proprietary messaging exceptions into Spring's consistent `DataAccessException` hierarchy, simplifying error management.
+*   **Message Conversion**: `convertAndSend` and `receiveAndConvert` methods, coupled with `MessageConverter` implementations (like `MappingJackson2MessageConverter` for JMS or `Jackson2JsonMessageConverter` for AMQP), allow seamless serialization and deserialization of Java objects to and from message payloads.
+*   **Integration with Spring Features**: Seamlessly integrates with other Spring features like transaction management, dependency injection, and AOP.
+*   **Consistent Pattern**: Provides a consistent programming model across different messaging technologies.
+
+In summary, Spring's messaging templates are indispensable tools for building robust and maintainable message-driven applications, especially when interacting with brokers like ActiveMQ Artemis. They streamline development by managing low-level messaging details, letting developers focus on the application's core messaging logic.</code></pre>
+</div>
+</div>
+<nav class="pagination">
+  <span class="prev"><a href="configuring-spring-boot-for-activemq-artemis-connectivity.html">Configuring Spring Boot for ActiveMQ Artemis connectivity</a></span>
+  <span class="next"><a href="implementing-message-producers-in-spring-boot.html">Implementing message producers in Spring Boot</a></span>
+</nav>
+</article>
+  </div>
+</main>
+</div>
+<footer class="footer">
+  <img src="../../../_/img/rhl-logo-red.png" height="40px" alt="Red Hat"  href="https://redhat.com" >
+</footer><script id="site-script" src="../../../_/js/site.js" data-ui-root-path="../../../_"></script>
+<script async src="../../../_/js/vendor/highlight.js"></script>
+  </body>
+</html>

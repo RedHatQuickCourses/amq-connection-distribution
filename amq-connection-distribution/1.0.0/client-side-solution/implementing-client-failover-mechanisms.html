@@ -1,0 +1,570 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Implementing client failover mechanisms :: Building Resilient Messaging Applications with ActiveMQ Artemis and OpenShift</title>
+    <link rel="prev" href="client-side-connection-management-and-pooling.html">
+    <link rel="next" href="client-side-load-balancing-for-message-consumption.html">
+    <meta name="generator" content="Antora 3.1.3">
+    <link rel="stylesheet" href="../../../_/css/site.css">
+    <script>var uiRootPath = '../../../_'</script>
+  </head>
+  <body class="article">
+<header class="header">
+  <nav class="navbar">
+    <div class="navbar-brand">
+      <a class="navbar-item" href="https://www.redhat.com" target="_blank"><img src="../../../_/img/redhat-logo.png" height="40px" alt="Red Hat"></a>
+      <a class="navbar-item" style="font-size: 24px; color: white" href="../../..">Building Resilient Messaging Applications with ActiveMQ Artemis and OpenShift</a>
+      <button class="navbar-burger" data-target="topbar-nav">
+        <span></span>
+        <span></span>
+        <span></span>
+      </button>
+    </div>
+    <div id="topbar-nav" class="navbar-menu">
+      <div class="navbar-end">
+        <a class="navbar-item" href="https://github.com/RedHatQuickCourses/REPLACEREPONAME/issues" target="_blank">Report Issues</a>
+      </div>
+    </div>
+  </nav>
+</header>
+<div class="body">
+<div class="nav-container" data-component="amq-connection-distribution" data-version="1.0.0">
+  <aside class="nav">
+    <div class="panels">
+<div class="nav-panel-menu is-active" data-panel="menu">
+  <nav class="nav-menu">
+    <h3 class="title"><a href="../index.html">Building Resilient Messaging Applications with ActiveMQ Artemis and OpenShift</a></h3>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="../index.html">Home</a>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../deploying-activemq-artemis-on-openshift/deploying-activemq-artemis-on-openshift.html">Deploying ActiveMQ Artemis on OpenShift</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../deploying-activemq-artemis-on-openshift/introduction-to-openshift-for-messaging-applications.html">Introduction to OpenShift for messaging applications</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../deploying-activemq-artemis-on-openshift/understanding-activemq-artemis-on-openshift.html">Understanding ActiveMQ Artemis on OpenShift</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../deploying-activemq-artemis-on-openshift/using-the-activemq-artemis-operator.html">Using the ActiveMQ Artemis Operator</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../deploying-activemq-artemis-on-openshift/custom-resource-definitions-crds-for-artemis.html">Custom Resource Definitions (CRDs) for Artemis</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../deploying-activemq-artemis-on-openshift/configuring-persistent-storage-for-artemis.html">Configuring persistent storage for Artemis</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../deploying-activemq-artemis-on-openshift/scaling-artemis-brokers-on-openshift.html">Scaling Artemis brokers on OpenShift</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../deploying-activemq-artemis-on-openshift/monitoring-artemis-instances-on-openshift.html">Monitoring Artemis instances on OpenShift</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../deploying-activemq-artemis-on-openshift/hands-on-lab-deploying-a-highly-available-activemq-artemis-cluster-on-openshift.html">Hands-on Lab: Deploying a highly available ActiveMQ Artemis cluster on OpenShift</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../message-distribution-issues/message-distribution-issues.html">Message distribution issues</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../message-distribution-issues/understanding-distributed-messaging-patterns.html">Understanding distributed messaging patterns</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../message-distribution-issues/load-balancing-messages-across-consumers.html">Load balancing messages across consumers</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../message-distribution-issues/message-routing-strategies-and-challenges.html">Message routing strategies and challenges</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../message-distribution-issues/consumer-groups-and-shared-subscriptions.html">Consumer groups and shared subscriptions</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../message-distribution-issues/ensuring-message-ordering-in-distributed-systems.html">Ensuring message ordering in distributed systems</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../message-distribution-issues/handling-message-durability-and-reliability.html">Handling message durability and reliability</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../message-distribution-issues/addressing-fault-tolerance-and-high-availability-for-messages.html">Addressing fault tolerance and high availability for messages</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="client-side-solution.html">Client Side Solution</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="client-side-connection-management-and-pooling.html">Client-side connection management and pooling</a>
+  </li>
+  <li class="nav-item is-current-page" data-depth="2">
+    <a class="nav-link" href="implementing-client-failover-mechanisms.html">Implementing client failover mechanisms</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="client-side-load-balancing-for-message-consumption.html">Client-side load balancing for message consumption</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="message-acknowledgment-patterns-auto_acknowledge-client_acknowledge.html">Message acknowledgment patterns (AUTO_ACKNOWLEDGE, CLIENT_ACKNOWLEDGE)</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="transaction-management-for-message-producers-and-consumers.html">Transaction management for message producers and consumers</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="best-practices-for-client-integration-with-distributed-brokers.html">Best practices for client integration with distributed brokers</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../quarkus-example/quarkus-example.html">Quarkus Example</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../quarkus-example/integrating-jmsamqp-clients-with-quarkus.html">Integrating JMS/AMQP clients with Quarkus</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../quarkus-example/configuring-quarkus-for-activemq-artemis-connectivity.html">Configuring Quarkus for ActiveMQ Artemis connectivity</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../quarkus-example/implementing-message-producers-in-quarkus.html">Implementing message producers in Quarkus</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../quarkus-example/implementing-message-consumers-in-quarkus.html">Implementing message consumers in Quarkus</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../quarkus-example/reactive-messaging-with-quarkus-and-artemis.html">Reactive messaging with Quarkus and Artemis</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../quarkus-example/deploying-quarkus-messaging-applications-on-openshift.html">Deploying Quarkus messaging applications on OpenShift</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../quarkus-example/hands-on-lab-developing-a-quarkus-microservice-with-distributed-messaging.html">Hands-on Lab: Developing a Quarkus microservice with distributed messaging</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../spring-boot-example/spring-boot-example.html">Spring Boot Example</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../spring-boot-example/integrating-jmsamqp-clients-with-spring-boot.html">Integrating JMS/AMQP clients with Spring Boot</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../spring-boot-example/configuring-spring-boot-for-activemq-artemis-connectivity.html">Configuring Spring Boot for ActiveMQ Artemis connectivity</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../spring-boot-example/using-spring-jmsamqp-templates-for-messaging.html">Using Spring JMS/AMQP templates for messaging</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../spring-boot-example/implementing-message-producers-in-spring-boot.html">Implementing message producers in Spring Boot</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../spring-boot-example/implementing-message-consumers-in-spring-boot.html">Implementing message consumers in Spring Boot</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../spring-boot-example/configuring-listener-containers-and-concurrency.html">Configuring listener containers and concurrency</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../spring-boot-example/deploying-spring-boot-messaging-applications-on-openshift.html">Deploying Spring Boot messaging applications on OpenShift</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../spring-boot-example/hands-on-lab-developing-a-spring-boot-microservice-with-distributed-messaging.html">Hands-on Lab: Developing a Spring Boot microservice with distributed messaging</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+</ul>
+  </nav>
+</div>
+<div class="nav-panel-explore" data-panel="explore">
+  <div class="context">
+    <span class="title">Building Resilient Messaging Applications with ActiveMQ Artemis and OpenShift</span>
+    <span class="version">1.0.0</span>
+  </div>
+  <ul class="components">
+    <li class="component is-current">
+      <a class="title" href="../index.html">Building Resilient Messaging Applications with ActiveMQ Artemis and OpenShift</a>
+      <ul class="versions">
+        <li class="version is-current is-latest">
+          <a href="../index.html">1.0.0</a>
+        </li>
+      </ul>
+    </li>
+  </ul>
+</div>
+    </div>
+  </aside>
+</div>
+<main class="article">
+<div class="toolbar" role="navigation">
+<button class="nav-toggle"></button>
+  <a href="../index.html" class="home-link"></a>
+<nav class="breadcrumbs" aria-label="breadcrumbs">
+  <ul>
+    <li><a href="../index.html">Building Resilient Messaging Applications with ActiveMQ Artemis and OpenShift</a></li>
+    <li><a href="client-side-solution.html">Client Side Solution</a></li>
+    <li><a href="implementing-client-failover-mechanisms.html">Implementing client failover mechanisms</a></li>
+  </ul>
+</nav>
+</div>
+  <div class="content">
+<aside class="toc sidebar" data-title="Contents" data-levels="2">
+  <div class="toc-menu"></div>
+</aside>
+<article class="doc">
+<h1 class="page">Implementing client failover mechanisms</h1>
+<div id="preamble">
+<div class="sectionbody">
+<div class="paragraph">
+<p>This content covers the implementation of client failover mechanisms, a critical aspect of building resilient messaging applications with ActiveMQ Artemis and OpenShift.</p>
+</div>
+</div>
+</div>
+<h1 id="_implementing_client_failover_mechanisms" class="sect0"><a class="anchor" href="#_implementing_client_failover_mechanisms"></a>Implementing client failover mechanisms</h1>
+<div class="paragraph">
+<p>Resilience in distributed messaging systems isn&#8217;t solely the responsibility of the broker; clients also play a crucial role in ensuring continuous operation and message delivery even when parts of the system encounter issues. Client failover mechanisms are a cornerstone of building highly available messaging applications.</p>
+</div>
+<div class="sect1">
+<h2 id="_detailed_technical_explanation_client_failover"><a class="anchor" href="#_detailed_technical_explanation_client_failover"></a>Detailed Technical Explanation: Client Failover</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Client failover refers to the ability of a messaging client to automatically detect a failure in its current connection to a message broker and transparently reconnect to another available broker instance without manual intervention or application downtime. This mechanism is essential for handling various fault scenarios, including:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>Broker Failures:</strong> An individual broker instance crashes, becomes unresponsive, or is shut down unexpectedly.</p>
+</li>
+<li>
+<p><strong>Network Disruptions:</strong> Temporary loss of connectivity between the client and the primary broker.</p>
+</li>
+<li>
+<p><strong>Planned Maintenance:</strong> When a broker needs to be taken offline for upgrades, patching, or configuration changes.</p>
+</li>
+<li>
+<p><strong>Load Balancing:</strong> While primarily for failover, the same connection configuration can often be used to distribute initial connections across multiple brokers.</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>The core principle behind client failover involves the client being aware of multiple potential broker endpoints. When a connection fails, the client attempts to establish a connection with the next available broker from its configured list. This process often includes:</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p><strong>Connection URL List:</strong> The client is configured with a list of broker connection URLs (e.g., <code>tcp://broker1:61616,tcp://broker2:61616</code>).</p>
+</li>
+<li>
+<p><strong>Failure Detection:</strong> The client&#8217;s underlying network library or protocol implementation detects a broken connection (e.g., socket closed, timeout, unreachable host).</p>
+</li>
+<li>
+<p><strong>Reconnection Logic:</strong> Upon detecting a failure, the client iterates through its list of known brokers, attempting to establish a new connection to the next available one. This usually involves retry attempts and configurable delays.</p>
+</li>
+<li>
+<p><strong>Session Re-establishment:</strong> Once a new connection is successfully established, the client may need to re-establish sessions, consumers, producers, and potentially re-subscribe to destinations.</p>
+</li>
+<li>
+<p><strong>Message Redelivery (for consumers):</strong> For clients consuming messages, active transactions might be rolled back, and messages that were delivered but not acknowledged before the failover might be redelivered. This requires careful handling in the consumer application to ensure idempotency.</p>
+</li>
+</ol>
+</div>
+<div class="sect2">
+<h3 id="_activemq_artemis_client_failover_configuration"><a class="anchor" href="#_activemq_artemis_client_failover_configuration"></a>ActiveMQ Artemis Client Failover Configuration</h3>
+<div class="paragraph">
+<p>ActiveMQ Artemis provides robust client-side failover capabilities, primarily configured through the connection URL itself or properties on the <code>ConnectionFactory</code>.</p>
+</div>
+<div class="paragraph">
+<p>The failover capabilities are activated by specifying multiple broker URLs and setting the <code>ha</code> (High Availability) parameter to <code>true</code>. The client will then automatically cycle through the provided URLs until a successful connection is established.</p>
+</div>
+<div class="paragraph">
+<p>The general format for an ActiveMQ Artemis failover connection URL is:</p>
+</div>
+<div class="paragraph">
+<p><code>(`<em>transport</em></code>://<code><em>host1</em></code>:`<em>port1</em>`?,<code><em>transport</em></code>://<code><em>host2</em></code>:`<em>port2</em>`?<code><em>param</em></code>= <code><em>value</em></code>&#8230;&#8203;)?ha=true&amp;`<em>failover</em>`<em>param</em>`=<code><em>value</em></code>&#8230;&#8203;`</p>
+</div>
+<div class="paragraph">
+<p>Common failover parameters include:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><code>ha=true</code>: Enables failover. This is crucial.</p>
+</li>
+<li>
+<p><code>initialConnectAttempts</code>: The number of attempts to connect to the <strong>first</strong> URL in the list before trying the next. Defaults to 1.</p>
+</li>
+<li>
+<p><code>reconnectAttempts</code>: The total number of times the client will attempt to reconnect to <strong>any</strong> broker after an initial connection has been established and subsequently failed. A value of <code>-1</code> means infinite attempts.</p>
+</li>
+<li>
+<p><code>retryInterval</code>: The time in milliseconds to wait between reconnection attempts.</p>
+</li>
+<li>
+<p><code>retryIntervalMultiplier</code>: A multiplier applied to <code>retryInterval</code> on each successive attempt, allowing for exponential backoff.</p>
+</li>
+<li>
+<p><code>maxRetryInterval</code>: The maximum interval in milliseconds when <code>retryIntervalMultiplier</code> is used.</p>
+</li>
+<li>
+<p><code>callTimeout</code>: How long a client will wait for an acknowledgement from the server after sending data before assuming the connection is broken.</p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_hands_on_activity_configuring_a_jms_client_for_failover"><a class="anchor" href="#_hands_on_activity_configuring_a_jms_client_for_failover"></a>Hands-on Activity: Configuring a JMS Client for Failover</h3>
+<div class="paragraph">
+<p>This activity demonstrates how to configure a simple JMS client to connect to an ActiveMQ Artemis cluster with failover enabled. We&#8217;ll use a plain Java client with the Artemis JMS client library.</p>
+</div>
+<div class="paragraph">
+<p><strong>Prerequisites:</strong></p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>A running ActiveMQ Artemis cluster (e.g., deployed on OpenShift as described in previous sections). Assume you have at least two broker instances, <code>broker-0</code> and <code>broker-1</code>, accessible on specific hosts/ports or through a load balancer. For OpenShift, these might be internal service hostnames or routes.</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p><strong>Step 1: Add ActiveMQ Artemis Client Dependency</strong></p>
+</div>
+<div class="paragraph">
+<p>Ensure your <code>pom.xml</code> includes the necessary JMS client dependency:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-xml hljs" data-lang="xml">&lt;dependency&gt;
+    &lt;groupId&gt;org.apache.activemq&lt;/groupId&gt;
+    &lt;artifactId&gt;artemis-jakarta-client&lt;/artifactId&gt;
+    &lt;version&gt;2.31.0&lt;/version&gt; &lt;!-- Use a recent version --&gt;
+&lt;/dependency&gt;
+&lt;dependency&gt;
+    &lt;groupId&gt;jakarta.jms&lt;/groupId&gt;
+    &lt;artifactId&gt;jakarta.jms-api&lt;/artifactId&gt;
+    &lt;version&gt;3.1.0&lt;/version&gt;
+&lt;/dependency&gt;</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p><strong>Step 2: Implement a Failover-Aware JMS Producer Client</strong></p>
+</div>
+<div class="paragraph">
+<p>This example will create a producer that continuously sends messages. If the primary broker fails, it should automatically reconnect to the secondary broker.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-java hljs" data-lang="java">import jakarta.jms.Connection;
+import jakarta.jms.ConnectionFactory;
+import jakarta.jms.Destination;
+import jakarta.jms.JMSException;
+import jakarta.jms.MessageProducer;
+import jakarta.jms.Session;
+import jakarta.jms.TextMessage;
+
+import org.apache.activemq.artemis.jms.client.ActiveMQConnectionFactory;
+
+public class FailoverProducer {
+
+    private static final String BROKER_URL_1 = "tcp://artemis-cluster-headless.artemis-namespace.svc.cluster.local:61616";
+    private static final String BROKER_URL_2 = "tcp://artemis-cluster-0-svc.artemis-namespace.svc.cluster.local:61616"; // Example for a specific pod service
+    private static final String BROKER_URL_3 = "tcp://artemis-cluster-1-svc.artemis-namespace.svc.cluster.local:61616"; // Example for another specific pod service
+
+    // Using a connection URL with multiple brokers and HA enabled
+    private static final String FAILOVER_URL = "(" +
+        BROKER_URL_1 + "," +
+        BROKER_URL_2 + "," +
+        BROKER_URL_3 +
+        ")?ha=true&amp;reconnectAttempts=-1&amp;retryInterval=1000&amp;retryIntervalMultiplier=1.2&amp;maxRetryInterval=60000";
+
+    private static final String QUEUE_NAME = "myFailoverQueue";
+
+    public static void main(String[] args) throws JMSException, InterruptedException {
+        ConnectionFactory connectionFactory = new ActiveMQConnectionFactory(FAILOVER_URL);
+        Connection connection = null;
+        Session session = null;
+        MessageProducer producer = null;
+
+        try {
+            System.out.println("Attempting to connect to ActiveMQ Artemis cluster with failover...");
+            connection = connectionFactory.createConnection();
+            connection.start(); // Start the connection to receive messages (if it were a consumer)
+            System.out.println("Connection established successfully.");
+
+            session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE); // Non-transacted session
+            Destination destination = session.createQueue(QUEUE_NAME);
+            producer = session.createProducer(destination);
+
+            int messageCount = 0;
+            while (true) {
+                String messageText = "Hello from failover producer! Message #" + (++messageCount);
+                TextMessage message = session.createTextMessage(messageText);
+                producer.send(message);
+                System.out.println("Sent message: " + messageText);
+                Thread.sleep(2000); // Send every 2 seconds
+            }
+
+        } catch (JMSException e) {
+            System.err.println("JMS Exception occurred: " + e.getMessage());
+            e.printStackTrace();
+            // In a real application, you might log, clean up, and potentially exit or retry.
+        } finally {
+            if (producer != null) {
+                try { producer.close(); } catch (JMSException e) { e.printStackTrace(); }
+            }
+            if (session != null) {
+                try { session.close(); } catch (JMSException e) { e.printStackTrace(); }
+            }
+            if (connection != null) {
+                try { connection.close(); } catch (JMSException e) { e.printStackTrace(); }
+            }
+            System.out.println("Client shut down.");
+        }
+    }
+}</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p><strong>Explanation of the Code:</strong></p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p><strong><code>FAILOVER_URL</code></strong>: This string is the heart of the failover configuration.</p>
+<div class="ulist">
+<ul>
+<li>
+<p><code>(</code>&#8230;&#8203;<code>)</code>: Denotes a list of URLs.</p>
+</li>
+<li>
+<p><code>tcp://&#8230;&#8203;</code>: Specifies the transport protocol and endpoint for each broker. In an OpenShift environment, <code>artemis-cluster-headless.artemis-namespace.svc.cluster.local</code> refers to the headless service that exposes all broker pods. <code>artemis-cluster-0-svc</code> and <code>artemis-cluster-1-svc</code> refer to specific services for individual pods, which can be useful for direct testing or if a headless service isn&#8217;t preferred.</p>
+</li>
+<li>
+<p><code>ha=true</code>: Explicitly enables High Availability (failover) mode for the client.</p>
+</li>
+<li>
+<p><code>reconnectAttempts=-1</code>: Configures the client to attempt reconnection indefinitely.</p>
+</li>
+<li>
+<p><code>retryInterval=1000</code>: Initially waits 1 second between reconnection attempts.</p>
+</li>
+<li>
+<p><code>retryIntervalMultiplier=1.2</code>: Increases the retry interval by 20% on each subsequent attempt.</p>
+</li>
+<li>
+<p><code>maxRetryInterval=60000</code>: Caps the retry interval at 60 seconds to prevent excessively long waits.</p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<p><strong><code>ActiveMQConnectionFactory</code></strong>: This is the ActiveMQ Artemis-specific implementation of <code>ConnectionFactory</code> that understands the failover URL syntax.</p>
+</li>
+<li>
+<p><strong><code>connection.start()</code></strong>: While producers don&#8217;t strictly <strong>need</strong> <code>start()</code> (it&#8217;s mainly for consumers to begin message delivery), it&#8217;s good practice.</p>
+</li>
+<li>
+<p><strong><code>while(true)</code> loop</strong>: Continuously sends messages, allowing you to observe failover behavior if a broker is stopped or restarted.</p>
+</li>
+</ol>
+</div>
+<div class="paragraph">
+<p><strong>Step 3: Test the Failover Mechanism</strong></p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>Compile and run the <code>FailoverProducer</code> application. You should see messages being sent successfully.</p>
+</li>
+<li>
+<p>While the producer is running, intentionally shut down the broker that the client is currently connected to.</p>
+<div class="ulist">
+<ul>
+<li>
+<p>If using OpenShift, you might delete the pod of the active broker instance or scale down the StatefulSet.</p>
+</li>
+<li>
+<p>Observe the producer&#8217;s output. You should see messages indicating a connection loss, followed by attempts to reconnect, and eventually a successful reconnection to another broker in the list. The <code>JMSException</code> might be caught, but the <code>while(true)</code> loop will likely just encounter a broken pipe and the connection factory will handle the re-establishment internally.</p>
+</li>
+<li>
+<p>Once reconnected, message sending should resume.</p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<p>Bring the original broker back online, and observe if the client can fail back (it typically won&#8217;t automatically fail back unless the current connection fails again, it will stick to the reconnected broker).</p>
+</li>
+</ol>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_important_considerations_for_client_failover"><a class="anchor" href="#_important_considerations_for_client_failover"></a>Important Considerations for Client Failover</h3>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>Idempotency of Consumers:</strong> When a failover occurs, messages that were delivered to a consumer but not yet acknowledged might be redelivered by the new broker. Consumer applications must be designed to handle duplicate messages gracefully (i.e., processing the same message multiple times should not cause incorrect state changes).</p>
+</li>
+<li>
+<p><strong>Transaction Management:</strong> If using JMS transactions, an in-flight transaction will be rolled back upon failover. The client application needs to explicitly retry the entire transaction after re-establishing the connection.</p>
+</li>
+<li>
+<p><strong>Client-side Load Balancing vs. Failover:</strong> The same connection URL syntax can be used for both. If <code>ha=true</code> is used, the primary goal is failover. If <code>ha=false</code> (or omitted) and multiple URLs are provided, the client will attempt to connect to the first available broker for load distribution upon initial connection, but will <strong>not</strong> automatically fail over if that connection breaks. For robust systems, <code>ha=true</code> is almost always preferred.</p>
+</li>
+<li>
+<p><strong>DNS Resolution:</strong> In OpenShift, using headless service names (e.g., <code>artemis-cluster-headless.artemis-namespace.svc.cluster.local</code>) in the failover URL is highly recommended. This allows the client to resolve to the current set of available broker pod IPs dynamically, reducing the need to hardcode individual pod service names.</p>
+</li>
+<li>
+<p><strong>Connection Pooling:</strong> When using connection pools (e.g., in application servers or frameworks like Spring/Quarkus), ensure that the pooling mechanism correctly integrates with the underlying `ConnectionFactory&#8217;s failover logic. A good connection pool should validate connections before handing them out and replace broken connections with new ones from the failover logic.</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>By implementing these client-side failover mechanisms, you significantly enhance the overall resilience and availability of your messaging applications, ensuring that they can withstand broker failures and network interruptions with minimal impact on service.</p>
+</div>
+</div>
+</div>
+</div>
+<nav class="pagination">
+  <span class="prev"><a href="client-side-connection-management-and-pooling.html">Client-side connection management and pooling</a></span>
+  <span class="next"><a href="client-side-load-balancing-for-message-consumption.html">Client-side load balancing for message consumption</a></span>
+</nav>
+</article>
+  </div>
+</main>
+</div>
+<footer class="footer">
+  <img src="../../../_/img/rhl-logo-red.png" height="40px" alt="Red Hat"  href="https://redhat.com" >
+</footer><script id="site-script" src="../../../_/js/site.js" data-ui-root-path="../../../_"></script>
+<script async src="../../../_/js/vendor/highlight.js"></script>
+  </body>
+</html>

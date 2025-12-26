@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Hands-on Lab: Deploying a highly available ActiveMQ Artemis cluster on OpenShift :: Building Resilient Messaging Applications with ActiveMQ Artemis and OpenShift</title>
+    <link rel="prev" href="monitoring-artemis-instances-on-openshift.html">
+    <link rel="next" href="../message-distribution-issues/message-distribution-issues.html">
+    <meta name="generator" content="Antora 3.1.3">
+    <link rel="stylesheet" href="../../../_/css/site.css">
+    <script>var uiRootPath = '../../../_'</script>
+  </head>
+  <body class="article">
+<header class="header">
+  <nav class="navbar">
+    <div class="navbar-brand">
+      <a class="navbar-item" href="https://www.redhat.com" target="_blank"><img src="../../../_/img/redhat-logo.png" height="40px" alt="Red Hat"></a>
+      <a class="navbar-item" style="font-size: 24px; color: white" href="../../..">Building Resilient Messaging Applications with ActiveMQ Artemis and OpenShift</a>
+      <button class="navbar-burger" data-target="topbar-nav">
+        <span></span>
+        <span></span>
+        <span></span>
+      </button>
+    </div>
+    <div id="topbar-nav" class="navbar-menu">
+      <div class="navbar-end">
+        <a class="navbar-item" href="https://github.com/RedHatQuickCourses/REPLACEREPONAME/issues" target="_blank">Report Issues</a>
+      </div>
+    </div>
+  </nav>
+</header>
+<div class="body">
+<div class="nav-container" data-component="amq-connection-distribution" data-version="1.0.0">
+  <aside class="nav">
+    <div class="panels">
+<div class="nav-panel-menu is-active" data-panel="menu">
+  <nav class="nav-menu">
+    <h3 class="title"><a href="../index.html">Building Resilient Messaging Applications with ActiveMQ Artemis and OpenShift</a></h3>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="../index.html">Home</a>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="deploying-activemq-artemis-on-openshift.html">Deploying ActiveMQ Artemis on OpenShift</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="introduction-to-openshift-for-messaging-applications.html">Introduction to OpenShift for messaging applications</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="understanding-activemq-artemis-on-openshift.html">Understanding ActiveMQ Artemis on OpenShift</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="using-the-activemq-artemis-operator.html">Using the ActiveMQ Artemis Operator</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="custom-resource-definitions-crds-for-artemis.html">Custom Resource Definitions (CRDs) for Artemis</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="configuring-persistent-storage-for-artemis.html">Configuring persistent storage for Artemis</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="scaling-artemis-brokers-on-openshift.html">Scaling Artemis brokers on OpenShift</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="monitoring-artemis-instances-on-openshift.html">Monitoring Artemis instances on OpenShift</a>
+  </li>
+  <li class="nav-item is-current-page" data-depth="2">
+    <a class="nav-link" href="hands-on-lab-deploying-a-highly-available-activemq-artemis-cluster-on-openshift.html">Hands-on Lab: Deploying a highly available ActiveMQ Artemis cluster on OpenShift</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../message-distribution-issues/message-distribution-issues.html">Message distribution issues</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../message-distribution-issues/understanding-distributed-messaging-patterns.html">Understanding distributed messaging patterns</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../message-distribution-issues/load-balancing-messages-across-consumers.html">Load balancing messages across consumers</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../message-distribution-issues/message-routing-strategies-and-challenges.html">Message routing strategies and challenges</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../message-distribution-issues/consumer-groups-and-shared-subscriptions.html">Consumer groups and shared subscriptions</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../message-distribution-issues/ensuring-message-ordering-in-distributed-systems.html">Ensuring message ordering in distributed systems</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../message-distribution-issues/handling-message-durability-and-reliability.html">Handling message durability and reliability</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../message-distribution-issues/addressing-fault-tolerance-and-high-availability-for-messages.html">Addressing fault tolerance and high availability for messages</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../client-side-solution/client-side-solution.html">Client Side Solution</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../client-side-solution/client-side-connection-management-and-pooling.html">Client-side connection management and pooling</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../client-side-solution/implementing-client-failover-mechanisms.html">Implementing client failover mechanisms</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../client-side-solution/client-side-load-balancing-for-message-consumption.html">Client-side load balancing for message consumption</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../client-side-solution/message-acknowledgment-patterns-auto_acknowledge-client_acknowledge.html">Message acknowledgment patterns (AUTO_ACKNOWLEDGE, CLIENT_ACKNOWLEDGE)</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../client-side-solution/transaction-management-for-message-producers-and-consumers.html">Transaction management for message producers and consumers</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../client-side-solution/best-practices-for-client-integration-with-distributed-brokers.html">Best practices for client integration with distributed brokers</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../quarkus-example/quarkus-example.html">Quarkus Example</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../quarkus-example/integrating-jmsamqp-clients-with-quarkus.html">Integrating JMS/AMQP clients with Quarkus</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../quarkus-example/configuring-quarkus-for-activemq-artemis-connectivity.html">Configuring Quarkus for ActiveMQ Artemis connectivity</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../quarkus-example/implementing-message-producers-in-quarkus.html">Implementing message producers in Quarkus</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../quarkus-example/implementing-message-consumers-in-quarkus.html">Implementing message consumers in Quarkus</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../quarkus-example/reactive-messaging-with-quarkus-and-artemis.html">Reactive messaging with Quarkus and Artemis</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../quarkus-example/deploying-quarkus-messaging-applications-on-openshift.html">Deploying Quarkus messaging applications on OpenShift</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../quarkus-example/hands-on-lab-developing-a-quarkus-microservice-with-distributed-messaging.html">Hands-on Lab: Developing a Quarkus microservice with distributed messaging</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../spring-boot-example/spring-boot-example.html">Spring Boot Example</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../spring-boot-example/integrating-jmsamqp-clients-with-spring-boot.html">Integrating JMS/AMQP clients with Spring Boot</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../spring-boot-example/configuring-spring-boot-for-activemq-artemis-connectivity.html">Configuring Spring Boot for ActiveMQ Artemis connectivity</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../spring-boot-example/using-spring-jmsamqp-templates-for-messaging.html">Using Spring JMS/AMQP templates for messaging</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../spring-boot-example/implementing-message-producers-in-spring-boot.html">Implementing message producers in Spring Boot</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../spring-boot-example/implementing-message-consumers-in-spring-boot.html">Implementing message consumers in Spring Boot</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../spring-boot-example/configuring-listener-containers-and-concurrency.html">Configuring listener containers and concurrency</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../spring-boot-example/deploying-spring-boot-messaging-applications-on-openshift.html">Deploying Spring Boot messaging applications on OpenShift</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../spring-boot-example/hands-on-lab-developing-a-spring-boot-microservice-with-distributed-messaging.html">Hands-on Lab: Developing a Spring Boot microservice with distributed messaging</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+</ul>
+  </nav>
+</div>
+<div class="nav-panel-explore" data-panel="explore">
+  <div class="context">
+    <span class="title">Building Resilient Messaging Applications with ActiveMQ Artemis and OpenShift</span>
+    <span class="version">1.0.0</span>
+  </div>
+  <ul class="components">
+    <li class="component is-current">
+      <a class="title" href="../index.html">Building Resilient Messaging Applications with ActiveMQ Artemis and OpenShift</a>
+      <ul class="versions">
+        <li class="version is-current is-latest">
+          <a href="../index.html">1.0.0</a>
+        </li>
+      </ul>
+    </li>
+  </ul>
+</div>
+    </div>
+  </aside>
+</div>
+<main class="article">
+<div class="toolbar" role="navigation">
+<button class="nav-toggle"></button>
+  <a href="../index.html" class="home-link"></a>
+<nav class="breadcrumbs" aria-label="breadcrumbs">
+  <ul>
+    <li><a href="../index.html">Building Resilient Messaging Applications with ActiveMQ Artemis and OpenShift</a></li>
+    <li><a href="deploying-activemq-artemis-on-openshift.html">Deploying ActiveMQ Artemis on OpenShift</a></li>
+    <li><a href="hands-on-lab-deploying-a-highly-available-activemq-artemis-cluster-on-openshift.html">Hands-on Lab: Deploying a highly available ActiveMQ Artemis cluster on OpenShift</a></li>
+  </ul>
+</nav>
+</div>
+  <div class="content">
+<aside class="toc sidebar" data-title="Contents" data-levels="2">
+  <div class="toc-menu"></div>
+</aside>
+<article class="doc">
+<h1 class="page">Hands-on Lab: Deploying a highly available ActiveMQ Artemis cluster on OpenShift</h1>
+<div class="paragraph">
+<p>Here is the hands-on lab content for deploying a highly available ActiveMQ Artemis cluster on OpenShift, presented in Antora AsciiDoc format.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-asciidoc hljs" data-lang="asciidoc">[[deploying-ha-artemis-cluster]]
+= Hands-on Lab: Deploying a Highly Available ActiveMQ Artemis Cluster on OpenShift
+
+This lab guides you through deploying a highly available ActiveMQ Artemis cluster on OpenShift using the ActiveMQ Artemis Operator. You will learn how to leverage OpenShift's capabilities, such as persistent storage and StatefulSets, to build a resilient messaging infrastructure.
+
+== Learning Objectives
+
+Upon completion of this lab, you will be able to:
+
+*   Understand the architecture and benefits of deploying ActiveMQ Artemis on OpenShift for high availability.
+*   Install and manage the ActiveMQ Artemis Operator on an OpenShift cluster.
+*   Create a custom resource (CR) to deploy a multi-node, persistent ActiveMQ Artemis cluster.
+*   Verify the cluster's health and demonstrate its high availability features.
+
+== Prerequisites
+
+To complete this lab, you will need:
+
+*   Access to an OpenShift cluster (version 4.x or later) with administrative privileges to install Operators, or sufficient permissions within a dedicated project.
+*   The `oc` command-line tool configured and authenticated to your OpenShift cluster.
+*   Basic familiarity with OpenShift concepts (projects, pods, services, routes, StatefulSets).
+
+== 1. Introduction to ActiveMQ Artemis on OpenShift
+
+Deploying ActiveMQ Artemis on OpenShift offers significant advantages for building resilient messaging applications. OpenShift, with its Kubernetes foundation, provides robust features for orchestration, scaling, and self-healing.
+
+*   *Operator Pattern*: The ActiveMQ Artemis Operator automates the deployment, management, and scaling of Artemis brokers. It understands the operational complexities of Artemis clusters and handles tasks like creating StatefulSets, managing persistent volumes, and configuring broker replication.
+*   *High Availability (HA)*: By deploying multiple Artemis broker instances as a cluster within OpenShift, you can achieve high availability. In a shared-nothing or shared-store configuration, if one broker fails, another can take over, ensuring continuous message processing. The Operator simplifies the setup of these configurations.
+*   *Persistent Storage*: OpenShift allows you to provision persistent storage (e.g., using CSI drivers for various storage backends). This is crucial for Artemis to ensure message durability, even if a broker pod restarts or moves to another node.
+*   *Scalability*: Artemis brokers can be scaled horizontally by increasing the number of replicas in the custom resource, allowing you to handle increased message throughput and client connections.
+
+== 2. Set Up Your OpenShift Project
+
+First, create a new OpenShift project where you will deploy the ActiveMQ Artemis Operator and cluster.
+
+.Log in to OpenShift and create a new project:
+[source,bash]
+----
+oc login --token=&lt;your-token&gt; --server=&lt;your-openshift-api-url&gt;
+oc new-project artemis-ha-lab
+----
+.Verify you are in the correct project:
+[source,bash]
+----
+oc project
+----
+You should see `artemis-ha-lab` as your current project.
+
+== 3. Install the ActiveMQ Artemis Operator
+
+The ActiveMQ Artemis Operator simplifies the deployment and management of Artemis instances on OpenShift. We will install it using the OpenShift command-line interface.
+
+.Install the ActiveMQ Artemis Operator:
+[source,bash]
+----
+# Create the OperatorGroup for the project (if not already present for operators in this namespace)
+# This step might be optional if an OperatorGroup already exists or if installing cluster-wide
+cat &lt;&lt;EOF | oc apply -f -
+apiVersion: operators.coreos.com/v1
+kind: OperatorGroup
+metadata:
+  name: artemis-ha-operator-group
+  namespace: artemis-ha-lab
+spec:
+  targetNamespaces:
+  - artemis-ha-lab
+EOF
+
+# Subscribe to the ActiveMQ Artemis Operator from the Red Hat Operators catalog
+cat &lt;&lt;EOF | oc apply -f -
+apiVersion: operators.coreos.com/v1alpha1
+kind: Subscription
+metadata:
+  name: amq-broker-rhel8
+  namespace: artemis-ha-lab
+spec:
+  channel: 7.10.x # Or the latest stable channel available
+  name: amq-broker-rhel8 # The package name for the Operator
+  source: redhat-operators
+  sourceNamespace: openshift-marketplace
+EOF
+----
+
+.Verify the Operator deployment:
+It might take a few minutes for the Operator to become available. You can monitor its status.
+
+[source,bash]
+----
+oc get pod -n artemis-ha-lab -w | grep amq-broker-operator
+----
+Wait until you see output similar to `amq-broker-operator-xyz-abc   1/1     Running`.
+
+.Check the Custom Resource Definitions (CRDs):
+Once the Operator is running, it registers its CRDs with Kubernetes.
+
+[source,bash]
+----
+oc get crd | grep activemqartemises
+----
+You should see `activemqartemises.broker.amq.io` listed. This CRD allows you to define Artemis broker instances as custom resources.
+
+== 4. Deploy a Highly Available ActiveMQ Artemis Cluster
+
+Now that the Operator is installed, you can deploy an Artemis cluster by creating an `ActiveMQArtemis` custom resource. We will configure a three-node cluster with persistent storage for high availability.
+
+.Identify an available StorageClass:
+For persistent storage, you need an available `StorageClass` in your OpenShift cluster. If you don't know which one to use, check the available options:
+
+[source,bash]
+----
+oc get storageclass
+----
+Common choices might be `ocs-storagecluster-cephfs`, `cephfs`, `gp2`, `standard`, etc. Choose one that is provisioned dynamically. For this lab, we'll assume `gp2` or similar default is available. If not, replace `storageClassName: gp2` in the YAML below with an appropriate one from your cluster.
+
+.Create the ActiveMQArtemis Custom Resource (CR):
+This YAML defines a three-node Artemis cluster. Key aspects for HA include `deploymentPlan.size: 3` and `persistenceEnabled: true`.
+
+[source,yaml]
+.artemis-ha-cluster.yaml
+----
+apiVersion: broker.amq.io/v1beta1
+kind: ActiveMQArtemis
+metadata:
+  name: artemis-ha-cluster
+spec:
+  deploymentPlan:
+    size: 3
+    image: registry.redhat.io/amq7/amq-broker-rhel8:7.10
+    journalType: nio
+    persistenceEnabled: true
+    persistenceStorage:
+      class: gp2 <i class="conum" data-value="1"></i><b>(1)</b>
+      size: 2Gi
+    messageMigration: true <i class="conum" data-value="2"></i><b>(2)</b>
+    javaOpts: "-Xms512M -Xmx1024M"
+    resources:
+      limits:
+        memory: 1Gi
+      requests:
+        memory: 512Mi
+  console:
+    expose: true <i class="conum" data-value="3"></i><b>(3)</b>
+  acceptors:
+    - name: amqp
+      protocols: AMQP
+      port: 5672
+      expose: true
+      exposedClients: AMQP
+      connectionRouters: 1
+    - name: openwire
+      protocols: CORE,AMQP,JMS,MQTT,OPENWIRE,STOMP
+      port: 61616
+      expose: true
+      exposedClients: OPENWIRE
+      connectionRouters: 1
+  connectors:
+    - name: broker-connector
+      port: 61616
+      host: "artemis-ha-cluster-amqp-0.artemis-ha-cluster-amqp.artemis-ha-lab.svc.cluster.local" <i class="conum" data-value="4"></i><b>(4)</b>
+      # This is an example, in a truly dynamic HA setup, the operator handles internal connection details.
+      # For client connections, the exposed service will handle routing.
+  externalCertSecret: {}
+  extraMounts: {}
+  federation: {}
+  managementRBAC: {}
+  networkConfiguration: {}
+  upgrades: {}
+  web: {}
+----
+&lt;1&gt; Replace `gp2` with an appropriate `StorageClass` available in your OpenShift cluster.
+&lt;2&gt; `messageMigration: true` ensures that messages are migrated between brokers during failover/failback, maintaining message durability and availability.
+&lt;3&gt; Exposing the console allows you to access the Artemis management console via an OpenShift Route.
+&lt;4&gt; This connector definition is more illustrative. The Operator typically manages the internal network configuration for HA brokers. Clients will connect to the OpenShift Service or Route.
+
+.Apply the CR to your OpenShift cluster:
+[source,bash]
+----
+oc apply -f artemis-ha-cluster.yaml
+----
+
+.Monitor the deployment:
+The Operator will now create the necessary OpenShift resources: a StatefulSet, multiple PersistentVolumeClaims (PVCs), Services, and Routes. This may take several minutes.
+
+[source,bash]
+----
+oc get all -l activemq-artemis-cluster-name=artemis-ha-cluster -w
+----
+Wait until you see three pods (e.g., `artemis-ha-cluster-amqp-0`, `artemis-ha-cluster-amqp-1`, `artemis-ha-cluster-amqp-2`) in a `Running` state, along with their associated PVCs, Services, and Routes.
+
+.Verify PersistentVolumeClaims (PVCs):
+[source,bash]
+----
+oc get pvc -l activemq-artemis-cluster-name=artemis-ha-cluster
+----
+You should see three PVCs, one for each broker instance, in a `Bound` state. These ensure that message data is persisted across restarts.
+
+.Access the Artemis Console:
+Get the URL for the Artemis console:
+
+[source,bash]
+----
+oc get route artemis-ha-cluster-console -o jsonpath='{.spec.host}'
+----
+Open the provided URL in your browser. You should see the ActiveMQ Artemis management console. Log in (default username: `admin`, password: `admin` unless configured otherwise) and explore the cluster. You should see all three brokers registered.
+
+== 5. Demonstrate High Availability
+
+Now, let's simulate a failure to observe the cluster's high availability in action.
+
+.Identify the broker pods:
+[source,bash]
+----
+oc get pods -l activemq-artemis-cluster-name=artemis-ha-cluster
+----
+Note the full names of your three broker pods.
+
+.Delete one of the broker pods:
+This simulates an unexpected pod termination or node failure.
+
+[source,bash]
+----
+oc delete pod artemis-ha-cluster-amqp-0 # Replace with one of your actual pod names
+----
+Observe the output. You will see the pod terminating.
+
+.Monitor the cluster:
+[source,bash]
+----
+oc get all -l activemq-artemis-cluster-name=artemis-ha-cluster -w
+----
+You will notice:
+*   The `artemis-ha-cluster-amqp-0` pod terminating.
+*   The OpenShift StatefulSet automatically creating a *new* pod to replace it, ensuring the desired replica count of 3 is maintained.
+*   The new pod `artemis-ha-cluster-amqp-0` starting up and rejoining the cluster. The PersistentVolumeClaim ensures that its journal data is still available, allowing it to recover its state and rejoin the cluster seamlessly.
+
+.Verify in the Artemis Console (Optional):
+If you still have the console open, refresh it. You might momentarily see a broker disappear and then reappear as the new pod starts up and rejoins the cluster. This demonstrates that even if a broker pod dies, the cluster maintains its desired state and functionality. For client applications, this would typically be handled via client-side failover logic connecting to the OpenShift Service which abstracts the individual broker instances.
+
+== Conclusion
+
+Congratulations! You have successfully deployed a highly available ActiveMQ Artemis cluster on OpenShift using the ActiveMQ Artemis Operator. You've witnessed how OpenShift's orchestration capabilities, combined with the Operator, provide a robust and resilient platform for mission-critical messaging applications.
+
+This setup forms the foundation for building message-driven microservices that can tolerate failures and scale dynamically, which are key requirements for resilient distributed systems.</code></pre>
+</div>
+</div>
+<nav class="pagination">
+  <span class="prev"><a href="monitoring-artemis-instances-on-openshift.html">Monitoring Artemis instances on OpenShift</a></span>
+  <span class="next"><a href="../message-distribution-issues/message-distribution-issues.html">Message distribution issues</a></span>
+</nav>
+</article>
+  </div>
+</main>
+</div>
+<footer class="footer">
+  <img src="../../../_/img/rhl-logo-red.png" height="40px" alt="Red Hat"  href="https://redhat.com" >
+</footer><script id="site-script" src="../../../_/js/site.js" data-ui-root-path="../../../_"></script>
+<script async src="../../../_/js/vendor/highlight.js"></script>
+  </body>
+</html>

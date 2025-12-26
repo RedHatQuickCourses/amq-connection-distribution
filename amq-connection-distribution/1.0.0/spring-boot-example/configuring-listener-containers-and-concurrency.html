@@ -1,0 +1,473 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Configuring listener containers and concurrency :: Building Resilient Messaging Applications with ActiveMQ Artemis and OpenShift</title>
+    <link rel="prev" href="implementing-message-consumers-in-spring-boot.html">
+    <link rel="next" href="deploying-spring-boot-messaging-applications-on-openshift.html">
+    <meta name="generator" content="Antora 3.1.3">
+    <link rel="stylesheet" href="../../../_/css/site.css">
+    <script>var uiRootPath = '../../../_'</script>
+  </head>
+  <body class="article">
+<header class="header">
+  <nav class="navbar">
+    <div class="navbar-brand">
+      <a class="navbar-item" href="https://www.redhat.com" target="_blank"><img src="../../../_/img/redhat-logo.png" height="40px" alt="Red Hat"></a>
+      <a class="navbar-item" style="font-size: 24px; color: white" href="../../..">Building Resilient Messaging Applications with ActiveMQ Artemis and OpenShift</a>
+      <button class="navbar-burger" data-target="topbar-nav">
+        <span></span>
+        <span></span>
+        <span></span>
+      </button>
+    </div>
+    <div id="topbar-nav" class="navbar-menu">
+      <div class="navbar-end">
+        <a class="navbar-item" href="https://github.com/RedHatQuickCourses/REPLACEREPONAME/issues" target="_blank">Report Issues</a>
+      </div>
+    </div>
+  </nav>
+</header>
+<div class="body">
+<div class="nav-container" data-component="amq-connection-distribution" data-version="1.0.0">
+  <aside class="nav">
+    <div class="panels">
+<div class="nav-panel-menu is-active" data-panel="menu">
+  <nav class="nav-menu">
+    <h3 class="title"><a href="../index.html">Building Resilient Messaging Applications with ActiveMQ Artemis and OpenShift</a></h3>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="../index.html">Home</a>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../deploying-activemq-artemis-on-openshift/deploying-activemq-artemis-on-openshift.html">Deploying ActiveMQ Artemis on OpenShift</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../deploying-activemq-artemis-on-openshift/introduction-to-openshift-for-messaging-applications.html">Introduction to OpenShift for messaging applications</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../deploying-activemq-artemis-on-openshift/understanding-activemq-artemis-on-openshift.html">Understanding ActiveMQ Artemis on OpenShift</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../deploying-activemq-artemis-on-openshift/using-the-activemq-artemis-operator.html">Using the ActiveMQ Artemis Operator</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../deploying-activemq-artemis-on-openshift/custom-resource-definitions-crds-for-artemis.html">Custom Resource Definitions (CRDs) for Artemis</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../deploying-activemq-artemis-on-openshift/configuring-persistent-storage-for-artemis.html">Configuring persistent storage for Artemis</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../deploying-activemq-artemis-on-openshift/scaling-artemis-brokers-on-openshift.html">Scaling Artemis brokers on OpenShift</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../deploying-activemq-artemis-on-openshift/monitoring-artemis-instances-on-openshift.html">Monitoring Artemis instances on OpenShift</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../deploying-activemq-artemis-on-openshift/hands-on-lab-deploying-a-highly-available-activemq-artemis-cluster-on-openshift.html">Hands-on Lab: Deploying a highly available ActiveMQ Artemis cluster on OpenShift</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../message-distribution-issues/message-distribution-issues.html">Message distribution issues</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../message-distribution-issues/understanding-distributed-messaging-patterns.html">Understanding distributed messaging patterns</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../message-distribution-issues/load-balancing-messages-across-consumers.html">Load balancing messages across consumers</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../message-distribution-issues/message-routing-strategies-and-challenges.html">Message routing strategies and challenges</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../message-distribution-issues/consumer-groups-and-shared-subscriptions.html">Consumer groups and shared subscriptions</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../message-distribution-issues/ensuring-message-ordering-in-distributed-systems.html">Ensuring message ordering in distributed systems</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../message-distribution-issues/handling-message-durability-and-reliability.html">Handling message durability and reliability</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../message-distribution-issues/addressing-fault-tolerance-and-high-availability-for-messages.html">Addressing fault tolerance and high availability for messages</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../client-side-solution/client-side-solution.html">Client Side Solution</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../client-side-solution/client-side-connection-management-and-pooling.html">Client-side connection management and pooling</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../client-side-solution/implementing-client-failover-mechanisms.html">Implementing client failover mechanisms</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../client-side-solution/client-side-load-balancing-for-message-consumption.html">Client-side load balancing for message consumption</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../client-side-solution/message-acknowledgment-patterns-auto_acknowledge-client_acknowledge.html">Message acknowledgment patterns (AUTO_ACKNOWLEDGE, CLIENT_ACKNOWLEDGE)</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../client-side-solution/transaction-management-for-message-producers-and-consumers.html">Transaction management for message producers and consumers</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../client-side-solution/best-practices-for-client-integration-with-distributed-brokers.html">Best practices for client integration with distributed brokers</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../quarkus-example/quarkus-example.html">Quarkus Example</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../quarkus-example/integrating-jmsamqp-clients-with-quarkus.html">Integrating JMS/AMQP clients with Quarkus</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../quarkus-example/configuring-quarkus-for-activemq-artemis-connectivity.html">Configuring Quarkus for ActiveMQ Artemis connectivity</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../quarkus-example/implementing-message-producers-in-quarkus.html">Implementing message producers in Quarkus</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../quarkus-example/implementing-message-consumers-in-quarkus.html">Implementing message consumers in Quarkus</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../quarkus-example/reactive-messaging-with-quarkus-and-artemis.html">Reactive messaging with Quarkus and Artemis</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../quarkus-example/deploying-quarkus-messaging-applications-on-openshift.html">Deploying Quarkus messaging applications on OpenShift</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../quarkus-example/hands-on-lab-developing-a-quarkus-microservice-with-distributed-messaging.html">Hands-on Lab: Developing a Quarkus microservice with distributed messaging</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="spring-boot-example.html">Spring Boot Example</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="integrating-jmsamqp-clients-with-spring-boot.html">Integrating JMS/AMQP clients with Spring Boot</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="configuring-spring-boot-for-activemq-artemis-connectivity.html">Configuring Spring Boot for ActiveMQ Artemis connectivity</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="using-spring-jmsamqp-templates-for-messaging.html">Using Spring JMS/AMQP templates for messaging</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="implementing-message-producers-in-spring-boot.html">Implementing message producers in Spring Boot</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="implementing-message-consumers-in-spring-boot.html">Implementing message consumers in Spring Boot</a>
+  </li>
+  <li class="nav-item is-current-page" data-depth="2">
+    <a class="nav-link" href="configuring-listener-containers-and-concurrency.html">Configuring listener containers and concurrency</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="deploying-spring-boot-messaging-applications-on-openshift.html">Deploying Spring Boot messaging applications on OpenShift</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="hands-on-lab-developing-a-spring-boot-microservice-with-distributed-messaging.html">Hands-on Lab: Developing a Spring Boot microservice with distributed messaging</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+</ul>
+  </nav>
+</div>
+<div class="nav-panel-explore" data-panel="explore">
+  <div class="context">
+    <span class="title">Building Resilient Messaging Applications with ActiveMQ Artemis and OpenShift</span>
+    <span class="version">1.0.0</span>
+  </div>
+  <ul class="components">
+    <li class="component is-current">
+      <a class="title" href="../index.html">Building Resilient Messaging Applications with ActiveMQ Artemis and OpenShift</a>
+      <ul class="versions">
+        <li class="version is-current is-latest">
+          <a href="../index.html">1.0.0</a>
+        </li>
+      </ul>
+    </li>
+  </ul>
+</div>
+    </div>
+  </aside>
+</div>
+<main class="article">
+<div class="toolbar" role="navigation">
+<button class="nav-toggle"></button>
+  <a href="../index.html" class="home-link"></a>
+<nav class="breadcrumbs" aria-label="breadcrumbs">
+  <ul>
+    <li><a href="../index.html">Building Resilient Messaging Applications with ActiveMQ Artemis and OpenShift</a></li>
+    <li><a href="spring-boot-example.html">Spring Boot Example</a></li>
+    <li><a href="configuring-listener-containers-and-concurrency.html">Configuring listener containers and concurrency</a></li>
+  </ul>
+</nav>
+</div>
+  <div class="content">
+<aside class="toc sidebar" data-title="Contents" data-levels="2">
+  <div class="toc-menu"></div>
+</aside>
+<article class="doc">
+<h1 class="page">Configuring listener containers and concurrency</h1>
+<div class="paragraph">
+<p>Here&#8217;s the content for "Configuring listener containers and concurrency" in Antora AsciiDoc format, focusing on Spring Boot and ActiveMQ Artemis.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-asciidoc hljs" data-lang="asciidoc">= Configuring Listener Containers and Concurrency
+
+This section delves into how to configure message listener containers and manage concurrency for message consumption in Spring Boot applications integrating with ActiveMQ Artemis. Effective configuration of these components is crucial for building scalable, high-performance, and resilient messaging applications.
+
+== Understanding Message Listener Containers
+
+In Spring Boot, a message listener container is responsible for receiving messages from a message broker (like ActiveMQ Artemis) and dispatching them to message listener components within your application. Spring provides robust abstractions for this, primarily through:
+
+*   `DefaultJmsListenerContainerFactory` for JMS (Java Message Service).
+*   `SimpleRabbitListenerContainerFactory` or `DefaultMessageListenerContainer` (for AMQP, depending on the client library used, e.g., Spring AMQP's RabbitMQ integration uses the former).
+
+For ActiveMQ Artemis, we predominantly focus on the `DefaultJmsListenerContainerFactory` when using JMS clients, or custom AMQP container factories if using AMQP 1.0.
+
+A message listener container manages the lifecycle of listeners, including:
+
+*   Establishing and maintaining connections to the message broker.
+*   Creating and managing sessions and consumers.
+*   Handling transactions and acknowledgements.
+*   Recovering from connection failures.
+
+== The Need for Concurrency
+
+By default, a message listener might process messages sequentially within a single thread. While simple, this approach can become a bottleneck when message volumes increase or when message processing is CPU-bound or involves I/O operations (e.g., database calls, external service invocations).
+
+Concurrency allows multiple messages to be processed simultaneously, significantly improving throughput and responsiveness. When configured, a listener container can create and manage multiple message consumer threads, each processing messages concurrently.
+
+== Configuring JMS Listener Containers for Concurrency
+
+Spring Boot auto-configures a `DefaultJmsListenerContainerFactory` bean if you have `spring-jms` on your classpath. You can customize this factory to enable and configure concurrency.
+
+=== Core Concurrency Properties
+
+The `DefaultJmsListenerContainerFactory` offers several properties to control concurrency:
+
+*   `setConcurrency(String concurrency)`: This is the primary property. It accepts a string that can be a single number (e.g., "5") indicating a fixed number of concurrent consumers, or a range (e.g., "3-10") indicating a minimum and maximum number of concurrent consumers.
+    *   If a single number `N` is provided, the container will always maintain `N` consumers.
+    *   If a range `M-N` is provided, the container starts with `M` consumers and can scale up to `N` consumers based on message load (though `DefaultJmsListenerContainerFactory` does not dynamically scale; `DefaultMessageListenerContainer` does). For `DefaultJmsListenerContainerFactory`, `concurrency` generally refers to the *maximum* number of concurrent consumers, and if only a single value is given, it's a fixed pool size.
+*   `setSessionTransacted(boolean sessionTransacted)`: Determines if JMS sessions are transacted. If `true`, messages are only acknowledged upon successful transaction commit. This is crucial for *Exactly-Once* processing guarantees in conjunction with external transactions.
+*   `setSessionAcknowledgeMode(int sessionAcknowledgeMode)`: Defines how messages are acknowledged. Common modes include:
+    *   `Session.AUTO_ACKNOWLEDGE`: Messages are acknowledged automatically by the JMS provider when they are received.
+    *   `Session.CLIENT_ACKNOWLEDGE`: The client application is responsible for acknowledging messages explicitly.
+    *   `Session.DUPS_OK_ACKNOWLEDGE`: Acknowledges messages lazily, which can lead to duplicate messages but might improve performance.
+    *   `Session.SESSION_TRANSACTED`: Acknowledgment is tied to the transaction commit.
+
+=== Hands-on Activity: Configuring Concurrency with Java Configuration
+
+Let's configure a custom `JmsListenerContainerFactory` to handle messages from ActiveMQ Artemis with concurrency.
+
+.Prerequisites:
+*   A Spring Boot project with `spring-boot-starter-activemq` or `spring-boot-starter-artemis` dependency.
+*   An ActiveMQ Artemis instance running and accessible.
+
+.Steps:
+
+.  **Define a Custom `JmsListenerContainerFactory` Bean:**
+    Create a configuration class where you define your custom `JmsListenerContainerFactory`. This allows you to override the default settings provided by Spring Boot.
+
+    [source,java]
+    ----
+    package com.example.artemis.config;
+
+    import jakarta.jms.ConnectionFactory;
+    import org.springframework.boot.autoconfigure.jms.Default  JmsListenerContainerFactoryConfigurer;
+    import org.springframework.context.annotation.Bean;
+    import org.springframework.context.annotation.Configuration;
+    import org.springframework.jms.config.DefaultJmsListenerContainerFactory;
+    import org.springframework.jms.config.JmsListenerContainerFactory;
+    import org.springframework.jms.support.converter.MappingJackson2MessageConverter;
+    import org.springframework.jms.support.converter.MessageConverter;
+    import org.springframework.jms.support.converter.MessageType;
+
+    @Configuration
+    public class JmsConfig {
+
+        // Custom JmsListenerContainerFactory for concurrent message processing
+        @Bean
+        public JmsListenerContainerFactory&lt;?&gt; myJmsListenerContainerFactory(
+                ConnectionFactory connectionFactory,
+                DefaultJmsListenerContainerFactoryConfigurer configurer) {
+
+            DefaultJmsListenerContainerFactory factory = new DefaultJmsListenerContainerFactory();
+            configurer.configure(factory, connectionFactory);
+
+            // Configure concurrency: 5 consumers
+            factory.setConcurrency("5"); // Fixed pool of 5 concurrent consumers
+
+            // Optional: Configure a message converter for JSON payloads
+            factory.setMessageConverter(jacksonJmsMessageConverter());
+
+            // Optional: Enable session transacted for transactional message processing
+            factory.setSessionTransacted(true);
+
+            // Optional: Set acknowledge mode (relevant if not session transacted)
+            // factory.setSessionAcknowledgeMode(jakarta.jms.Session.CLIENT_ACKNOWLEDGE);
+
+            System.out.println("Custom JmsListenerContainerFactory configured with concurrency: 5 and session transacted: true");
+            return factory;
+        }
+
+        // Optional: Configure a MessageConverter for JSON payload handling
+        @Bean
+        public MessageConverter jacksonJmsMessageConverter() {
+            MappingJackson2MessageConverter converter = new MappingJackson2MessageConverter();
+            converter.setTargetType(MessageType.TEXT);
+            converter.setTypeIdPropertyName("_type"); // Custom type ID for deserialization
+            return converter;
+        }
+    }
+    ----
+
+.  **Use the Custom Factory in your `@JmsListener`:**
+    Specify the `containerFactory` attribute in your `@JmsListener` annotation to use the custom factory.
+
+    [source,java]
+    ----
+    package com.example.artemis.listener;
+
+    import org.springframework.jms.annotation.JmsListener;
+    import org.springframework.stereotype.Component;
+
+    @Component
+    public class MyMessageListener {
+
+        @JmsListener(destination = "my.queue", containerFactory = "myJmsListenerContainerFactory")
+        public void receiveMessage(String message) {
+            System.out.println("Received message in thread " + Thread.currentThread().getName() + ": " + message);
+            // Simulate some work
+            try {
+                Thread.sleep(1000); // 1 second processing time
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+        }
+    }
+    ----
+
+.  **Verify Concurrency:**
+    When you send multiple messages to `my.queue`, you will observe that messages are processed by different threads, indicating that your concurrency configuration is active. Each message processing will print the `Thread.currentThread().getName()`, showing distinct threads (e.g., `myJmsListenerContainerFactory-1`, `myJmsListenerContainerFactory-2`, etc., up to 5).
+
+=== Configuring Concurrency with `application.properties`
+
+For simpler configurations, Spring Boot allows you to configure some JMS listener container properties directly in `application.properties` (or `application.yml`). These properties apply to the auto-configured `DefaultJmsListenerContainerFactory`.
+
+[source,properties]
+----
+# application.properties
+spring.jms.listener.auto-startup=true
+spring.jms.listener.acknowledge-mode=auto
+spring.jms.listener.concurrency=3
+spring.jms.listener.max-concurrency=10
+spring.jms.listener.session-transacted=true
+----
+
+*   `spring.jms.listener.concurrency`: Sets the minimum number of concurrent consumers. If `max-concurrency` is also set, this acts as the base.
+*   `spring.jms.listener.max-concurrency`: Sets the maximum number of concurrent consumers. If both `concurrency` and `max-concurrency` are set, the container will scale between these values. *Note*: `DefaultJmsListenerContainerFactory` does not dynamically scale by default; it typically interprets `concurrency` as a fixed pool size or `maxConcurrency` as the upper bound for a simple `ExecutorService` pool. For dynamic scaling, `DefaultMessageListenerContainer` is generally used, which has more sophisticated resource management. For the standard `DefaultJmsListenerContainerFactory`, `concurrency` often dictates the fixed pool size.
+
+For a fixed pool of 5 consumers, you would typically use:
+`spring.jms.listener.concurrency=5` (and omit `max-concurrency` if you don't need a range).
+
+=== Transaction Management and Concurrency
+
+When `setSessionTransacted(true)` is enabled, each message received by a consumer within the listener container will be part of a local JMS transaction. This means:
+
+*   The message is consumed within a transaction.
+*   Any database operations or other resource modifications performed within the listener method should ideally be part of the same transaction (e.g., using `@Transactional` on the listener method if Spring's JTA or a transaction manager is configured).
+*   If the listener method completes successfully, the JMS session transaction is committed, and the message is acknowledged.
+*   If an exception occurs, the JMS session transaction is rolled back, and the message is redelivered (subject to ActiveMQ Artemis's redelivery policy).
+
+This transactional behavior is critical for ensuring message reliability and preventing data inconsistencies.
+
+== Concurrency for AMQP Listener Containers (Brief Overview)
+
+While the primary focus for ActiveMQ Artemis's default integration with Spring Boot is JMS, it also supports AMQP 1.0. If you were to use Spring AMQP (e.g., with RabbitMQ, or a Spring AMQP client connecting to Artemis via AMQP 1.0), the approach is similar but uses different classes:
+
+*   `SimpleRabbitListenerContainerFactory` is commonly used.
+*   Properties like `setConcurrentConsumers()` and `setMaxConcurrentConsumers()` are available to manage thread pools.
+
+[source,java]
+----
+// Example for AMQP (conceptual, using RabbitMQ classes for illustration)
+// This would be relevant if using Spring AMQP with Artemis's AMQP 1.0 support
+@Configuration
+public class AmqpConfig {
+
+    // @Bean
+    // public SimpleRabbitListenerContainerFactory rabbitListenerContainerFactory(ConnectionFactory connectionFactory) {
+    //     SimpleRabbitListenerContainerFactory factory = new SimpleRabbitListenerContainerFactory();
+    //     factory.setConnectionFactory(connectionFactory);
+    //     factory.setConcurrentConsumers(5); // Minimum consumers
+    //     factory.setMaxConcurrentConsumers(10); // Maximum consumers for scaling
+    //     factory.setDefaultRequeueRejected(false); // Do not requeue messages on listener failure
+    //     return factory;
+    // }
+}
+----
+
+The principles of concurrency, transactionality, and acknowledgment modes remain consistent across different messaging protocols, though the specific class names and property setters vary.
+
+== Best Practices and Troubleshooting
+
+*   **Determine Optimal Concurrency:** Start with a conservative concurrency value (e.g., 2-5) and monitor your application's CPU, memory, and message processing rates. Increase it gradually based on performance metrics and system resources. Too many concurrent consumers can lead to resource exhaustion (database connections, CPU context switching, memory).
+*   **Message Processing Time:** If message processing is fast (milliseconds), a higher concurrency might be beneficial. If processing is slow (seconds), you might need fewer, but more robust, consumers, or consider asynchronous processing within the listener.
+*   **Idempotency:** When using concurrency, be prepared for potential message redelivery and out-of-order processing. Design your message consumers to be *idempotent* – meaning processing the same message multiple times has the same effect as processing it once.
+*   **Dead Letter Queues (DLQs):** Always configure DLQs on your ActiveMQ Artemis broker. If messages fail repeatedly after multiple redelivery attempts, they should be moved to a DLQ to prevent blocking the queue and allow for manual inspection.
+*   **Error Handling:** Implement robust error handling within your listener methods. Catch exceptions, log details, and decide whether to rethrow (triggering redelivery) or handle the message as a failure without redelivery (e.g., by sending to a DLQ explicitly if `sessionTransacted` is false and you're using client acknowledge mode).
+*   **Resource Contention:** Be aware of shared resources (e.g., database connections, external APIs) that your concurrent listeners might contend for. Ensure these resources are themselves thread-safe or properly pooled and managed.
+
+By carefully configuring listener containers and concurrency, you can build Spring Boot messaging applications that are highly performant, scalable, and resilient when interacting with ActiveMQ Artemis.</code></pre>
+</div>
+</div>
+<nav class="pagination">
+  <span class="prev"><a href="implementing-message-consumers-in-spring-boot.html">Implementing message consumers in Spring Boot</a></span>
+  <span class="next"><a href="deploying-spring-boot-messaging-applications-on-openshift.html">Deploying Spring Boot messaging applications on OpenShift</a></span>
+</nav>
+</article>
+  </div>
+</main>
+</div>
+<footer class="footer">
+  <img src="../../../_/img/rhl-logo-red.png" height="40px" alt="Red Hat"  href="https://redhat.com" >
+</footer><script id="site-script" src="../../../_/js/site.js" data-ui-root-path="../../../_"></script>
+<script async src="../../../_/js/vendor/highlight.js"></script>
+  </body>
+</html>

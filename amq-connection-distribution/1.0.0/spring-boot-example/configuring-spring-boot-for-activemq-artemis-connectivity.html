@@ -1,0 +1,1007 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Configuring Spring Boot for ActiveMQ Artemis connectivity :: Building Resilient Messaging Applications with ActiveMQ Artemis and OpenShift</title>
+    <link rel="prev" href="integrating-jmsamqp-clients-with-spring-boot.html">
+    <link rel="next" href="using-spring-jmsamqp-templates-for-messaging.html">
+    <meta name="generator" content="Antora 3.1.3">
+    <link rel="stylesheet" href="../../../_/css/site.css">
+    <script>var uiRootPath = '../../../_'</script>
+  </head>
+  <body class="article">
+<header class="header">
+  <nav class="navbar">
+    <div class="navbar-brand">
+      <a class="navbar-item" href="https://www.redhat.com" target="_blank"><img src="../../../_/img/redhat-logo.png" height="40px" alt="Red Hat"></a>
+      <a class="navbar-item" style="font-size: 24px; color: white" href="../../..">Building Resilient Messaging Applications with ActiveMQ Artemis and OpenShift</a>
+      <button class="navbar-burger" data-target="topbar-nav">
+        <span></span>
+        <span></span>
+        <span></span>
+      </button>
+    </div>
+    <div id="topbar-nav" class="navbar-menu">
+      <div class="navbar-end">
+        <a class="navbar-item" href="https://github.com/RedHatQuickCourses/REPLACEREPONAME/issues" target="_blank">Report Issues</a>
+      </div>
+    </div>
+  </nav>
+</header>
+<div class="body">
+<div class="nav-container" data-component="amq-connection-distribution" data-version="1.0.0">
+  <aside class="nav">
+    <div class="panels">
+<div class="nav-panel-menu is-active" data-panel="menu">
+  <nav class="nav-menu">
+    <h3 class="title"><a href="../index.html">Building Resilient Messaging Applications with ActiveMQ Artemis and OpenShift</a></h3>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="../index.html">Home</a>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../deploying-activemq-artemis-on-openshift/deploying-activemq-artemis-on-openshift.html">Deploying ActiveMQ Artemis on OpenShift</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../deploying-activemq-artemis-on-openshift/introduction-to-openshift-for-messaging-applications.html">Introduction to OpenShift for messaging applications</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../deploying-activemq-artemis-on-openshift/understanding-activemq-artemis-on-openshift.html">Understanding ActiveMQ Artemis on OpenShift</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../deploying-activemq-artemis-on-openshift/using-the-activemq-artemis-operator.html">Using the ActiveMQ Artemis Operator</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../deploying-activemq-artemis-on-openshift/custom-resource-definitions-crds-for-artemis.html">Custom Resource Definitions (CRDs) for Artemis</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../deploying-activemq-artemis-on-openshift/configuring-persistent-storage-for-artemis.html">Configuring persistent storage for Artemis</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../deploying-activemq-artemis-on-openshift/scaling-artemis-brokers-on-openshift.html">Scaling Artemis brokers on OpenShift</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../deploying-activemq-artemis-on-openshift/monitoring-artemis-instances-on-openshift.html">Monitoring Artemis instances on OpenShift</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../deploying-activemq-artemis-on-openshift/hands-on-lab-deploying-a-highly-available-activemq-artemis-cluster-on-openshift.html">Hands-on Lab: Deploying a highly available ActiveMQ Artemis cluster on OpenShift</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../message-distribution-issues/message-distribution-issues.html">Message distribution issues</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../message-distribution-issues/understanding-distributed-messaging-patterns.html">Understanding distributed messaging patterns</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../message-distribution-issues/load-balancing-messages-across-consumers.html">Load balancing messages across consumers</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../message-distribution-issues/message-routing-strategies-and-challenges.html">Message routing strategies and challenges</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../message-distribution-issues/consumer-groups-and-shared-subscriptions.html">Consumer groups and shared subscriptions</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../message-distribution-issues/ensuring-message-ordering-in-distributed-systems.html">Ensuring message ordering in distributed systems</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../message-distribution-issues/handling-message-durability-and-reliability.html">Handling message durability and reliability</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../message-distribution-issues/addressing-fault-tolerance-and-high-availability-for-messages.html">Addressing fault tolerance and high availability for messages</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../client-side-solution/client-side-solution.html">Client Side Solution</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../client-side-solution/client-side-connection-management-and-pooling.html">Client-side connection management and pooling</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../client-side-solution/implementing-client-failover-mechanisms.html">Implementing client failover mechanisms</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../client-side-solution/client-side-load-balancing-for-message-consumption.html">Client-side load balancing for message consumption</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../client-side-solution/message-acknowledgment-patterns-auto_acknowledge-client_acknowledge.html">Message acknowledgment patterns (AUTO_ACKNOWLEDGE, CLIENT_ACKNOWLEDGE)</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../client-side-solution/transaction-management-for-message-producers-and-consumers.html">Transaction management for message producers and consumers</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../client-side-solution/best-practices-for-client-integration-with-distributed-brokers.html">Best practices for client integration with distributed brokers</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../quarkus-example/quarkus-example.html">Quarkus Example</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../quarkus-example/integrating-jmsamqp-clients-with-quarkus.html">Integrating JMS/AMQP clients with Quarkus</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../quarkus-example/configuring-quarkus-for-activemq-artemis-connectivity.html">Configuring Quarkus for ActiveMQ Artemis connectivity</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../quarkus-example/implementing-message-producers-in-quarkus.html">Implementing message producers in Quarkus</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../quarkus-example/implementing-message-consumers-in-quarkus.html">Implementing message consumers in Quarkus</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../quarkus-example/reactive-messaging-with-quarkus-and-artemis.html">Reactive messaging with Quarkus and Artemis</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../quarkus-example/deploying-quarkus-messaging-applications-on-openshift.html">Deploying Quarkus messaging applications on OpenShift</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../quarkus-example/hands-on-lab-developing-a-quarkus-microservice-with-distributed-messaging.html">Hands-on Lab: Developing a Quarkus microservice with distributed messaging</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="spring-boot-example.html">Spring Boot Example</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="integrating-jmsamqp-clients-with-spring-boot.html">Integrating JMS/AMQP clients with Spring Boot</a>
+  </li>
+  <li class="nav-item is-current-page" data-depth="2">
+    <a class="nav-link" href="configuring-spring-boot-for-activemq-artemis-connectivity.html">Configuring Spring Boot for ActiveMQ Artemis connectivity</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="using-spring-jmsamqp-templates-for-messaging.html">Using Spring JMS/AMQP templates for messaging</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="implementing-message-producers-in-spring-boot.html">Implementing message producers in Spring Boot</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="implementing-message-consumers-in-spring-boot.html">Implementing message consumers in Spring Boot</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="configuring-listener-containers-and-concurrency.html">Configuring listener containers and concurrency</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="deploying-spring-boot-messaging-applications-on-openshift.html">Deploying Spring Boot messaging applications on OpenShift</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="hands-on-lab-developing-a-spring-boot-microservice-with-distributed-messaging.html">Hands-on Lab: Developing a Spring Boot microservice with distributed messaging</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+</ul>
+  </nav>
+</div>
+<div class="nav-panel-explore" data-panel="explore">
+  <div class="context">
+    <span class="title">Building Resilient Messaging Applications with ActiveMQ Artemis and OpenShift</span>
+    <span class="version">1.0.0</span>
+  </div>
+  <ul class="components">
+    <li class="component is-current">
+      <a class="title" href="../index.html">Building Resilient Messaging Applications with ActiveMQ Artemis and OpenShift</a>
+      <ul class="versions">
+        <li class="version is-current is-latest">
+          <a href="../index.html">1.0.0</a>
+        </li>
+      </ul>
+    </li>
+  </ul>
+</div>
+    </div>
+  </aside>
+</div>
+<main class="article">
+<div class="toolbar" role="navigation">
+<button class="nav-toggle"></button>
+  <a href="../index.html" class="home-link"></a>
+<nav class="breadcrumbs" aria-label="breadcrumbs">
+  <ul>
+    <li><a href="../index.html">Building Resilient Messaging Applications with ActiveMQ Artemis and OpenShift</a></li>
+    <li><a href="spring-boot-example.html">Spring Boot Example</a></li>
+    <li><a href="configuring-spring-boot-for-activemq-artemis-connectivity.html">Configuring Spring Boot for ActiveMQ Artemis connectivity</a></li>
+  </ul>
+</nav>
+</div>
+  <div class="content">
+<aside class="toc sidebar" data-title="Contents" data-levels="2">
+  <div class="toc-menu"></div>
+</aside>
+<article class="doc">
+<h1 class="page">Configuring Spring Boot for ActiveMQ Artemis connectivity</h1>
+<div id="preamble">
+<div class="sectionbody">
+<div class="paragraph">
+<p>Here&#8217;s the detailed educational content for configuring Spring Boot for ActiveMQ Artemis connectivity, presented in Antora AsciiDoc format:</p>
+</div>
+<div class="paragraph">
+<p>Unresolved include directive in modules/spring-boot-example/pages/configuring-spring-boot-for-activemq-artemis-connectivity.adoc - include::partial$attributes.adoc[]</p>
+</div>
+</div>
+</div>
+<h1 id="_configuring_spring_boot_for_activemq_artemis_connectivity" class="sect0"><a class="anchor" href="#_configuring_spring_boot_for_activemq_artemis_connectivity"></a>Configuring Spring Boot for ActiveMQ Artemis Connectivity</h1>
+<div class="paragraph">
+<p>This section delves into the essential steps and best practices for integrating Spring Boot applications with ActiveMQ Artemis brokers. Leveraging Spring Boot&#8217;s auto-configuration capabilities simplifies the setup, allowing developers to quickly establish robust and reliable messaging connections.</p>
+</div>
+<div class="sect1">
+<h2 id="_understanding_spring_boots_messaging_auto_configuration"><a class="anchor" href="#_understanding_spring_boots_messaging_auto_configuration"></a>Understanding Spring Boot&#8217;s Messaging Auto-configuration</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Spring Boot provides comprehensive auto-configuration for various messaging technologies, including JMS (Java Message Service) which ActiveMQ Artemis supports. When the necessary dependencies are present, Spring Boot automatically configures a <code>ConnectionFactory</code> and a <code>JmsTemplate</code>, ready for use. This significantly reduces boilerplate code and speeds up development.</p>
+</div>
+<div class="sect2">
+<h3 id="_key_components_for_connectivity"><a class="anchor" href="#_key_components_for_connectivity"></a>Key Components for Connectivity</h3>
+<div class="paragraph">
+<p>Before diving into configuration, it&#8217;s important to understand the core components involved:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>JMS API:</strong> The standard Java API for sending and receiving messages. ActiveMQ Artemis implements this API.</p>
+</li>
+<li>
+<p><strong>JMS ConnectionFactory:</strong> An administrative object used to create connections to a JMS provider. Spring Boot auto-configures one for Artemis.</p>
+</li>
+<li>
+<p><strong>JmsTemplate:</strong> A helper class provided by Spring Framework to simplify JMS operations, such as sending and receiving messages.</p>
+</li>
+<li>
+<p><strong>Message Listener Container:</strong> Manages the lifecycle of JMS message listeners, allowing asynchronous message consumption.</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_dependencies_for_activemq_artemis_connectivity"><a class="anchor" href="#_dependencies_for_activemq_artemis_connectivity"></a>Dependencies for ActiveMQ Artemis Connectivity</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>To enable Spring Boot to connect to ActiveMQ Artemis, you need to include the appropriate client dependencies in your <code>pom.xml</code> (for Maven) or <code>build.gradle</code> (for Gradle).</p>
+</div>
+<div class="listingblock">
+<div class="title">Maven Dependencies (<code>pom.xml</code>)</div>
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-xml hljs" data-lang="xml">&lt;dependencies&gt;
+    &lt;!-- Spring Boot Starter for JMS --&gt;
+    &lt;dependency&gt;
+        &lt;groupId&gt;org.springframework.boot&lt;/groupId&gt;
+        &lt;artifactId&gt;spring-boot-starter-activemq&lt;/artifactId&gt;
+    &lt;/dependency&gt;
+
+    &lt;!-- ActiveMQ Artemis JMS Client - provides the actual client libraries --&gt;
+    &lt;dependency&gt;
+        &lt;groupId&gt;org.apache.activemq&lt;/groupId&gt;
+        &lt;artifactId&gt;artemis-jms-client-all&lt;/artifactId&gt;
+        &lt;version&gt;${activemq.artemis.version}&lt;/version&gt; <i class="conum" data-value="1"></i><b>(1)</b>
+    &lt;/dependency&gt;
+&lt;/dependencies&gt;</code></pre>
+</div>
+</div>
+<div class="colist arabic">
+<table>
+<tr>
+<td><i class="conum" data-value="1"></i><b>1</b></td>
+<td>Replace <code>${activemq.artemis.version}</code> with the version compatible with your broker, e.g., <code>2.31.2</code>.</td>
+</tr>
+</table>
+</div>
+<div class="listingblock">
+<div class="title">Gradle Dependencies (<code>build.gradle</code>)</div>
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-groovy hljs" data-lang="groovy">dependencies {
+    // Spring Boot Starter for JMS
+    implementation 'org.springframework.boot:spring-boot-starter-activemq'
+
+    // ActiveMQ Artemis JMS Client
+    implementation 'org.apache.activemq:artemis-jms-client-all:${activemqArtemisVersion}' <i class="conum" data-value="1"></i><b>(1)</b>
+}</code></pre>
+</div>
+</div>
+<div class="colist arabic">
+<table>
+<tr>
+<td><i class="conum" data-value="1"></i><b>1</b></td>
+<td>Define <code>activemqArtemisVersion</code> in your <code>build.gradle</code> or <code>gradle.properties</code>.
+<div class="ulist">
+<ul>
+<li>
+<p><code>spring-boot-starter-activemq</code>: This starter brings in <code>spring-jms</code> and also transitively includes <code>artemis-jms-client</code> (though sometimes the <code>artemis-jms-client-all</code> is explicitly added for broader feature support or to override versions). It&#8217;s designed to simplify auto-configuration for Artemis.</p>
+</li>
+<li>
+<p><code>artemis-jms-client-all</code>: This explicitly provides the ActiveMQ Artemis JMS client library, which is necessary for the Spring Boot application to communicate with the Artemis broker. It includes all necessary transport connectors and JMS client implementations.</p>
+</li>
+</ul>
+</div></td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_basic_configuration_via_application_properties_or_application_yml"><a class="anchor" href="#_basic_configuration_via_application_properties_or_application_yml"></a>Basic Configuration via <code>application.properties</code> or <code>application.yml</code></h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Spring Boot&#8217;s auto-configuration for JMS can be customized using properties in <code>application.properties</code> or <code>application.yml</code>. These properties are prefixed with <code>spring.activemq</code>.</p>
+</div>
+<div class="sect2">
+<h3 id="_connecting_to_an_external_activemq_artemis_broker"><a class="anchor" href="#_connecting_to_an_external_activemq_artemis_broker"></a>Connecting to an External ActiveMQ Artemis Broker</h3>
+<div class="paragraph">
+<p>To connect to an external Artemis broker, you typically configure the broker URL, username, and password.</p>
+</div>
+<div class="listingblock">
+<div class="title">Example <code>application.properties</code></div>
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-properties hljs" data-lang="properties"># Enable JMS support
+spring.jms.enabled=true
+
+# Configure ActiveMQ Artemis broker connection
+spring.activemq.broker-url=tcp://localhost:61616 <i class="conum" data-value="1"></i><b>(1)</b>
+spring.activemq.user=admin <i class="conum" data-value="2"></i><b>(2)</b>
+spring.activemq.password=password <i class="conum" data-value="3"></i><b>(3)</b>
+spring.activemq.mode=native <i class="conum" data-value="4"></i><b>(4)</b>
+
+# Optionally, configure connection pooling (highly recommended for production)
+spring.activemq.pool.enabled=true
+spring.activemq.pool.max-connections=10
+spring.activemq.pool.block-if-full=true</code></pre>
+</div>
+</div>
+<div class="colist arabic">
+<table>
+<tr>
+<td><i class="conum" data-value="1"></i><b>1</b></td>
+<td>The URL of your ActiveMQ Artemis broker. This can also be a discovery URL, for example, <code>(tcp://host1:61616,tcp://host2:61616)?ha=true&amp;retryInterval=1000&amp;retryIntervalMultiplier=1.5&amp;maxRetryInterval=60000&amp;reconnectAttempts=-1</code>.</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="2"></i><b>2</b></td>
+<td>The username for connecting to the broker.</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="3"></i><b>3</b></td>
+<td>The password for the specified user.</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="4"></i><b>4</b></td>
+<td>Specifies the type of broker. <code>native</code> is for ActiveMQ Artemis. <code>embedded</code> is for an in-memory broker (discussed later).</td>
+</tr>
+</table>
+</div>
+<div class="listingblock">
+<div class="title">Example <code>application.yml</code></div>
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">spring:
+  jms:
+    enabled: true
+  activemq:
+    broker-url: tcp://localhost:61616
+    user: admin
+    password: password
+    mode: native
+    pool:
+      enabled: true
+      max-connections: 10
+      block-if-full: true</code></pre>
+</div>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><code>spring.activemq.broker-url</code>: This is the most critical property, specifying how to reach the Artemis broker. It supports various transport protocols (e.g., <code>tcp</code>, <code>amqp</code>, <code>vm</code>) and can be configured for single brokers or highly available clusters.</p>
+</li>
+<li>
+<p><code>spring.activemq.user</code> and <code>spring.activemq.password</code>: Credentials for authentication with the Artemis broker.</p>
+</li>
+<li>
+<p><code>spring.activemq.mode</code>:</p>
+</li>
+<li>
+<p><code>native</code>: Connects to an external ActiveMQ Artemis broker. This is the default and most common setting for production deployments.</p>
+</li>
+<li>
+<p><code>embedded</code>: Configures an in-memory ActiveMQ Artemis broker directly within the Spring Boot application. Useful for development and testing, but not recommended for production message persistence.</p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_using_connection_pooling"><a class="anchor" href="#_using_connection_pooling"></a>Using Connection Pooling</h3>
+<div class="paragraph">
+<p>For production environments, connection pooling is crucial for efficient resource management and performance. Spring Boot&#8217;s ActiveMQ starter automatically configures <code>CachingConnectionFactory</code> or <code>PooledConnectionFactory</code> if <code>spring.activemq.pool.enabled</code> is set to <code>true</code>.</p>
+</div>
+<div class="paragraph">
+<p>The <code>CachingConnectionFactory</code> caches <code>Session</code> and <code>MessageProducer</code>/<code>MessageConsumer</code> instances, while <code>PooledConnectionFactory</code> (from the Artemis client) pools <code>Connection</code> instances. The Spring Boot starter defaults to <code>CachingConnectionFactory</code> unless explicitly configured otherwise.</p>
+</div>
+<div class="paragraph">
+<p>Properties for connection pooling:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><code>spring.activemq.pool.enabled</code>: Set to <code>true</code> to enable connection pooling.</p>
+</li>
+<li>
+<p><code>spring.activemq.pool.max-connections</code>: The maximum number of pooled JMS connections.</p>
+</li>
+<li>
+<p><code>spring.activemq.pool.idle-timeout</code>: The amount of time in milliseconds that a connection can remain idle in the pool before being closed.</p>
+</li>
+<li>
+<p><code>spring.activemq.pool.block-if-full</code>: Whether to block new connection requests if the pool is full.</p>
+</li>
+<li>
+<p><code>spring.activemq.pool.time-between-expiration-check</code>: Time in milliseconds between checks for expired connections.</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_advanced_configuration_with_java_configuration"><a class="anchor" href="#_advanced_configuration_with_java_configuration"></a>Advanced Configuration with Java @Configuration</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>While <code>application.properties</code> covers many common scenarios, you might need more granular control or custom logic for your <code>ConnectionFactory</code> or <code>JmsTemplate</code>. This can be achieved using <code>@Configuration</code> classes and defining Spring beans.</p>
+</div>
+<div class="sect2">
+<h3 id="_custom_connectionfactory"><a class="anchor" href="#_custom_connectionfactory"></a>Custom <code>ConnectionFactory</code></h3>
+<div class="paragraph">
+<p>You can define your own <code>ConnectionFactory</code> bean to override Spring Boot&#8217;s auto-configuration or to apply specific Artemis client-side settings.</p>
+</div>
+<div class="listingblock">
+<div class="title">Example: Custom <code>ActiveMQConnectionFactory</code> Bean</div>
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-java hljs" data-lang="java">package com.example.messaging;
+
+import org.apache.activemq.artemis.jms.client.ActiveMQConnectionFactory;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.jms.annotation.EnableJms;
+
+@Configuration
+@EnableJms <i class="conum" data-value="1"></i><b>(1)</b>
+public class JmsConfig {
+
+    // Define custom connection factory parameters
+    private static final String BROKER_URL = "tcp://localhost:61616";
+    private static final String USERNAME = "admin";
+    private static final String PASSWORD = "password";
+
+    @Bean
+    public ActiveMQConnectionFactory artemisConnectionFactory() {
+        ActiveMQConnectionFactory connectionFactory = new ActiveMQConnectionFactory(
+            BROKER_URL, USERNAME, PASSWORD
+        );
+        // Additional configuration for the connection factory
+        // For example, setting client ID, connection retry policies, etc.
+        // connectionFactory.setClientID("my-spring-app");
+        // connectionFactory.setReconnectAttempts(-1); // Infinite reconnects
+
+        return connectionFactory;
+    }
+}</code></pre>
+</div>
+</div>
+<div class="colist arabic">
+<table>
+<tr>
+<td><i class="conum" data-value="1"></i><b>1</b></td>
+<td><code>@EnableJms</code> is necessary to enable JMS listener annotation processing (e.g., <code>@JmsListener</code>).</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>If you define an <code>ActiveMQConnectionFactory</code> bean, Spring Boot will use it instead of creating its own default one, and it will wrap it in a <code>CachingConnectionFactory</code> by default if <code>spring.activemq.pool.enabled=true</code>.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_custom_jmstemplate"><a class="anchor" href="#_custom_jmstemplate"></a>Custom <code>JmsTemplate</code></h3>
+<div class="paragraph">
+<p>Similarly, you can define a custom <code>JmsTemplate</code> bean if you need to override its default settings (e.g., message converter, explicit delivery mode, priority, or time-to-live).</p>
+</div>
+<div class="listingblock">
+<div class="title">Example: Custom <code>JmsTemplate</code> Bean</div>
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-java hljs" data-lang="java">package com.example.messaging;
+
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.jms.core.JmsTemplate;
+import org.springframework.jms.support.converter.MappingJackson2MessageConverter;
+import org.springframework.jms.support.converter.MessageConverter;
+import org.springframework.jms.support.converter.MessageType;
+
+import jakarta.jms.ConnectionFactory; // Use jakarta.jms for Spring Boot 3+
+
+@Configuration
+public class JmsConfig {
+
+    // Assuming artemisConnectionFactory() bean is defined or auto-configured
+    @Bean
+    public JmsTemplate customJmsTemplate(ConnectionFactory connectionFactory) {
+        JmsTemplate jmsTemplate = new JmsTemplate(connectionFactory);
+        jmsTemplate.setPubSubDomain(false); // Default to point-to-point messaging (queues)
+        jmsTemplate.setDeliveryPersistent(true); // Ensure messages are durable
+        jmsTemplate.setTimeToLive(3600000L); // 1 hour TTL
+        jmsTemplate.setMessageConverter(jacksonJmsMessageConverter()); // Use a custom message converter
+        return jmsTemplate;
+    }
+
+    // Define a custom MessageConverter, e.g., for JSON payload handling
+    @Bean
+    public MessageConverter jacksonJmsMessageConverter() {
+        MappingJackson2MessageConverter converter = new MappingJackson2MessageConverter();
+        converter.setTargetType(MessageType.TEXT);
+        converter.setTypeIdPropertyName("_type");
+        return converter;
+    }
+}</code></pre>
+</div>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><code>setPubSubDomain(false)</code>: Configures the template for point-to-point messaging (queues). Set to <code>true</code> for publish-subscribe (topics).</p>
+</li>
+<li>
+<p><code>setDeliveryPersistent(true)</code>: Ensures messages are written to disk by the broker, providing durability.</p>
+</li>
+<li>
+<p><code>setTimeToLive()</code>: Sets the maximum time a message is allowed to live in milliseconds.</p>
+</li>
+<li>
+<p><code>setMessageConverter()</code>: Allows specifying a custom message converter for serializing/deserializing message payloads, useful for complex objects or JSON.</p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_configuring_defaultjmslistenercontainerfactory"><a class="anchor" href="#_configuring_defaultjmslistenercontainerfactory"></a>Configuring <code>DefaultJmsListenerContainerFactory</code></h3>
+<div class="paragraph">
+<p>When using <code>@JmsListener</code> annotations for message consumption, Spring Boot auto-configures a <code>DefaultJmsListenerContainerFactory</code>. You can customize this factory to control listener concurrency, transaction management, error handling, and more.</p>
+</div>
+<div class="listingblock">
+<div class="title">Example: Custom <code>DefaultJmsListenerContainerFactory</code></div>
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-java hljs" data-lang="java">package com.example.messaging;
+
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.jms.config.DefaultJmsListenerContainerFactory;
+import org.springframework.jms.config.JmsListenerContainerFactory;
+import jakarta.jms.ConnectionFactory; // Use jakarta.jms for Spring Boot 3+
+
+@Configuration
+public class JmsConfig {
+
+    // Assuming artemisConnectionFactory() bean is defined or auto-configured
+    @Bean
+    public JmsListenerContainerFactory&lt;?&gt; customJmsListenerContainerFactory(ConnectionFactory connectionFactory) {
+        DefaultJmsListenerContainerFactory factory = new DefaultJmsListenerContainerFactory();
+        factory.setConnectionFactory(connectionFactory);
+        factory.setConcurrency("3-5"); // Minimum 3, maximum 5 concurrent consumers
+        factory.setSessionTransacted(true); // Enable JMS transactions for listeners
+        factory.setSessionAcknowledgeMode(jakarta.jms.Session.CLIENT_ACKNOWLEDGE); // Client explicitly acknowledges
+        // factory.setErrorHandler(myCustomErrorHandler()); // Define a custom error handler for listener errors
+        // factory.setReceiveTimeout(5000L); // Timeout for receiving messages (in a polling scenario)
+        return factory;
+    }
+}</code></pre>
+</div>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><code>setConcurrency("3-5")</code>: Configures the number of concurrent message consumers. This helps in scaling message processing within a single application instance.</p>
+</li>
+<li>
+<p><code>setSessionTransacted(true)</code>: Enables local JMS transactions. If a listener method fails, the transaction is rolled back, and the message is redelivered.</p>
+</li>
+<li>
+<p><code>setSessionAcknowledgeMode()</code>: Defines how messages are acknowledged. <code>CLIENT_ACKNOWLEDGE</code> gives the application explicit control over acknowledgment. Other modes include <code>AUTO_ACKNOWLEDGE</code> (default, broker acknowledges automatically), <code>DUPS_OK_ACKNOWLEDGE</code> (lazy acknowledgment, allows duplicates).</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_hands_on_lab_basic_spring_boot_application_with_activemq_artemis_connectivity"><a class="anchor" href="#_hands_on_lab_basic_spring_boot_application_with_activemq_artemis_connectivity"></a>Hands-on Lab: Basic Spring Boot Application with ActiveMQ Artemis Connectivity</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>In this lab, you will create a simple Spring Boot application that connects to an ActiveMQ Artemis broker (which you would typically run locally or on OpenShift). The application will demonstrate basic configuration and verify connectivity.</p>
+</div>
+<div class="sect2">
+<h3 id="_prerequisites"><a class="anchor" href="#_prerequisites"></a>Prerequisites</h3>
+<div class="ulist">
+<ul>
+<li>
+<p>Java Development Kit (JDK) 17 or newer installed.</p>
+</li>
+<li>
+<p>Maven 3.6+ or Gradle 7.x+ installed.</p>
+</li>
+<li>
+<p>An ActiveMQ Artemis broker running and accessible (e.g., <code>tcp://localhost:61616</code>).</p>
+</li>
+<li>
+<p>You can run a local Artemis instance using Docker:
+<code>docker run -it --rm --name artemis -p 8161:8161 -p 61616:61616 -e ARTEMIS_USERNAME=admin -e ARTEMIS_PASSWORD=password apache/activemq-artemis:latest-alpine</code></p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_activity_steps"><a class="anchor" href="#_activity_steps"></a>Activity Steps</h3>
+<div class="sect3">
+<h4 id="_step_1_create_a_new_spring_boot_project"><a class="anchor" href="#_step_1_create_a_new_spring_boot_project"></a>Step 1: Create a New Spring Boot Project</h4>
+<div class="paragraph">
+<p>Use Spring Initializr to generate a new Maven project.</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>Navigate to <a href="https://start.spring.io/">Spring Initializr</a>.</p>
+</li>
+<li>
+<p>Configure the project as follows:</p>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>Project:</strong> Maven Project</p>
+</li>
+<li>
+<p><strong>Language:</strong> Java</p>
+</li>
+<li>
+<p><strong>Spring Boot:</strong> 3.x (latest stable)</p>
+</li>
+<li>
+<p><strong>Group:</strong> <code>com.example</code></p>
+</li>
+<li>
+<p><strong>Artifact:</strong> <code>artemis-connector</code></p>
+</li>
+<li>
+<p><strong>Name:</strong> <code>artemis-connector</code></p>
+</li>
+<li>
+<p><strong>Package Name:</strong> <code>com.example.artemisconnector</code></p>
+</li>
+<li>
+<p><strong>Java:</strong> 17</p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<p>Add the following dependencies:</p>
+<div class="ulist">
+<ul>
+<li>
+<p><code>Spring Web</code> (optional, for a simple REST endpoint to trigger messages)</p>
+</li>
+<li>
+<p><code>Spring for Apache ActiveMQ</code> (This will add <code>spring-boot-starter-activemq</code>)</p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<p>Click "Generate" and download the project.</p>
+</li>
+<li>
+<p>Unzip the project into a directory of your choice.</p>
+</li>
+</ol>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_step_2_update_pom_xml_with_artemis_client_dependency"><a class="anchor" href="#_step_2_update_pom_xml_with_artemis_client_dependency"></a>Step 2: Update <code>pom.xml</code> with Artemis Client Dependency</h4>
+<div class="paragraph">
+<p>Open the <code>pom.xml</code> file and add the <code>artemis-jms-client-all</code> dependency explicitly. This ensures you have the full Artemis client features.</p>
+</div>
+<div class="listingblock">
+<div class="title">src/pom.xml</div>
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-xml hljs" data-lang="xml">&lt;?xml version="1.0" encoding="UTF-8"?&gt;
+&lt;project ...&gt;
+    ...
+    &lt;properties&gt;
+        &lt;java.version&gt;17&lt;/java.version&gt;
+        &lt;activemq.artemis.version&gt;2.31.2&lt;/activemq.artemis.version&gt; <i class="conum" data-value="1"></i><b>(1)</b>
+    &lt;/properties&gt;
+    ...
+    &lt;dependencies&gt;
+        &lt;dependency&gt;
+            &lt;groupId&gt;org.springframework.boot&lt;/groupId&gt;
+            &lt;artifactId&gt;spring-boot-starter-activemq&lt;/artifactId&gt;
+        &lt;/dependency&gt;
+        &lt;dependency&gt;
+            &lt;groupId&gt;org.apache.activemq&lt;/groupId&gt;
+            &lt;artifactId&gt;artemis-jms-client-all&lt;/artifactId&gt;
+            &lt;version&gt;${activemq.artemis.version}&lt;/version&gt;
+        &lt;/dependency&gt;
+        &lt;dependency&gt;
+            &lt;groupId&gt;org.springframework.boot&lt;/groupId&gt;
+            &lt;artifactId&gt;spring-boot-starter-web&lt;/artifactId&gt;
+        &lt;/dependency&gt;
+        &lt;dependency&gt;
+            &lt;groupId&gt;org.springframework.boot&lt;/groupId&gt;
+            &lt;artifactId&gt;spring-boot-starter-test&lt;/artifactId&gt;
+            &lt;scope&gt;test&lt;/scope&gt;
+        &lt;/dependency&gt;
+    &lt;/dependencies&gt;
+    ...
+&lt;/project&gt;</code></pre>
+</div>
+</div>
+<div class="colist arabic">
+<table>
+<tr>
+<td><i class="conum" data-value="1"></i><b>1</b></td>
+<td>Ensure the Artemis client version is compatible with your broker.</td>
+</tr>
+</table>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_step_3_configure_application_properties"><a class="anchor" href="#_step_3_configure_application_properties"></a>Step 3: Configure <code>application.properties</code></h4>
+<div class="paragraph">
+<p>Open <code>src/main/resources/application.properties</code> and add the configuration for connecting to your ActiveMQ Artemis broker.</p>
+</div>
+<div class="listingblock">
+<div class="title">src/main/resources/application.properties</div>
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-properties hljs" data-lang="properties"># Enable JMS support
+spring.jms.enabled=true
+
+# Configure ActiveMQ Artemis broker connection
+spring.activemq.broker-url=tcp://localhost:61616
+spring.activemq.user=admin
+spring.activemq.password=password
+spring.activemq.mode=native
+
+# Enable connection pooling
+spring.activemq.pool.enabled=true
+spring.activemq.pool.max-connections=5</code></pre>
+</div>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Adjust <code>broker-url</code>, <code>user</code>, and <code>password</code> if your Artemis instance has different settings.</p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_step_4_create_a_jms_producer_service"><a class="anchor" href="#_step_4_create_a_jms_producer_service"></a>Step 4: Create a JMS Producer Service</h4>
+<div class="paragraph">
+<p>Create a simple service to send messages to an Artemis queue.</p>
+</div>
+<div class="listingblock">
+<div class="title">src/main/java/com/example/artemisconnector/JmsProducer.java</div>
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-java hljs" data-lang="java">package com.example.artemisconnector;
+
+import org.springframework.jms.core.JmsTemplate;
+import org.springframework.stereotype.Service;
+
+@Service
+public class JmsProducer {
+
+    private final JmsTemplate jmsTemplate;
+
+    public JmsProducer(JmsTemplate jmsTemplate) {
+        this.jmsTemplate = jmsTemplate;
+    }
+
+    public void sendMessage(String queueName, String message) {
+        System.out.println("Sending message: '" + message + "' to queue: " + queueName);
+        jmsTemplate.convertAndSend(queueName, message);
+    }
+}</code></pre>
+</div>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_step_5_create_a_jms_consumer_component"><a class="anchor" href="#_step_5_create_a_jms_consumer_component"></a>Step 5: Create a JMS Consumer Component</h4>
+<div class="paragraph">
+<p>Create a component with a <code>@JmsListener</code> to receive messages from an Artemis queue.</p>
+</div>
+<div class="listingblock">
+<div class="title">src/main/java/com/example/artemisconnector/JmsConsumer.java</div>
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-java hljs" data-lang="java">package com.example.artemisconnector;
+
+import org.springframework.jms.annotation.JmsListener;
+import org.springframework.stereotype.Component;
+
+@Component
+public class JmsConsumer {
+
+    private static final String EXAMPLE_QUEUE = "example-queue";
+
+    @JmsListener(destination = EXAMPLE_QUEUE)
+    public void receiveMessage(String message) {
+        System.out.println("Received message from " + EXAMPLE_QUEUE + ": '" + message + "'");
+        // In a real application, process the message here
+    }
+}</code></pre>
+</div>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_step_6_create_a_rest_controller_to_trigger_messages_optional"><a class="anchor" href="#_step_6_create_a_rest_controller_to_trigger_messages_optional"></a>Step 6: Create a REST Controller to Trigger Messages (Optional)</h4>
+<div class="paragraph">
+<p>Add a simple REST controller to easily send messages via a web endpoint.</p>
+</div>
+<div class="listingblock">
+<div class="title">src/main/java/com/example/artemisconnector/MessageController.java</div>
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-java hljs" data-lang="java">package com.example.artemisconnector;
+
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+
+@RestController
+public class MessageController {
+
+    private final JmsProducer jmsProducer;
+    private static final String EXAMPLE_QUEUE = "example-queue";
+
+    public MessageController(JmsProducer jmsProducer) {
+        this.jmsProducer = jmsProducer;
+    }
+
+    @GetMapping("/send")
+    public String sendMessage(@RequestParam String message) {
+        jmsProducer.sendMessage(EXAMPLE_QUEUE, message);
+        return "Message sent to " + EXAMPLE_QUEUE + ": " + message;
+    }
+}</code></pre>
+</div>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_step_7_run_the_application_and_test_connectivity"><a class="anchor" href="#_step_7_run_the_application_and_test_connectivity"></a>Step 7: Run the Application and Test Connectivity</h4>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>Ensure your ActiveMQ Artemis broker is running and accessible.</p>
+</li>
+<li>
+<p>Open a terminal in your project&#8217;s root directory.</p>
+</li>
+<li>
+<p>Build and run the Spring Boot application:
+<code>./mvnw spring-boot:run</code> (or <code>gradle bootRun</code>)</p>
+</li>
+<li>
+<p>Observe the application logs. You should see messages indicating successful connection to Artemis.</p>
+</li>
+<li>
+<p>If you implemented the <code>MessageController</code>, open your web browser or use <code>curl</code> to send a message:
+<code><a href="http://localhost:8080/send?message=HelloArtemis" class="bare">http://localhost:8080/send?message=HelloArtemis</a></code></p>
+</li>
+<li>
+<p>Check your application&#8217;s console output. You should see both "Sending message&#8230;&#8203;" and "Received message&#8230;&#8203;" logs, confirming that the producer sent the message and the consumer received it via the ActiveMQ Artemis broker.</p>
+</li>
+</ol>
+</div>
+<div class="paragraph">
+<p>This lab demonstrates the fundamental configuration for connecting Spring Boot applications to ActiveMQ Artemis, showcasing both message production and consumption.</p>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_troubleshooting_common_connectivity_issues"><a class="anchor" href="#_troubleshooting_common_connectivity_issues"></a>Troubleshooting Common Connectivity Issues</h2>
+<div class="sectionbody">
+<div class="ulist">
+<ul>
+<li>
+<p><strong><code>JMSException: Could not connect to broker URL</code></strong>:</p>
+</li>
+<li>
+<p>Verify the <code>spring.activemq.broker-url</code> is correct and the broker is running.</p>
+</li>
+<li>
+<p>Check network connectivity between your Spring Boot application and the Artemis broker (firewall rules, hostnames, ports).</p>
+</li>
+<li>
+<p>Ensure the Artemis broker is listening on the specified port.</p>
+</li>
+<li>
+<p><strong><code>JMSException: Invalid user name or password</code></strong>:</p>
+</li>
+<li>
+<p>Double-check <code>spring.activemq.user</code> and <code>spring.activemq.password</code> against your Artemis broker&#8217;s security settings.</p>
+</li>
+<li>
+<p><strong>Missing Dependencies</strong>:</p>
+</li>
+<li>
+<p>Ensure <code>spring-boot-starter-activemq</code> and <code>artemis-jms-client-all</code> (or similar Artemis client library) are correctly included in your <code>pom.xml</code> or <code>build.gradle</code>.</p>
+</li>
+<li>
+<p><strong>Version Mismatches</strong>:</p>
+</li>
+<li>
+<p>Incompatibility between Spring Boot, Spring Framework, and ActiveMQ Artemis client versions can cause issues. Always refer to the Spring Boot documentation for recommended dependency versions or explicitly define compatible versions.</p>
+</li>
+<li>
+<p><strong>Message Not Received by Consumer</strong>:</p>
+</li>
+<li>
+<p>Verify the queue/topic name in <code>@JmsListener</code> matches where the producer is sending messages.</p>
+</li>
+<li>
+<p>Check if <code>JmsListenerContainerFactory</code> is properly configured (e.g., concurrency, acknowledge mode).</p>
+</li>
+<li>
+<p>Ensure the consumer application is running and healthy.</p>
+</li>
+<li>
+<p><strong><code>jakarta.jms</code> vs. <code>javax.jms</code></strong>:</p>
+</li>
+<li>
+<p>For Spring Boot 3.x and newer, Java EE APIs have been migrated to Jakarta EE. Ensure your imports are <code>jakarta.jms.<strong></code> instead of <code>javax.jms.</strong></code>. The Spring Boot starter for ActiveMQ typically handles this automatically, but custom configurations might require attention.</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>By following these configuration guidelines and troubleshooting steps, you can effectively integrate your Spring Boot applications with ActiveMQ Artemis for robust and high-performance messaging solutions.</p>
+</div>
+</div>
+</div>
+<nav class="pagination">
+  <span class="prev"><a href="integrating-jmsamqp-clients-with-spring-boot.html">Integrating JMS/AMQP clients with Spring Boot</a></span>
+  <span class="next"><a href="using-spring-jmsamqp-templates-for-messaging.html">Using Spring JMS/AMQP templates for messaging</a></span>
+</nav>
+</article>
+  </div>
+</main>
+</div>
+<footer class="footer">
+  <img src="../../../_/img/rhl-logo-red.png" height="40px" alt="Red Hat"  href="https://redhat.com" >
+</footer><script id="site-script" src="../../../_/js/site.js" data-ui-root-path="../../../_"></script>
+<script async src="../../../_/js/vendor/highlight.js"></script>
+  </body>
+</html>

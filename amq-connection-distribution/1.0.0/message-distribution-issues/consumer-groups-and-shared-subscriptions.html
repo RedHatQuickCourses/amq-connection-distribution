@@ -1,0 +1,444 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Consumer groups and shared subscriptions :: Building Resilient Messaging Applications with ActiveMQ Artemis and OpenShift</title>
+    <link rel="prev" href="message-routing-strategies-and-challenges.html">
+    <link rel="next" href="ensuring-message-ordering-in-distributed-systems.html">
+    <meta name="generator" content="Antora 3.1.3">
+    <link rel="stylesheet" href="../../../_/css/site.css">
+    <script>var uiRootPath = '../../../_'</script>
+  </head>
+  <body class="article">
+<header class="header">
+  <nav class="navbar">
+    <div class="navbar-brand">
+      <a class="navbar-item" href="https://www.redhat.com" target="_blank"><img src="../../../_/img/redhat-logo.png" height="40px" alt="Red Hat"></a>
+      <a class="navbar-item" style="font-size: 24px; color: white" href="../../..">Building Resilient Messaging Applications with ActiveMQ Artemis and OpenShift</a>
+      <button class="navbar-burger" data-target="topbar-nav">
+        <span></span>
+        <span></span>
+        <span></span>
+      </button>
+    </div>
+    <div id="topbar-nav" class="navbar-menu">
+      <div class="navbar-end">
+        <a class="navbar-item" href="https://github.com/RedHatQuickCourses/REPLACEREPONAME/issues" target="_blank">Report Issues</a>
+      </div>
+    </div>
+  </nav>
+</header>
+<div class="body">
+<div class="nav-container" data-component="amq-connection-distribution" data-version="1.0.0">
+  <aside class="nav">
+    <div class="panels">
+<div class="nav-panel-menu is-active" data-panel="menu">
+  <nav class="nav-menu">
+    <h3 class="title"><a href="../index.html">Building Resilient Messaging Applications with ActiveMQ Artemis and OpenShift</a></h3>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="../index.html">Home</a>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../deploying-activemq-artemis-on-openshift/deploying-activemq-artemis-on-openshift.html">Deploying ActiveMQ Artemis on OpenShift</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../deploying-activemq-artemis-on-openshift/introduction-to-openshift-for-messaging-applications.html">Introduction to OpenShift for messaging applications</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../deploying-activemq-artemis-on-openshift/understanding-activemq-artemis-on-openshift.html">Understanding ActiveMQ Artemis on OpenShift</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../deploying-activemq-artemis-on-openshift/using-the-activemq-artemis-operator.html">Using the ActiveMQ Artemis Operator</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../deploying-activemq-artemis-on-openshift/custom-resource-definitions-crds-for-artemis.html">Custom Resource Definitions (CRDs) for Artemis</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../deploying-activemq-artemis-on-openshift/configuring-persistent-storage-for-artemis.html">Configuring persistent storage for Artemis</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../deploying-activemq-artemis-on-openshift/scaling-artemis-brokers-on-openshift.html">Scaling Artemis brokers on OpenShift</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../deploying-activemq-artemis-on-openshift/monitoring-artemis-instances-on-openshift.html">Monitoring Artemis instances on OpenShift</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../deploying-activemq-artemis-on-openshift/hands-on-lab-deploying-a-highly-available-activemq-artemis-cluster-on-openshift.html">Hands-on Lab: Deploying a highly available ActiveMQ Artemis cluster on OpenShift</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="message-distribution-issues.html">Message distribution issues</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="understanding-distributed-messaging-patterns.html">Understanding distributed messaging patterns</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="load-balancing-messages-across-consumers.html">Load balancing messages across consumers</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="message-routing-strategies-and-challenges.html">Message routing strategies and challenges</a>
+  </li>
+  <li class="nav-item is-current-page" data-depth="2">
+    <a class="nav-link" href="consumer-groups-and-shared-subscriptions.html">Consumer groups and shared subscriptions</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="ensuring-message-ordering-in-distributed-systems.html">Ensuring message ordering in distributed systems</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="handling-message-durability-and-reliability.html">Handling message durability and reliability</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="addressing-fault-tolerance-and-high-availability-for-messages.html">Addressing fault tolerance and high availability for messages</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../client-side-solution/client-side-solution.html">Client Side Solution</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../client-side-solution/client-side-connection-management-and-pooling.html">Client-side connection management and pooling</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../client-side-solution/implementing-client-failover-mechanisms.html">Implementing client failover mechanisms</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../client-side-solution/client-side-load-balancing-for-message-consumption.html">Client-side load balancing for message consumption</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../client-side-solution/message-acknowledgment-patterns-auto_acknowledge-client_acknowledge.html">Message acknowledgment patterns (AUTO_ACKNOWLEDGE, CLIENT_ACKNOWLEDGE)</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../client-side-solution/transaction-management-for-message-producers-and-consumers.html">Transaction management for message producers and consumers</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../client-side-solution/best-practices-for-client-integration-with-distributed-brokers.html">Best practices for client integration with distributed brokers</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../quarkus-example/quarkus-example.html">Quarkus Example</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../quarkus-example/integrating-jmsamqp-clients-with-quarkus.html">Integrating JMS/AMQP clients with Quarkus</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../quarkus-example/configuring-quarkus-for-activemq-artemis-connectivity.html">Configuring Quarkus for ActiveMQ Artemis connectivity</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../quarkus-example/implementing-message-producers-in-quarkus.html">Implementing message producers in Quarkus</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../quarkus-example/implementing-message-consumers-in-quarkus.html">Implementing message consumers in Quarkus</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../quarkus-example/reactive-messaging-with-quarkus-and-artemis.html">Reactive messaging with Quarkus and Artemis</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../quarkus-example/deploying-quarkus-messaging-applications-on-openshift.html">Deploying Quarkus messaging applications on OpenShift</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../quarkus-example/hands-on-lab-developing-a-quarkus-microservice-with-distributed-messaging.html">Hands-on Lab: Developing a Quarkus microservice with distributed messaging</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../spring-boot-example/spring-boot-example.html">Spring Boot Example</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../spring-boot-example/integrating-jmsamqp-clients-with-spring-boot.html">Integrating JMS/AMQP clients with Spring Boot</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../spring-boot-example/configuring-spring-boot-for-activemq-artemis-connectivity.html">Configuring Spring Boot for ActiveMQ Artemis connectivity</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../spring-boot-example/using-spring-jmsamqp-templates-for-messaging.html">Using Spring JMS/AMQP templates for messaging</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../spring-boot-example/implementing-message-producers-in-spring-boot.html">Implementing message producers in Spring Boot</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../spring-boot-example/implementing-message-consumers-in-spring-boot.html">Implementing message consumers in Spring Boot</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../spring-boot-example/configuring-listener-containers-and-concurrency.html">Configuring listener containers and concurrency</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../spring-boot-example/deploying-spring-boot-messaging-applications-on-openshift.html">Deploying Spring Boot messaging applications on OpenShift</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../spring-boot-example/hands-on-lab-developing-a-spring-boot-microservice-with-distributed-messaging.html">Hands-on Lab: Developing a Spring Boot microservice with distributed messaging</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+</ul>
+  </nav>
+</div>
+<div class="nav-panel-explore" data-panel="explore">
+  <div class="context">
+    <span class="title">Building Resilient Messaging Applications with ActiveMQ Artemis and OpenShift</span>
+    <span class="version">1.0.0</span>
+  </div>
+  <ul class="components">
+    <li class="component is-current">
+      <a class="title" href="../index.html">Building Resilient Messaging Applications with ActiveMQ Artemis and OpenShift</a>
+      <ul class="versions">
+        <li class="version is-current is-latest">
+          <a href="../index.html">1.0.0</a>
+        </li>
+      </ul>
+    </li>
+  </ul>
+</div>
+    </div>
+  </aside>
+</div>
+<main class="article">
+<div class="toolbar" role="navigation">
+<button class="nav-toggle"></button>
+  <a href="../index.html" class="home-link"></a>
+<nav class="breadcrumbs" aria-label="breadcrumbs">
+  <ul>
+    <li><a href="../index.html">Building Resilient Messaging Applications with ActiveMQ Artemis and OpenShift</a></li>
+    <li><a href="message-distribution-issues.html">Message distribution issues</a></li>
+    <li><a href="consumer-groups-and-shared-subscriptions.html">Consumer groups and shared subscriptions</a></li>
+  </ul>
+</nav>
+</div>
+  <div class="content">
+<aside class="toc sidebar" data-title="Contents" data-levels="2">
+  <div class="toc-menu"></div>
+</aside>
+<article class="doc">
+<h1 class="page">Consumer groups and shared subscriptions</h1>
+<h1 id="_consumer_groups_and_shared_subscriptions" class="sect0"><a class="anchor" href="#_consumer_groups_and_shared_subscriptions"></a>Consumer Groups and Shared Subscriptions</h1>
+<div class="paragraph">
+<p>In distributed messaging systems, efficiently distributing messages to multiple consumers while ensuring reliability and scalability is a critical challenge. Consumer groups and shared subscriptions are powerful mechanisms designed to address these requirements, enabling load balancing, high availability, and simplified consumer management.</p>
+</div>
+<div class="sect1">
+<h2 id="consumer-groups"><a class="anchor" href="#consumer-groups"></a>Understanding Consumer Groups</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>A consumer group, also often referred to as a "shared consumer group" or "subscription group," represents a logical collection of multiple consumer instances that collectively subscribe to the <strong>same</strong> destination (e.g., a queue or a topic). The primary purpose of a consumer group is to distribute messages arriving at that destination among its members, typically in a load-balanced fashion.</p>
+</div>
+<div class="paragraph">
+<p>When a message arrives, only one member of the consumer group will receive and process that message. This "competing consumer" pattern ensures that messages are processed once and only once, even with multiple consumers active.</p>
+</div>
+<div class="paragraph">
+<p>Key characteristics of consumer groups:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>Load Balancing</strong>: Messages are distributed across the active consumers in the group, enhancing throughput and distributing the processing workload.</p>
+</li>
+<li>
+<p><strong>High Availability</strong>: If one consumer instance within the group fails, other active consumers in the same group can automatically take over the processing of new messages, ensuring continuous operation without manual intervention.</p>
+</li>
+<li>
+<p><strong>Scalability</strong>: You can dynamically add or remove consumer instances from a group based on message load, allowing the system to scale horizontally to meet demand.</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>For instance, in ActiveMQ Artemis, when you create multiple consumers with the <strong>same</strong> subscription name (especially for topics with shared subscriptions or for queues), they implicitly form a consumer group.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="shared-subscriptions"><a class="anchor" href="#shared-subscriptions"></a>Shared Subscriptions</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Shared subscriptions are a specific type of subscription, particularly relevant for topics, that allow multiple consumers to attach to the same logical subscription. Unlike traditional "exclusive" or "non-shared" topic subscriptions where each subscriber typically receives its own copy of all messages published to the topic, a shared subscription behaves more like a queue for topic messages within a group.</p>
+</div>
+<div class="paragraph">
+<p>When multiple consumers subscribe to a topic using the same shared subscription name:</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>All messages published to the topic are logically delivered to this shared subscription.</p>
+</li>
+<li>
+<p>These messages are then distributed among the active consumers <strong>within that shared subscription group</strong>.</p>
+</li>
+<li>
+<p>Each message is delivered to <strong>only one</strong> consumer in the group.</p>
+</li>
+</ol>
+</div>
+<div class="paragraph">
+<p>This pattern combines the broadcast capabilities of topics (multiple distinct shared subscriptions can each get a copy of the message) with the load-balancing and competing consumer benefits of queues (within each shared subscription group).</p>
+</div>
+<div class="paragraph">
+<p>The Java Message Service (JMS) 2.0 specification introduced explicit support for shared subscriptions, allowing clients to declare them. Similarly, AMQP 1.0 brokers like ActiveMQ Artemis support similar concepts through durable subscriptions and consumer groups.</p>
+</div>
+<div class="sect2">
+<h3 id="_distinguishing_shared_vs_non_shared_exclusive_subscriptions"><a class="anchor" href="#_distinguishing_shared_vs_non_shared_exclusive_subscriptions"></a>Distinguishing Shared vs. Non-Shared (Exclusive) Subscriptions</h3>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 33.3333%;">
+<col style="width: 33.3333%;">
+<col style="width: 33.3334%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Feature</th>
+<th class="tableblock halign-left valign-top">Non-Shared (Exclusive) Subscription</th>
+<th class="tableblock halign-left valign-top">Shared Subscription</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Scope</strong></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">One consumer per subscription ID</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Multiple consumers per subscription ID</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Delivery</strong></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Each active consumer receives a copy of <strong>all</strong> messages</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Messages are load-balanced across consumers in the group; each message delivered to <strong>one</strong> consumer.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Use Case</strong></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Broadcasting messages to all interested parties, individual processing</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Distributing workload among a group of consumers, high availability, competing consumers pattern for topic messages</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Client Side</strong></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Each consumer typically has a unique client ID and subscription name</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Multiple consumers specify the <strong>same</strong> subscription name</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Durability</strong></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Can be durable (messages persist for inactive consumer)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Inherently supports durability within the group (messages persist until <strong>any</strong> group member consumes them)</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="sect2">
+<h3 id="_benefits_of_shared_subscriptions"><a class="anchor" href="#_benefits_of_shared_subscriptions"></a>Benefits of Shared Subscriptions</h3>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>Enhanced Load Balancing for Topics</strong>: Distributes messages from a topic across a pool of consumers, preventing a single consumer from becoming a bottleneck.</p>
+</li>
+<li>
+<p><strong>Simplified High Availability</strong>: If a consumer processing messages from a shared subscription fails, other consumers in the group automatically pick up the load, ensuring no messages are lost and processing continues seamlessly.</p>
+</li>
+<li>
+<p><strong>Resource Efficiency</strong>: Reduces the number of redundant messages being sent over the network compared to each consumer having its own exclusive subscription and filtering.</p>
+</li>
+<li>
+<p><strong>Flexible Scaling</strong>: Easily scale consumer applications horizontally by adding more instances to the shared subscription group.</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="client-side-implementation-considerations"><a class="anchor" href="#client-side-implementation-considerations"></a>Client-Side Implementation Considerations</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>When implementing clients that utilize consumer groups and shared subscriptions, especially with ActiveMQ Artemis, it&#8217;s crucial to understand how to configure them correctly.</p>
+</div>
+<div class="sect2">
+<h3 id="_jms_example_conceptual"><a class="anchor" href="#_jms_example_conceptual"></a>JMS Example (Conceptual)</h3>
+<div class="paragraph">
+<p>For JMS 2.0 compliant clients, creating a shared durable subscription is straightforward:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-java hljs" data-lang="java">// Assume 'connection' is an active JMSConnection and 'topic' is a JMSTopic
+try (JMSContext context = connection.createContext(JMSContext.AUTO_ACKNOWLEDGE)) {
+    // Create a shared durable subscription with a given subscription name
+    // Multiple consumers can use the same sharedSubscriptionName
+    JMSConsumer consumer = context.createSharedDurableConsumer(topic, "mySharedSubscriptionName");
+    consumer.setMessageListener(message -&gt; {
+        System.out.println("Message received by consumer: " + message.getBody(String.class));
+        // Process message
+    });
+    // Keep connection and context open for message reception
+    // ...
+} catch (JMSException e) {
+    e.printStackTrace();
+}</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>In this example, any other consumer client using <code>createSharedDurableConsumer(topic, "mySharedSubscriptionName")</code> will join the same consumer group for that shared subscription, and messages sent to <code>topic</code> will be distributed among them.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_amqp_1_0_example_conceptual"><a class="anchor" href="#_amqp_1_0_example_conceptual"></a>AMQP 1.0 Example (Conceptual)</h3>
+<div class="paragraph">
+<p>AMQP 1.0 clients interact with the broker using links. ActiveMQ Artemis, when acting as an AMQP 1.0 broker, supports shared subscriptions through specific link properties or address syntax. For queues, multiple consumers simply connect to the same queue address. For topics, specific configurations on the consumer link might be used to indicate a shared subscription or durability. Often, the broker&#8217;s address settings determine how messages are distributed.</p>
+</div>
+<div class="paragraph">
+<p>For example, connecting multiple AMQP consumers to a FQQN (Fully Qualified Queue Name) or using a specific routing type on the address can achieve similar shared consumer group behavior.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-text hljs" data-lang="text">// Conceptual AMQP 1.0 consumer connection for a shared subscription
+// (Actual implementation depends on the AMQP client library, e.g., proton-j)
+
+// Consumer A
+connection.createReceiver("topic://myTopic::mySharedSubscriptionName")
+
+// Consumer B (joins the same shared subscription group)
+connection.createReceiver("topic://myTopic::mySharedSubscriptionName")</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>In the ActiveMQ Artemis context, shared subscriptions are a fundamental mechanism for building resilient and scalable messaging applications, especially when dealing with high message volumes on topics or requiring fault-tolerant processing of messages. By leveraging these features, developers can ensure that messages are processed efficiently, reliably, and with high availability.</p>
+</div>
+</div>
+</div>
+</div>
+<nav class="pagination">
+  <span class="prev"><a href="message-routing-strategies-and-challenges.html">Message routing strategies and challenges</a></span>
+  <span class="next"><a href="ensuring-message-ordering-in-distributed-systems.html">Ensuring message ordering in distributed systems</a></span>
+</nav>
+</article>
+  </div>
+</main>
+</div>
+<footer class="footer">
+  <img src="../../../_/img/rhl-logo-red.png" height="40px" alt="Red Hat"  href="https://redhat.com" >
+</footer><script id="site-script" src="../../../_/js/site.js" data-ui-root-path="../../../_"></script>
+<script async src="../../../_/js/vendor/highlight.js"></script>
+  </body>
+</html>

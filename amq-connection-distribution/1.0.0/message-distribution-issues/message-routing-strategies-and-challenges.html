@@ -1,0 +1,494 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Message routing strategies and challenges :: Building Resilient Messaging Applications with ActiveMQ Artemis and OpenShift</title>
+    <link rel="prev" href="load-balancing-messages-across-consumers.html">
+    <link rel="next" href="consumer-groups-and-shared-subscriptions.html">
+    <meta name="generator" content="Antora 3.1.3">
+    <link rel="stylesheet" href="../../../_/css/site.css">
+    <script>var uiRootPath = '../../../_'</script>
+  </head>
+  <body class="article">
+<header class="header">
+  <nav class="navbar">
+    <div class="navbar-brand">
+      <a class="navbar-item" href="https://www.redhat.com" target="_blank"><img src="../../../_/img/redhat-logo.png" height="40px" alt="Red Hat"></a>
+      <a class="navbar-item" style="font-size: 24px; color: white" href="../../..">Building Resilient Messaging Applications with ActiveMQ Artemis and OpenShift</a>
+      <button class="navbar-burger" data-target="topbar-nav">
+        <span></span>
+        <span></span>
+        <span></span>
+      </button>
+    </div>
+    <div id="topbar-nav" class="navbar-menu">
+      <div class="navbar-end">
+        <a class="navbar-item" href="https://github.com/RedHatQuickCourses/REPLACEREPONAME/issues" target="_blank">Report Issues</a>
+      </div>
+    </div>
+  </nav>
+</header>
+<div class="body">
+<div class="nav-container" data-component="amq-connection-distribution" data-version="1.0.0">
+  <aside class="nav">
+    <div class="panels">
+<div class="nav-panel-menu is-active" data-panel="menu">
+  <nav class="nav-menu">
+    <h3 class="title"><a href="../index.html">Building Resilient Messaging Applications with ActiveMQ Artemis and OpenShift</a></h3>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="../index.html">Home</a>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../deploying-activemq-artemis-on-openshift/deploying-activemq-artemis-on-openshift.html">Deploying ActiveMQ Artemis on OpenShift</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../deploying-activemq-artemis-on-openshift/introduction-to-openshift-for-messaging-applications.html">Introduction to OpenShift for messaging applications</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../deploying-activemq-artemis-on-openshift/understanding-activemq-artemis-on-openshift.html">Understanding ActiveMQ Artemis on OpenShift</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../deploying-activemq-artemis-on-openshift/using-the-activemq-artemis-operator.html">Using the ActiveMQ Artemis Operator</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../deploying-activemq-artemis-on-openshift/custom-resource-definitions-crds-for-artemis.html">Custom Resource Definitions (CRDs) for Artemis</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../deploying-activemq-artemis-on-openshift/configuring-persistent-storage-for-artemis.html">Configuring persistent storage for Artemis</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../deploying-activemq-artemis-on-openshift/scaling-artemis-brokers-on-openshift.html">Scaling Artemis brokers on OpenShift</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../deploying-activemq-artemis-on-openshift/monitoring-artemis-instances-on-openshift.html">Monitoring Artemis instances on OpenShift</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../deploying-activemq-artemis-on-openshift/hands-on-lab-deploying-a-highly-available-activemq-artemis-cluster-on-openshift.html">Hands-on Lab: Deploying a highly available ActiveMQ Artemis cluster on OpenShift</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="message-distribution-issues.html">Message distribution issues</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="understanding-distributed-messaging-patterns.html">Understanding distributed messaging patterns</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="load-balancing-messages-across-consumers.html">Load balancing messages across consumers</a>
+  </li>
+  <li class="nav-item is-current-page" data-depth="2">
+    <a class="nav-link" href="message-routing-strategies-and-challenges.html">Message routing strategies and challenges</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="consumer-groups-and-shared-subscriptions.html">Consumer groups and shared subscriptions</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="ensuring-message-ordering-in-distributed-systems.html">Ensuring message ordering in distributed systems</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="handling-message-durability-and-reliability.html">Handling message durability and reliability</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="addressing-fault-tolerance-and-high-availability-for-messages.html">Addressing fault tolerance and high availability for messages</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../client-side-solution/client-side-solution.html">Client Side Solution</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../client-side-solution/client-side-connection-management-and-pooling.html">Client-side connection management and pooling</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../client-side-solution/implementing-client-failover-mechanisms.html">Implementing client failover mechanisms</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../client-side-solution/client-side-load-balancing-for-message-consumption.html">Client-side load balancing for message consumption</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../client-side-solution/message-acknowledgment-patterns-auto_acknowledge-client_acknowledge.html">Message acknowledgment patterns (AUTO_ACKNOWLEDGE, CLIENT_ACKNOWLEDGE)</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../client-side-solution/transaction-management-for-message-producers-and-consumers.html">Transaction management for message producers and consumers</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../client-side-solution/best-practices-for-client-integration-with-distributed-brokers.html">Best practices for client integration with distributed brokers</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../quarkus-example/quarkus-example.html">Quarkus Example</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../quarkus-example/integrating-jmsamqp-clients-with-quarkus.html">Integrating JMS/AMQP clients with Quarkus</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../quarkus-example/configuring-quarkus-for-activemq-artemis-connectivity.html">Configuring Quarkus for ActiveMQ Artemis connectivity</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../quarkus-example/implementing-message-producers-in-quarkus.html">Implementing message producers in Quarkus</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../quarkus-example/implementing-message-consumers-in-quarkus.html">Implementing message consumers in Quarkus</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../quarkus-example/reactive-messaging-with-quarkus-and-artemis.html">Reactive messaging with Quarkus and Artemis</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../quarkus-example/deploying-quarkus-messaging-applications-on-openshift.html">Deploying Quarkus messaging applications on OpenShift</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../quarkus-example/hands-on-lab-developing-a-quarkus-microservice-with-distributed-messaging.html">Hands-on Lab: Developing a Quarkus microservice with distributed messaging</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../spring-boot-example/spring-boot-example.html">Spring Boot Example</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../spring-boot-example/integrating-jmsamqp-clients-with-spring-boot.html">Integrating JMS/AMQP clients with Spring Boot</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../spring-boot-example/configuring-spring-boot-for-activemq-artemis-connectivity.html">Configuring Spring Boot for ActiveMQ Artemis connectivity</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../spring-boot-example/using-spring-jmsamqp-templates-for-messaging.html">Using Spring JMS/AMQP templates for messaging</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../spring-boot-example/implementing-message-producers-in-spring-boot.html">Implementing message producers in Spring Boot</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../spring-boot-example/implementing-message-consumers-in-spring-boot.html">Implementing message consumers in Spring Boot</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../spring-boot-example/configuring-listener-containers-and-concurrency.html">Configuring listener containers and concurrency</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../spring-boot-example/deploying-spring-boot-messaging-applications-on-openshift.html">Deploying Spring Boot messaging applications on OpenShift</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../spring-boot-example/hands-on-lab-developing-a-spring-boot-microservice-with-distributed-messaging.html">Hands-on Lab: Developing a Spring Boot microservice with distributed messaging</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+</ul>
+  </nav>
+</div>
+<div class="nav-panel-explore" data-panel="explore">
+  <div class="context">
+    <span class="title">Building Resilient Messaging Applications with ActiveMQ Artemis and OpenShift</span>
+    <span class="version">1.0.0</span>
+  </div>
+  <ul class="components">
+    <li class="component is-current">
+      <a class="title" href="../index.html">Building Resilient Messaging Applications with ActiveMQ Artemis and OpenShift</a>
+      <ul class="versions">
+        <li class="version is-current is-latest">
+          <a href="../index.html">1.0.0</a>
+        </li>
+      </ul>
+    </li>
+  </ul>
+</div>
+    </div>
+  </aside>
+</div>
+<main class="article">
+<div class="toolbar" role="navigation">
+<button class="nav-toggle"></button>
+  <a href="../index.html" class="home-link"></a>
+<nav class="breadcrumbs" aria-label="breadcrumbs">
+  <ul>
+    <li><a href="../index.html">Building Resilient Messaging Applications with ActiveMQ Artemis and OpenShift</a></li>
+    <li><a href="message-distribution-issues.html">Message distribution issues</a></li>
+    <li><a href="message-routing-strategies-and-challenges.html">Message routing strategies and challenges</a></li>
+  </ul>
+</nav>
+</div>
+  <div class="content">
+<aside class="toc sidebar" data-title="Contents" data-levels="2">
+  <div class="toc-menu"></div>
+</aside>
+<article class="doc">
+<h1 class="page">Message routing strategies and challenges</h1>
+<h1 id="_message_routing_strategies_and_challenges" class="sect0"><a class="anchor" href="#_message_routing_strategies_and_challenges"></a>Message Routing Strategies and Challenges</h1>
+<div class="paragraph">
+<p>Effective message routing is fundamental to building scalable, resilient, and decoupled distributed systems. It determines how messages, once produced, are delivered to the appropriate consumers or processing units within a messaging infrastructure. In a system like ActiveMQ Artemis, running on OpenShift, understanding these strategies and their associated challenges is crucial for designing robust messaging applications.</p>
+</div>
+<div class="sect1">
+<h2 id="_understanding_message_routing_strategies"><a class="anchor" href="#_understanding_message_routing_strategies"></a>Understanding Message Routing Strategies</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Message routing defines the path a message takes from a producer to one or more consumers. ActiveMQ Artemis, supporting protocols like AMQP and JMS, offers flexible mechanisms for routing messages based on various criteria.</p>
+</div>
+<div class="sect2">
+<h3 id="_1_direct_routing_point_to_point"><a class="anchor" href="#_1_direct_routing_point_to_point"></a>1. Direct Routing (Point-to-Point)</h3>
+<div class="paragraph">
+<p>In direct routing, messages are sent to a specific, named destination, typically a queue. This is the simplest form of routing, often used for point-to-point communication.</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>Mechanism</strong>: A producer sends a message directly to a queue. Only one consumer can process a message from that queue at a time (though multiple consumers can compete for messages from the same queue).</p>
+</li>
+<li>
+<p><strong>Use Cases</strong>: Task queues, command processing, request-response patterns where a specific service is expected to handle a particular type of message.</p>
+</li>
+<li>
+<p><strong>ActiveMQ Artemis Context</strong>: Implemented using standard JMS queues or AMQP queues with direct addressing.</p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_2_topic_based_routing_publish_subscribe"><a class="anchor" href="#_2_topic_based_routing_publish_subscribe"></a>2. Topic-Based Routing (Publish-Subscribe)</h3>
+<div class="paragraph">
+<p>Topic-based routing, also known as publish-subscribe, allows a producer to publish messages to a "topic" or "address," and all consumers subscribed to that topic receive a copy of the message.</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>Mechanism</strong>: Producers publish messages to a logical destination (topic/address). Consumers subscribe to one or more topics. When a message arrives at a topic, a copy is delivered to every active subscription.</p>
+</li>
+<li>
+<p><strong>Use Cases</strong>: Broadcasting events, notifications, data distribution to multiple interested parties, real-time analytics streams.</p>
+</li>
+<li>
+<p><strong>ActiveMQ Artemis Context</strong>: Implemented using JMS topics or AMQP topics/addresses configured for multicast delivery.</p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_3_content_based_routing"><a class="anchor" href="#_3_content_based_routing"></a>3. Content-Based Routing</h3>
+<div class="paragraph">
+<p>Content-based routing takes routing decisions beyond just the destination name, allowing messages to be routed based on their properties, headers, or even their payload content.</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>Mechanism</strong>: The messaging broker inspects message attributes (e.g., JMS properties, AMQP headers) or content. It then uses predefined rules or selectors to route the message to the appropriate queue or topic.</p>
+</li>
+<li>
+<p><strong>Use Cases</strong>: Event filtering, dynamic message dispatch to different processing pipelines based on message type, priority, or origin.</p>
+</li>
+<li>
+<p><strong>ActiveMQ Artemis Context</strong>: Achieved using:</p>
+</li>
+<li>
+<p><strong>JMS Message Selectors</strong>: Consumers can specify an SQL-like selector string when subscribing to a queue or topic, ensuring they only receive messages matching the criteria.</p>
+</li>
+<li>
+<p><strong>AMQP Routing Keys &amp; Exchanges</strong>: While AMQP 1.0 (used by Artemis) doesn&#8217;t have "exchanges" in the RabbitMQ sense, it uses addresses and routing types (anycast/multicast). Content-based routing can be implemented by setting properties/headers in AMQP messages and having consumers filter on them, or by using routing rules on the broker side (e.g., divert messages based on header values to different queues).</p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_4_header_based_routing"><a class="anchor" href="#_4_header_based_routing"></a>4. Header-Based Routing</h3>
+<div class="paragraph">
+<p>A specific form of content-based routing where decisions are made purely on the message headers, without inspecting the message body.</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>Mechanism</strong>: Producers attach metadata (headers) to messages. The broker or a routing layer uses these headers to decide the message&#8217;s destination.</p>
+</li>
+<li>
+<p><strong>Use Cases</strong>: Microservice architectures where services route messages based on 'service-name', 'version', 'region', or 'correlation-id' headers.</p>
+</li>
+<li>
+<p><strong>ActiveMQ Artemis Context</strong>: Standard JMS message properties or AMQP message headers are used for this purpose.</p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_5_fanoutbroadcast_routing"><a class="anchor" href="#_5_fanoutbroadcast_routing"></a>5. Fanout/Broadcast Routing</h3>
+<div class="paragraph">
+<p>A variation of topic-based routing where a message is effectively broadcast to all connected consumers or a predefined set of destinations without specific filtering.</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>Mechanism</strong>: A message sent to a fanout address is delivered to all queues bound to that address.</p>
+</li>
+<li>
+<p><strong>Use Cases</strong>: System-wide announcements, cache invalidation messages, scenarios where all services need to react to a global event.</p>
+</li>
+<li>
+<p><strong>ActiveMQ Artemis Context</strong>: Achieved using multicast addresses where multiple queues are bound to the same address, and all receive a copy.</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_challenges_in_message_routing"><a class="anchor" href="#_challenges_in_message_routing"></a>Challenges in Message Routing</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>While offering immense flexibility, message routing introduces several challenges that must be addressed during system design and implementation.</p>
+</div>
+<div class="sect2">
+<h3 id="_1_increased_complexity"><a class="anchor" href="#_1_increased_complexity"></a>1. Increased Complexity</h3>
+<div class="paragraph">
+<p>As the number of message types, producers, and consumers grows, and routing rules become more intricate (especially with content-based routing), the overall system complexity increases significantly.</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>Challenge</strong>: Managing and understanding complex routing logic can be difficult, leading to errors in message delivery or unexpected behavior.</p>
+</li>
+<li>
+<p><strong>Mitigation</strong>: Standardize routing conventions, use clear and consistent naming for addresses/topics, centralize routing rule configuration, and employ robust testing.</p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_2_scalability_and_performance_overhead"><a class="anchor" href="#_2_scalability_and_performance_overhead"></a>2. Scalability and Performance Overhead</h3>
+<div class="paragraph">
+<p>Routing decisions, especially content-based routing, involve processing logic at the broker level. This can introduce performance overhead, particularly under high message throughput.</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>Challenge</strong>: Intensive message property inspection or complex selector evaluation can consume CPU resources on the broker, potentially becoming a bottleneck.</p>
+</li>
+<li>
+<p><strong>Mitigation</strong>: Optimize selector expressions, avoid overly complex routing rules, distribute load across multiple broker instances (e.g., an ActiveMQ Artemis cluster on OpenShift), and ensure broker resources are adequately provisioned.</p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_3_maintainability_and_evolvability"><a class="anchor" href="#_3_maintainability_and_evolvability"></a>3. Maintainability and Evolvability</h3>
+<div class="paragraph">
+<p>Changing routing rules or introducing new message types can have cascading effects across the system. If routing logic is hardcoded or poorly managed, evolving the system becomes difficult.</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>Challenge</strong>: Modifying routing logic might require redeploying services, leading to downtime or service disruption. Ensuring backward compatibility for existing message flows.</p>
+</li>
+<li>
+<p><strong>Mitigation</strong>: Decouple routing rules from application code (e.g., configure them externally in Artemis via <code>broker.xml</code> or custom resources), use versioning for message types and routing configurations, and implement automated regression testing.</p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_4_reliability_and_durability_of_routed_messages"><a class="anchor" href="#_4_reliability_and_durability_of_routed_messages"></a>4. Reliability and Durability of Routed Messages</h3>
+<div class="paragraph">
+<p>Ensuring that messages are not lost during the routing process, especially when multiple hops or complex transformations are involved, is critical for reliability.</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>Challenge</strong>: What happens if a target queue is unavailable or a routing rule fails? How are messages persisted throughout their journey?</p>
+</li>
+<li>
+<p><strong>Mitigation</strong>: Utilize persistent messaging (configured for Artemis using persistent storage on OpenShift), implement Dead Letter Queues (DLQ) for unroutable messages, and use transactionality for message production and consumption where strong guarantees are needed.</p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_5_message_ordering"><a class="anchor" href="#_5_message_ordering"></a>5. Message Ordering</h3>
+<div class="paragraph">
+<p>In certain business processes, the order in which messages are processed is paramount. Complex routing strategies can make maintaining strict message order challenging.</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>Challenge</strong>: If messages take different routes or are processed by different consumers in parallel, their original order can be lost.</p>
+</li>
+<li>
+<p><strong>Mitigation</strong>: For strict ordering, ensure messages destined for a specific processing sequence always go to a single queue consumed by a single logical consumer. Use features like message groups or sequence numbers with correlation IDs, and potentially sticky sessions for consumers where Artemis can route messages from the same group to the same consumer.</p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_6_security_concerns"><a class="anchor" href="#_6_security_concerns"></a>6. Security Concerns</h3>
+<div class="paragraph">
+<p>Improperly configured routing can expose sensitive information or allow unauthorized access to message streams.</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>Challenge</strong>: Ensuring that only authorized applications can send or receive messages from specific addresses or topics, and that routing rules themselves cannot be maliciously altered.</p>
+</li>
+<li>
+<p><strong>Mitigation</strong>: Implement robust access control lists (ACLs) on ActiveMQ Artemis addresses and queues. On OpenShift, leverage network policies and Kubernetes RBAC for controlling access to the broker and its configuration.</p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_7_monitoring_and_troubleshooting"><a class="anchor" href="#_7_monitoring_and_troubleshooting"></a>7. Monitoring and Troubleshooting</h3>
+<div class="paragraph">
+<p>Diagnosing issues in complex routing scenarios can be difficult. Understanding why a message didn&#8217;t reach its intended destination or took an unexpected path requires good observability.</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>Challenge</strong>: Tracing a message&#8217;s journey through multiple routing steps can be opaque without proper tooling.</p>
+</li>
+<li>
+<p><strong>Mitigation</strong>: Implement comprehensive logging, tracing (e.g., using distributed tracing with correlation IDs), and leverage ActiveMQ Artemis&#8217;s management API and OpenShift monitoring tools (like Prometheus and Grafana for operator metrics) to observe message flow and broker health.</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>By carefully considering these strategies and challenges, architects and developers can design efficient and reliable message routing solutions within their ActiveMQ Artemis deployments on OpenShift.</p>
+</div>
+</div>
+</div>
+</div>
+<nav class="pagination">
+  <span class="prev"><a href="load-balancing-messages-across-consumers.html">Load balancing messages across consumers</a></span>
+  <span class="next"><a href="consumer-groups-and-shared-subscriptions.html">Consumer groups and shared subscriptions</a></span>
+</nav>
+</article>
+  </div>
+</main>
+</div>
+<footer class="footer">
+  <img src="../../../_/img/rhl-logo-red.png" height="40px" alt="Red Hat"  href="https://redhat.com" >
+</footer><script id="site-script" src="../../../_/js/site.js" data-ui-root-path="../../../_"></script>
+<script async src="../../../_/js/vendor/highlight.js"></script>
+  </body>
+</html>

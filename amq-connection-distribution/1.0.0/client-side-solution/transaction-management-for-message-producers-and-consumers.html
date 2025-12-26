@@ -1,0 +1,631 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Transaction management for message producers and consumers :: Building Resilient Messaging Applications with ActiveMQ Artemis and OpenShift</title>
+    <link rel="prev" href="message-acknowledgment-patterns-auto_acknowledge-client_acknowledge.html">
+    <link rel="next" href="best-practices-for-client-integration-with-distributed-brokers.html">
+    <meta name="generator" content="Antora 3.1.3">
+    <link rel="stylesheet" href="../../../_/css/site.css">
+    <script>var uiRootPath = '../../../_'</script>
+  </head>
+  <body class="article">
+<header class="header">
+  <nav class="navbar">
+    <div class="navbar-brand">
+      <a class="navbar-item" href="https://www.redhat.com" target="_blank"><img src="../../../_/img/redhat-logo.png" height="40px" alt="Red Hat"></a>
+      <a class="navbar-item" style="font-size: 24px; color: white" href="../../..">Building Resilient Messaging Applications with ActiveMQ Artemis and OpenShift</a>
+      <button class="navbar-burger" data-target="topbar-nav">
+        <span></span>
+        <span></span>
+        <span></span>
+      </button>
+    </div>
+    <div id="topbar-nav" class="navbar-menu">
+      <div class="navbar-end">
+        <a class="navbar-item" href="https://github.com/RedHatQuickCourses/REPLACEREPONAME/issues" target="_blank">Report Issues</a>
+      </div>
+    </div>
+  </nav>
+</header>
+<div class="body">
+<div class="nav-container" data-component="amq-connection-distribution" data-version="1.0.0">
+  <aside class="nav">
+    <div class="panels">
+<div class="nav-panel-menu is-active" data-panel="menu">
+  <nav class="nav-menu">
+    <h3 class="title"><a href="../index.html">Building Resilient Messaging Applications with ActiveMQ Artemis and OpenShift</a></h3>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="../index.html">Home</a>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../deploying-activemq-artemis-on-openshift/deploying-activemq-artemis-on-openshift.html">Deploying ActiveMQ Artemis on OpenShift</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../deploying-activemq-artemis-on-openshift/introduction-to-openshift-for-messaging-applications.html">Introduction to OpenShift for messaging applications</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../deploying-activemq-artemis-on-openshift/understanding-activemq-artemis-on-openshift.html">Understanding ActiveMQ Artemis on OpenShift</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../deploying-activemq-artemis-on-openshift/using-the-activemq-artemis-operator.html">Using the ActiveMQ Artemis Operator</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../deploying-activemq-artemis-on-openshift/custom-resource-definitions-crds-for-artemis.html">Custom Resource Definitions (CRDs) for Artemis</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../deploying-activemq-artemis-on-openshift/configuring-persistent-storage-for-artemis.html">Configuring persistent storage for Artemis</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../deploying-activemq-artemis-on-openshift/scaling-artemis-brokers-on-openshift.html">Scaling Artemis brokers on OpenShift</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../deploying-activemq-artemis-on-openshift/monitoring-artemis-instances-on-openshift.html">Monitoring Artemis instances on OpenShift</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../deploying-activemq-artemis-on-openshift/hands-on-lab-deploying-a-highly-available-activemq-artemis-cluster-on-openshift.html">Hands-on Lab: Deploying a highly available ActiveMQ Artemis cluster on OpenShift</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../message-distribution-issues/message-distribution-issues.html">Message distribution issues</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../message-distribution-issues/understanding-distributed-messaging-patterns.html">Understanding distributed messaging patterns</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../message-distribution-issues/load-balancing-messages-across-consumers.html">Load balancing messages across consumers</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../message-distribution-issues/message-routing-strategies-and-challenges.html">Message routing strategies and challenges</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../message-distribution-issues/consumer-groups-and-shared-subscriptions.html">Consumer groups and shared subscriptions</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../message-distribution-issues/ensuring-message-ordering-in-distributed-systems.html">Ensuring message ordering in distributed systems</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../message-distribution-issues/handling-message-durability-and-reliability.html">Handling message durability and reliability</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../message-distribution-issues/addressing-fault-tolerance-and-high-availability-for-messages.html">Addressing fault tolerance and high availability for messages</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="client-side-solution.html">Client Side Solution</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="client-side-connection-management-and-pooling.html">Client-side connection management and pooling</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="implementing-client-failover-mechanisms.html">Implementing client failover mechanisms</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="client-side-load-balancing-for-message-consumption.html">Client-side load balancing for message consumption</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="message-acknowledgment-patterns-auto_acknowledge-client_acknowledge.html">Message acknowledgment patterns (AUTO_ACKNOWLEDGE, CLIENT_ACKNOWLEDGE)</a>
+  </li>
+  <li class="nav-item is-current-page" data-depth="2">
+    <a class="nav-link" href="transaction-management-for-message-producers-and-consumers.html">Transaction management for message producers and consumers</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="best-practices-for-client-integration-with-distributed-brokers.html">Best practices for client integration with distributed brokers</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../quarkus-example/quarkus-example.html">Quarkus Example</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../quarkus-example/integrating-jmsamqp-clients-with-quarkus.html">Integrating JMS/AMQP clients with Quarkus</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../quarkus-example/configuring-quarkus-for-activemq-artemis-connectivity.html">Configuring Quarkus for ActiveMQ Artemis connectivity</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../quarkus-example/implementing-message-producers-in-quarkus.html">Implementing message producers in Quarkus</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../quarkus-example/implementing-message-consumers-in-quarkus.html">Implementing message consumers in Quarkus</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../quarkus-example/reactive-messaging-with-quarkus-and-artemis.html">Reactive messaging with Quarkus and Artemis</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../quarkus-example/deploying-quarkus-messaging-applications-on-openshift.html">Deploying Quarkus messaging applications on OpenShift</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../quarkus-example/hands-on-lab-developing-a-quarkus-microservice-with-distributed-messaging.html">Hands-on Lab: Developing a Quarkus microservice with distributed messaging</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../spring-boot-example/spring-boot-example.html">Spring Boot Example</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../spring-boot-example/integrating-jmsamqp-clients-with-spring-boot.html">Integrating JMS/AMQP clients with Spring Boot</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../spring-boot-example/configuring-spring-boot-for-activemq-artemis-connectivity.html">Configuring Spring Boot for ActiveMQ Artemis connectivity</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../spring-boot-example/using-spring-jmsamqp-templates-for-messaging.html">Using Spring JMS/AMQP templates for messaging</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../spring-boot-example/implementing-message-producers-in-spring-boot.html">Implementing message producers in Spring Boot</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../spring-boot-example/implementing-message-consumers-in-spring-boot.html">Implementing message consumers in Spring Boot</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../spring-boot-example/configuring-listener-containers-and-concurrency.html">Configuring listener containers and concurrency</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../spring-boot-example/deploying-spring-boot-messaging-applications-on-openshift.html">Deploying Spring Boot messaging applications on OpenShift</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../spring-boot-example/hands-on-lab-developing-a-spring-boot-microservice-with-distributed-messaging.html">Hands-on Lab: Developing a Spring Boot microservice with distributed messaging</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+</ul>
+  </nav>
+</div>
+<div class="nav-panel-explore" data-panel="explore">
+  <div class="context">
+    <span class="title">Building Resilient Messaging Applications with ActiveMQ Artemis and OpenShift</span>
+    <span class="version">1.0.0</span>
+  </div>
+  <ul class="components">
+    <li class="component is-current">
+      <a class="title" href="../index.html">Building Resilient Messaging Applications with ActiveMQ Artemis and OpenShift</a>
+      <ul class="versions">
+        <li class="version is-current is-latest">
+          <a href="../index.html">1.0.0</a>
+        </li>
+      </ul>
+    </li>
+  </ul>
+</div>
+    </div>
+  </aside>
+</div>
+<main class="article">
+<div class="toolbar" role="navigation">
+<button class="nav-toggle"></button>
+  <a href="../index.html" class="home-link"></a>
+<nav class="breadcrumbs" aria-label="breadcrumbs">
+  <ul>
+    <li><a href="../index.html">Building Resilient Messaging Applications with ActiveMQ Artemis and OpenShift</a></li>
+    <li><a href="client-side-solution.html">Client Side Solution</a></li>
+    <li><a href="transaction-management-for-message-producers-and-consumers.html">Transaction management for message producers and consumers</a></li>
+  </ul>
+</nav>
+</div>
+  <div class="content">
+<aside class="toc sidebar" data-title="Contents" data-levels="2">
+  <div class="toc-menu"></div>
+</aside>
+<article class="doc">
+<h1 class="page">Transaction management for message producers and consumers</h1>
+<h1 id="_transaction_management_for_message_producers_and_consumers" class="sect0"><a class="anchor" href="#_transaction_management_for_message_producers_and_consumers"></a>Transaction Management for Message Producers and Consumers</h1>
+<div class="paragraph">
+<p>Transaction management is a critical aspect of building reliable messaging applications. It ensures the atomicity, consistency, isolation, and durability (ACID) properties of message operations, guaranteeing that messages are processed reliably even in the face of failures. For both message producers and consumers, transactions provide a mechanism to group multiple operations into a single, atomic unit of work.</p>
+</div>
+<div class="sect1">
+<h2 id="_understanding_transactions_in_messaging"><a class="anchor" href="#_understanding_transactions_in_messaging"></a>Understanding Transactions in Messaging</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>In the context of messaging, a transaction ensures that a set of operations—such as sending one or more messages, or receiving and processing one or more messages—either all succeed or all fail together. This prevents partial updates and maintains data integrity.</p>
+</div>
+<div class="paragraph">
+<p>Consider these scenarios:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>Producer Transaction</strong>: A producer needs to send two related messages. If one message fails to send, the other should also not be sent. A transaction ensures both are sent successfully or neither are. This is vital for maintaining data consistency, for example, when updating multiple related records through messages.</p>
+</li>
+<li>
+<p><strong>Consumer Transaction</strong>: A consumer receives a message, processes it, and then updates a database. If the database update fails, the message should not be considered "acknowledged" and should be redelivered. A transaction encompasses both the message consumption and the business logic execution, ensuring <strong>at-least-once</strong> delivery semantics.</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>Most message queuing systems, including ActiveMQ Artemis, support transactional sessions, often following the Java Message Service (JMS) specification for Java clients.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_producer_side_transaction_management"><a class="anchor" href="#_producer_side_transaction_management"></a>Producer-Side Transaction Management</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>For message producers, transaction management ensures that messages are reliably sent to the broker. A producer can begin a transaction, send multiple messages within that transaction, and then either commit the transaction (making all messages visible to consumers) or roll it back (discarding all messages sent within that transaction).</p>
+</div>
+<div class="sect2">
+<h3 id="_how_it_works_for_producers"><a class="anchor" href="#_how_it_works_for_producers"></a>How it Works for Producers</h3>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p><strong>Create a Transactional Session</strong>: When creating a <code>Session</code> (in JMS), you explicitly specify it as transactional. This means all message operations within this session are part of a single unit of work until committed or rolled back.</p>
+</li>
+<li>
+<p><strong>Send Messages</strong>: Produce messages using the <code>MessageProducer</code> associated with this transactional session. These messages are not immediately visible to consumers; they are held in a pending state by the broker.</p>
+</li>
+<li>
+<p><strong>Commit or Rollback</strong>:</p>
+<div class="ulist">
+<ul>
+<li>
+<p><code>session.commit()</code>: This operation finalizes the transaction. All messages sent since the last commit (or the start of the session) are made persistent by the broker and become immediately available to eligible consumers.</p>
+</li>
+<li>
+<p><code>session.rollback()</code>: This operation aborts the transaction. All messages sent since the last commit are discarded by the broker, ensuring they are never delivered to consumers. This is critical when an error occurs during the batch sending process.</p>
+</li>
+</ul>
+</div>
+</li>
+</ol>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_example_transactional_message_producer_jms"><a class="anchor" href="#_example_transactional_message_producer_jms"></a>Example: Transactional Message Producer (JMS)</h3>
+<div class="paragraph">
+<p>Here’s a conceptual example using JMS to demonstrate a transactional producer interacting with an ActiveMQ Artemis broker.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-java hljs" data-lang="java">import javax.jms.*;
+import org.apache.activemq.artemis.jms.client.ActiveMQConnectionFactory;
+
+public class TransactionalProducer {
+
+    public static void main(String[] args) throws JMSException {
+        Connection connection = null;
+        Session session = null;
+        try {
+            // 1. Create a ConnectionFactory for ActiveMQ Artemis
+            ConnectionFactory connectionFactory = new ActiveMQConnectionFactory("tcp://localhost:61616");
+
+            // 2. Create a Connection to the broker
+            connection = connectionFactory.createConnection();
+            connection.start(); // Start the connection
+
+            // 3. Create a transactional Session
+            // The 'true' argument indicates a transactional session, and Session.SESSION_TRANSACTED is the acknowledgment mode.
+            session = connection.createSession(true, Session.SESSION_TRANSACTED);
+
+            // 4. Create a Destination (Queue) for sending messages
+            Queue queue = session.createQueue("myTransactionalQueue");
+
+            // 5. Create a MessageProducer for the queue
+            MessageProducer producer = session.createProducer(queue);
+
+            // 6. Send multiple messages within a single transaction
+            TextMessage message1 = session.createTextMessage("Hello from transaction message 1!");
+            producer.send(message1);
+            System.out.println("Sent message to session buffer: " + message1.getText());
+
+            TextMessage message2 = session.createTextMessage("Hello from transaction message 2!");
+            producer.send(message2);
+            System.out.println("Sent message to session buffer: " + message2.getText());
+
+            // --- Simulate an error before committing ---
+            // Uncomment the following lines to observe a transaction rollback
+            // if (Math.random() &gt; 0.5) {
+            //     throw new RuntimeException("Simulated error: Triggering transaction rollback.");
+            // }
+
+            // 7. Commit the transaction
+            // Only after this call, both messages become durable and visible to consumers.
+            session.commit();
+            System.out.println("Transaction committed successfully. Messages are now available to consumers.");
+
+        } catch (JMSException e) {
+            System.err.println("JMS Exception occurred: " + e.getMessage());
+            if (session != null) {
+                try {
+                    session.rollback(); // Rollback on JMS-related errors
+                    System.out.println("Transaction rolled back due to JMS error.");
+                } catch (JMSException rollbackEx) {
+                    System.err.println("Error during rollback after JMS exception: " + rollbackEx.getMessage());
+                }
+            }
+        } catch (RuntimeException e) {
+            System.err.println("Runtime Exception occurred: " + e.getMessage());
+            if (session != null) {
+                try {
+                    session.rollback(); // Rollback on application-specific runtime errors
+                    System.out.println("Transaction rolled back due to runtime error.");
+                } catch (JMSException rollbackEx) {
+                    System.err.println("Error during rollback after runtime exception: " + rollbackEx.getMessage());
+                }
+            }
+        } finally {
+            // 8. Close resources in a finally block to ensure they are always released
+            if (session != null) {
+                try {
+                    session.close();
+                } catch (JMSException e) {
+                    System.err.println("Error closing session: " + e.getMessage());
+                }
+            }
+            if (connection != null) {
+                try {
+                    connection.close();
+                } catch (JMSException e) {
+                    System.err.println("Error closing connection: " + e.getMessage());
+                }
+            }
+        }
+    }
+}</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>In this example, both <code>message1</code> and <code>message2</code> are sent within the same transaction. If <code>session.commit()</code> is called, both messages become available to consumers. If an error occurs (e.g., the simulated <code>RuntimeException</code> is uncommented) and <code>session.rollback()</code> is called, neither message is sent to the queue, ensuring atomicity.</p>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_consumer_side_transaction_management"><a class="anchor" href="#_consumer_side_transaction_management"></a>Consumer-Side Transaction Management</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>For message consumers, transaction management ensures that a message is processed completely and successfully before it&#8217;s removed from the queue. If an error occurs during processing, the message is automatically redelivered (up to a configured maximum number of times by the broker) for another attempt. This is crucial for <strong>at-least-once</strong> delivery semantics and reliable message processing.</p>
+</div>
+<div class="sect2">
+<h3 id="_how_it_works_for_consumers"><a class="anchor" href="#_how_it_works_for_consumers"></a>How it Works for Consumers</h3>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p><strong>Create a Transactional Session</strong>: Similar to producers, the <code>Session</code> for consumers must be transactional (<code>true</code>, <code>Session.SESSION_TRANSACTED</code>).</p>
+</li>
+<li>
+<p><strong>Receive Messages</strong>: Messages are received via a <code>MessageConsumer</code>. When a message is received in a transactional session, it is <strong>not</strong> immediately removed from the queue. The broker marks it as "in flight" to this consumer.</p>
+</li>
+<li>
+<p><strong>Process Message</strong>: The consumer applies its business logic to the message. This processing might involve interacting with other systems like databases.</p>
+</li>
+<li>
+<p><strong>Commit or Rollback</strong>:</p>
+<div class="ulist">
+<ul>
+<li>
+<p><code>session.commit()</code>: Acknowledges all messages received within the current transaction, effectively removing them from the queue. This signifies successful processing and confirms to the broker that the messages can be safely discarded.</p>
+</li>
+<li>
+<p><code>session.rollback()</code>: Causes all messages received within the current transaction to be redelivered. This occurs if processing fails or if the consumer decides to explicitly roll back due to business logic. The broker then makes the messages available again to eligible consumers (possibly the same consumer or a different one in a cluster). The <code>JMSRedelivered</code> header and redelivery count are updated.</p>
+</li>
+</ul>
+</div>
+</li>
+</ol>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_relationship_to_acknowledgment_patterns"><a class="anchor" href="#_relationship_to_acknowledgment_patterns"></a>Relationship to Acknowledgment Patterns</h3>
+<div class="paragraph">
+<p>When a session is transactional (<code>Session.SESSION_TRANSACTED</code>), explicit acknowledgment modes like <code>AUTO_ACKNOWLEDGE</code> and <code>CLIENT_ACKNOWLEDGE</code> are overridden. The acknowledgment of messages is implicitly handled by the <code>session.commit()</code> or <code>session.rollback()</code> operations.</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><code>AUTO_ACKNOWLEDGE</code>: Messages are automatically acknowledged <strong>by the broker</strong> as soon as they are delivered to the consumer. This mode is <strong>not transactional</strong> at the application level and generally provides <strong>at-most-once</strong> delivery, as a failure after delivery but before processing completion can lead to message loss.</p>
+</li>
+<li>
+<p><code>CLIENT_ACKNOWLEDGE</code>: The client explicitly acknowledges messages using <code>message.acknowledge()</code>. While offering more control than <code>AUTO_ACKNOWLEDGE</code>, it doesn&#8217;t provide the atomicity of a full transaction, especially when coordinating with other resources. It only acknowledges the individual message.</p>
+</li>
+<li>
+<p><code>SESSION_TRANSACTED</code>: Provides robust <strong>at-least-once</strong> delivery with atomicity. Messages are held by the broker until the transaction is committed or rolled back. If rolled back, they are redelivered, and if committed, they are removed. This ensures that a message is either fully processed or fully available for reprocessing.</p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_example_transactional_message_consumer_jms"><a class="anchor" href="#_example_transactional_message_consumer_jms"></a>Example: Transactional Message Consumer (JMS)</h3>
+<div class="paragraph">
+<p>Here’s a conceptual example using JMS for a transactional consumer interacting with an ActiveMQ Artemis broker.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-java hljs" data-lang="java">import javax.jms.*;
+import org.apache.activemq.artemis.jms.client.ActiveMQConnectionFactory;
+
+public class TransactionalConsumer {
+
+    public static void main(String[] args) throws JMSException {
+        Connection connection = null;
+        Session session = null;
+        try {
+            // 1. Create a ConnectionFactory
+            ConnectionFactory connectionFactory = new ActiveMQConnectionFactory("tcp://localhost:61616");
+
+            // 2. Create a Connection
+            connection = connectionFactory.createConnection();
+            connection.start();
+
+            // 3. Create a transactional Session
+            session = connection.createSession(true, Session.SESSION_TRANSACTED);
+
+            // 4. Create a Destination (Queue)
+            Queue queue = session.createQueue("myTransactionalQueue");
+
+            // 5. Create a MessageConsumer
+            MessageConsumer consumer = session.createConsumer(queue);
+
+            System.out.println("Waiting for messages on 'myTransactionalQueue'...");
+
+            while (true) { // Continuously consume messages
+                try {
+                    // 6. Receive a message (blocking call with timeout)
+                    TextMessage message = (TextMessage) consumer.receive(5000); // Wait up to 5 seconds
+
+                    if (message != null) {
+                        System.out.println("Received message: " + message.getText());
+                        System.out.println("  Redelivered: " + message.getJMSRedelivered()); // Check if it's a redelivered message
+
+                        // Simulate message processing and potential failure
+                        // For demonstration, messages containing "fail" will cause a rollback
+                        if (message.getText().contains("fail")) {
+                            System.err.println("Simulating processing error for message: " + message.getText());
+                            throw new RuntimeException("Processing logic failed for message: " + message.getText());
+                        }
+
+                        // 7. Process the message successfully (e.g., write to database, perform business logic)
+                        System.out.println("Successfully processed message: " + message.getText());
+
+                        // 8. Commit the transaction
+                        // This acknowledges the message and removes it from the queue.
+                        session.commit();
+                        System.out.println("Transaction committed. Message acknowledged and removed from queue.");
+                    } else {
+                        // System.out.println("No message received within timeout.");
+                    }
+                } catch (RuntimeException e) {
+                    System.err.println("Application processing error: " + e.getMessage());
+                    // 9. Rollback the transaction
+                    // This causes the message to be redelivered by the broker.
+                    if (session != null) {
+                        try {
+                            session.rollback();
+                            System.out.println("Transaction rolled back. Message will be redelivered.");
+                        } catch (JMSException rollbackEx) {
+                            System.err.println("Error during rollback after application error: " + rollbackEx.getMessage());
+                        }
+                    }
+                }
+            }
+        } catch (JMSException e) {
+            System.err.println("JMS Exception occurred: " + e.getMessage());
+            // Global error handling, potentially rolling back an ongoing transaction if any
+            if (session != null) {
+                try {
+                    session.rollback(); // Attempt to roll back any pending messages
+                } catch (JMSException rollbackEx) {
+                    System.err.println("Error during global rollback after JMS exception: " + rollbackEx.getMessage());
+                }
+            }
+        } finally {
+            // 10. Close resources in a finally block to ensure they are always released
+            if (session != null) {
+                try {
+                    session.close();
+                } catch (JMSException e) {
+                    System.err.println("Error closing session: " + e.getMessage());
+                }
+            }
+            if (connection != null) {
+                try {
+                    connection.close();
+                } catch (JMSException e) {
+                    System.err.println("Error closing connection: " + e.getMessage());
+                }
+            }
+        }
+    }
+}</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>In this consumer example, if the message processing (simulated by checking for "fail" in the message text) throws a <code>RuntimeException</code>, <code>session.rollback()</code> is called. This tells the broker that the message was <strong>not</strong> successfully processed, and it should be redelivered. If processing succeeds, <code>session.commit()</code> acknowledges the message, removing it from the queue.</p>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_distributed_transactions_xa_transactions"><a class="anchor" href="#_distributed_transactions_xa_transactions"></a>Distributed Transactions (XA Transactions)</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>While the examples above cover local transactions (transactions involving only the messaging session), real-world enterprise applications often need to coordinate transactions across multiple distinct resource managers, such as a database and a message broker. This is where <strong>distributed transactions</strong>, often managed using the XA standard (e.g., via the Java Transaction API - JTA), come into play.</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>Scenario</strong>: A message is received from a queue, a record is updated in a relational database, and then a confirmation message is sent to a different topic. All three operations must succeed or fail as a single atomic unit.</p>
+</li>
+<li>
+<p><strong>XA Requirements</strong>: For such a scenario, both the database driver and the message broker&#8217;s client (e.g., ActiveMQ Artemis JMS client) must be XA-compliant. A transaction manager (like Narayana in Quarkus, Atomikos, or Spring&#8217;s JTA support with an underlying manager) coordinates the two-phase commit protocol across these disparate resources, ensuring atomicity across the entire operation.</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>Implementing XA transactions is typically more complex and is often handled by application servers or modern microservice frameworks (like Spring Boot with Atomikos, or Quarkus with Narayana) which abstract away much of the underlying JTA/XA machinery, allowing developers to focus on business logic while still achieving global transaction guarantees.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_best_practices_for_transaction_management"><a class="anchor" href="#_best_practices_for_transaction_management"></a>Best Practices for Transaction Management</h2>
+<div class="sectionbody">
+<div class="ulist">
+<ul>
+<li>
+<p><strong>Transaction Scope</strong>: Keep transactions as small and short-lived as possible to minimize resource locking, improve throughput, and reduce the impact of rollbacks. Avoid long-running business processes that tie up a transaction for extended periods.</p>
+</li>
+<li>
+<p><strong>Robust Error Handling and Rollback</strong>: Always include comprehensive error handling in your message processing logic. Ensure that <code>session.rollback()</code> is explicitly called when application-level failures occur, guaranteeing messages are not lost and are available for reprocessing.</p>
+</li>
+<li>
+<p><strong>Idempotency for Consumers</strong>: While transactional messaging provides <strong>at-least-once</strong> delivery, consumers should be designed to be <strong>idempotent</strong>. This means that processing the same message multiple times (due to redelivery after a rollback) should produce the same result as processing it once. This prevents undesirable side effects from duplicate processing.</p>
+</li>
+<li>
+<p><strong>Dead-Letter Queues (DLQ)</strong>: Combine transactional consumption with the use of Dead-Letter Queues (DLQs). If a message consistently fails processing and is redelivered a maximum number of times (configured on the broker, e.g., using <code>max-delivery-attempts</code> in Artemis), it should be moved to a DLQ instead of endlessly attempting redelivery. This prevents "poison messages" from perpetually blocking the queue.</p>
+</li>
+<li>
+<p><strong>Resource Management</strong>: Always ensure that JMS <code>Connection</code>, <code>Session</code>, <code>MessageProducer</code>, and <code>MessageConsumer</code> objects are properly closed in <code>finally</code> blocks to prevent resource leaks and ensure graceful shutdown.</p>
+</li>
+<li>
+<p><strong>Asynchronous Consumers</strong>: For asynchronous message consumers (using <code>MessageListener</code> or <code>@JmsListener</code> in Spring, or <code>@Incoming</code> in Quarkus), the underlying framework or container typically manages the transaction scope for each message received, abstracting the explicit <code>commit</code>/<code>rollback</code> calls from the application developer. Understand how your chosen framework handles transactions in these scenarios.</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<nav class="pagination">
+  <span class="prev"><a href="message-acknowledgment-patterns-auto_acknowledge-client_acknowledge.html">Message acknowledgment patterns (AUTO_ACKNOWLEDGE, CLIENT_ACKNOWLEDGE)</a></span>
+  <span class="next"><a href="best-practices-for-client-integration-with-distributed-brokers.html">Best practices for client integration with distributed brokers</a></span>
+</nav>
+</article>
+  </div>
+</main>
+</div>
+<footer class="footer">
+  <img src="../../../_/img/rhl-logo-red.png" height="40px" alt="Red Hat"  href="https://redhat.com" >
+</footer><script id="site-script" src="../../../_/js/site.js" data-ui-root-path="../../../_"></script>
+<script async src="../../../_/js/vendor/highlight.js"></script>
+  </body>
+</html>

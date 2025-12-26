@@ -1,0 +1,478 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Scaling Artemis brokers on OpenShift :: Building Resilient Messaging Applications with ActiveMQ Artemis and OpenShift</title>
+    <link rel="prev" href="configuring-persistent-storage-for-artemis.html">
+    <link rel="next" href="monitoring-artemis-instances-on-openshift.html">
+    <meta name="generator" content="Antora 3.1.3">
+    <link rel="stylesheet" href="../../../_/css/site.css">
+    <script>var uiRootPath = '../../../_'</script>
+  </head>
+  <body class="article">
+<header class="header">
+  <nav class="navbar">
+    <div class="navbar-brand">
+      <a class="navbar-item" href="https://www.redhat.com" target="_blank"><img src="../../../_/img/redhat-logo.png" height="40px" alt="Red Hat"></a>
+      <a class="navbar-item" style="font-size: 24px; color: white" href="../../..">Building Resilient Messaging Applications with ActiveMQ Artemis and OpenShift</a>
+      <button class="navbar-burger" data-target="topbar-nav">
+        <span></span>
+        <span></span>
+        <span></span>
+      </button>
+    </div>
+    <div id="topbar-nav" class="navbar-menu">
+      <div class="navbar-end">
+        <a class="navbar-item" href="https://github.com/RedHatQuickCourses/REPLACEREPONAME/issues" target="_blank">Report Issues</a>
+      </div>
+    </div>
+  </nav>
+</header>
+<div class="body">
+<div class="nav-container" data-component="amq-connection-distribution" data-version="1.0.0">
+  <aside class="nav">
+    <div class="panels">
+<div class="nav-panel-menu is-active" data-panel="menu">
+  <nav class="nav-menu">
+    <h3 class="title"><a href="../index.html">Building Resilient Messaging Applications with ActiveMQ Artemis and OpenShift</a></h3>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="../index.html">Home</a>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="deploying-activemq-artemis-on-openshift.html">Deploying ActiveMQ Artemis on OpenShift</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="introduction-to-openshift-for-messaging-applications.html">Introduction to OpenShift for messaging applications</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="understanding-activemq-artemis-on-openshift.html">Understanding ActiveMQ Artemis on OpenShift</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="using-the-activemq-artemis-operator.html">Using the ActiveMQ Artemis Operator</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="custom-resource-definitions-crds-for-artemis.html">Custom Resource Definitions (CRDs) for Artemis</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="configuring-persistent-storage-for-artemis.html">Configuring persistent storage for Artemis</a>
+  </li>
+  <li class="nav-item is-current-page" data-depth="2">
+    <a class="nav-link" href="scaling-artemis-brokers-on-openshift.html">Scaling Artemis brokers on OpenShift</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="monitoring-artemis-instances-on-openshift.html">Monitoring Artemis instances on OpenShift</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="hands-on-lab-deploying-a-highly-available-activemq-artemis-cluster-on-openshift.html">Hands-on Lab: Deploying a highly available ActiveMQ Artemis cluster on OpenShift</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../message-distribution-issues/message-distribution-issues.html">Message distribution issues</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../message-distribution-issues/understanding-distributed-messaging-patterns.html">Understanding distributed messaging patterns</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../message-distribution-issues/load-balancing-messages-across-consumers.html">Load balancing messages across consumers</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../message-distribution-issues/message-routing-strategies-and-challenges.html">Message routing strategies and challenges</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../message-distribution-issues/consumer-groups-and-shared-subscriptions.html">Consumer groups and shared subscriptions</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../message-distribution-issues/ensuring-message-ordering-in-distributed-systems.html">Ensuring message ordering in distributed systems</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../message-distribution-issues/handling-message-durability-and-reliability.html">Handling message durability and reliability</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../message-distribution-issues/addressing-fault-tolerance-and-high-availability-for-messages.html">Addressing fault tolerance and high availability for messages</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../client-side-solution/client-side-solution.html">Client Side Solution</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../client-side-solution/client-side-connection-management-and-pooling.html">Client-side connection management and pooling</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../client-side-solution/implementing-client-failover-mechanisms.html">Implementing client failover mechanisms</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../client-side-solution/client-side-load-balancing-for-message-consumption.html">Client-side load balancing for message consumption</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../client-side-solution/message-acknowledgment-patterns-auto_acknowledge-client_acknowledge.html">Message acknowledgment patterns (AUTO_ACKNOWLEDGE, CLIENT_ACKNOWLEDGE)</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../client-side-solution/transaction-management-for-message-producers-and-consumers.html">Transaction management for message producers and consumers</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../client-side-solution/best-practices-for-client-integration-with-distributed-brokers.html">Best practices for client integration with distributed brokers</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../quarkus-example/quarkus-example.html">Quarkus Example</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../quarkus-example/integrating-jmsamqp-clients-with-quarkus.html">Integrating JMS/AMQP clients with Quarkus</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../quarkus-example/configuring-quarkus-for-activemq-artemis-connectivity.html">Configuring Quarkus for ActiveMQ Artemis connectivity</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../quarkus-example/implementing-message-producers-in-quarkus.html">Implementing message producers in Quarkus</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../quarkus-example/implementing-message-consumers-in-quarkus.html">Implementing message consumers in Quarkus</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../quarkus-example/reactive-messaging-with-quarkus-and-artemis.html">Reactive messaging with Quarkus and Artemis</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../quarkus-example/deploying-quarkus-messaging-applications-on-openshift.html">Deploying Quarkus messaging applications on OpenShift</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../quarkus-example/hands-on-lab-developing-a-quarkus-microservice-with-distributed-messaging.html">Hands-on Lab: Developing a Quarkus microservice with distributed messaging</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../spring-boot-example/spring-boot-example.html">Spring Boot Example</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../spring-boot-example/integrating-jmsamqp-clients-with-spring-boot.html">Integrating JMS/AMQP clients with Spring Boot</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../spring-boot-example/configuring-spring-boot-for-activemq-artemis-connectivity.html">Configuring Spring Boot for ActiveMQ Artemis connectivity</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../spring-boot-example/using-spring-jmsamqp-templates-for-messaging.html">Using Spring JMS/AMQP templates for messaging</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../spring-boot-example/implementing-message-producers-in-spring-boot.html">Implementing message producers in Spring Boot</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../spring-boot-example/implementing-message-consumers-in-spring-boot.html">Implementing message consumers in Spring Boot</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../spring-boot-example/configuring-listener-containers-and-concurrency.html">Configuring listener containers and concurrency</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../spring-boot-example/deploying-spring-boot-messaging-applications-on-openshift.html">Deploying Spring Boot messaging applications on OpenShift</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../spring-boot-example/hands-on-lab-developing-a-spring-boot-microservice-with-distributed-messaging.html">Hands-on Lab: Developing a Spring Boot microservice with distributed messaging</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+</ul>
+  </nav>
+</div>
+<div class="nav-panel-explore" data-panel="explore">
+  <div class="context">
+    <span class="title">Building Resilient Messaging Applications with ActiveMQ Artemis and OpenShift</span>
+    <span class="version">1.0.0</span>
+  </div>
+  <ul class="components">
+    <li class="component is-current">
+      <a class="title" href="../index.html">Building Resilient Messaging Applications with ActiveMQ Artemis and OpenShift</a>
+      <ul class="versions">
+        <li class="version is-current is-latest">
+          <a href="../index.html">1.0.0</a>
+        </li>
+      </ul>
+    </li>
+  </ul>
+</div>
+    </div>
+  </aside>
+</div>
+<main class="article">
+<div class="toolbar" role="navigation">
+<button class="nav-toggle"></button>
+  <a href="../index.html" class="home-link"></a>
+<nav class="breadcrumbs" aria-label="breadcrumbs">
+  <ul>
+    <li><a href="../index.html">Building Resilient Messaging Applications with ActiveMQ Artemis and OpenShift</a></li>
+    <li><a href="deploying-activemq-artemis-on-openshift.html">Deploying ActiveMQ Artemis on OpenShift</a></li>
+    <li><a href="scaling-artemis-brokers-on-openshift.html">Scaling Artemis brokers on OpenShift</a></li>
+  </ul>
+</nav>
+</div>
+  <div class="content">
+<aside class="toc sidebar" data-title="Contents" data-levels="2">
+  <div class="toc-menu"></div>
+</aside>
+<article class="doc">
+<h1 class="page">Scaling Artemis brokers on OpenShift</h1>
+<h1 id="_scaling_artemis_brokers_on_openshift" class="sect0"><a class="anchor" href="#_scaling_artemis_brokers_on_openshift"></a>Scaling ActiveMQ Artemis Brokers on OpenShift</h1>
+<div class="paragraph">
+<p>When building resilient messaging applications, the ability to scale your message broker infrastructure is paramount. Scaling allows you to handle increased message throughput, a larger number of connected clients, and maintain low latency as your application&#8217;s demands grow. On OpenShift, ActiveMQ Artemis can leverage the platform&#8217;s orchestration capabilities to scale effectively, ensuring high availability and performance.</p>
+</div>
+<div class="sect1">
+<h2 id="_understanding_scaling_strategies_for_activemq_artemis_on_openshift"><a class="anchor" href="#_understanding_scaling_strategies_for_activemq_artemis_on_openshift"></a>Understanding Scaling Strategies for ActiveMQ Artemis on OpenShift</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Scaling ActiveMQ Artemis on OpenShift primarily involves two strategies: horizontal scaling and vertical scaling.</p>
+</div>
+<div class="sect2">
+<h3 id="_horizontal_scaling"><a class="anchor" href="#_horizontal_scaling"></a>Horizontal Scaling</h3>
+<div class="paragraph">
+<p>Horizontal scaling involves adding more instances (pods) of the ActiveMQ Artemis broker to distribute the workload. This is the most common and effective way to increase throughput and capacity for messaging applications.</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>How it Works on OpenShift</strong>: The ActiveMQ Artemis Operator, in conjunction with OpenShift&#8217;s StatefulSets, manages the deployment of multiple broker pods. Each pod runs an independent ActiveMQ Artemis instance. When these instances are configured as a cluster, they can coordinate to provide a unified messaging fabric.</p>
+</li>
+<li>
+<p><strong>Benefits</strong>:</p>
+</li>
+<li>
+<p><strong>Increased Throughput</strong>: More brokers mean more processing power for messages.</p>
+</li>
+<li>
+<p><strong>Enhanced Reliability</strong>: If one broker fails, others can continue processing messages.</p>
+</li>
+<li>
+<p><strong>Improved Client Capacity</strong>: Distributes client connections across multiple brokers.</p>
+</li>
+<li>
+<p><strong>Implementation with the ActiveMQ Artemis Operator</strong>:
+The ActiveMQ Artemis Operator simplifies horizontal scaling by allowing you to specify the desired number of broker instances directly in the <code>ActiveMQArtemis</code> custom resource (CR).</p>
+<div class="literalblock">
+<div class="content">
+<pre>[source,yaml]
+----
+apiVersion: broker.amq.io/v1beta1
+kind: ActiveMQArtemis
+metadata:
+  name: my-artemis-cluster
+spec:
+  # ... other configurations ...
+  deploymentPlan:
+    size: 3 <i class="conum" data-value="1"></i><b>(1)</b>
+    extraMounts:
+      - name: artemis-config-volume
+        mountPath: "/opt/broker/etc-override"
+        configMap:
+          name: artemis-broker-config
+    image: quay.io/artemiscloud/activemq-artemis-broker:latest
+    resources:
+      limits:
+        cpu: 1000m
+        memory: 2Gi
+      requests:
+        cpu: 500m
+        memory: 1Gi
+----
+&lt;1&gt; The `size` parameter in the `deploymentPlan` determines the number of broker pods in the cluster. Changing this value (e.g., from 1 to 3) will instruct the Operator to scale out or scale in the broker instances.</pre>
+</div>
+</div>
+<div class="literalblock">
+<div class="content">
+<pre>When you increase the `size`, the Operator creates new StatefulSet pods, PVCs (if persistent storage is configured for each pod), and configures the new brokers to join the existing cluster. When you decrease the `size`, the Operator gracefully shuts down and removes the excess broker pods.</pre>
+</div>
+</div>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_vertical_scaling"><a class="anchor" href="#_vertical_scaling"></a>Vertical Scaling</h3>
+<div class="paragraph">
+<p>Vertical scaling involves increasing the computational resources (CPU, memory) allocated to existing ActiveMQ Artemis broker pods. This is useful when individual brokers need more power to handle specific workloads, such as processing very large messages or managing a high number of concurrent connections per broker.</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>How it Works on OpenShift</strong>: You adjust the <code>resources</code> section within the <code>deploymentPlan</code> of your <code>ActiveMQArtemis</code> CR. OpenShift&#8217;s scheduler will then ensure that your broker pods are allocated the specified CPU and memory resources.</p>
+</li>
+<li>
+<p><strong>Benefits</strong>:</p>
+</li>
+<li>
+<p><strong>Increased Capacity per Instance</strong>: A single broker can handle more load.</p>
+</li>
+<li>
+<p><strong>Simpler Management</strong>: Fewer instances to manage compared to horizontal scaling.</p>
+</li>
+<li>
+<p><strong>Limitations</strong>: There&#8217;s an upper limit to how much a single instance can scale vertically, typically constrained by the underlying node&#8217;s resources and the architecture of the broker itself.</p>
+</li>
+<li>
+<p><strong>Implementation with the ActiveMQ Artemis Operator</strong>:
+You configure resource requests and limits for the broker pods within the <code>deploymentPlan</code> spec:</p>
+<div class="literalblock">
+<div class="content">
+<pre>[source,yaml]
+----
+apiVersion: broker.amq.io/v1beta1
+kind: ActiveMQArtemis
+metadata:
+  name: my-artemis-cluster
+spec:
+  # ... other configurations ...
+  deploymentPlan:
+    size: 3
+    image: quay.io/artemiscloud/activemq-artemis-broker:latest
+    resources: <i class="conum" data-value="1"></i><b>(1)</b>
+      limits:
+        cpu: 2000m <i class="conum" data-value="2"></i><b>(2)</b>
+        memory: 4Gi <i class="conum" data-value="3"></i><b>(3)</b>
+      requests:
+        cpu: 1000m <i class="conum" data-value="4"></i><b>(4)</b>
+        memory: 2Gi <i class="conum" data-value="5"></i><b>(5)</b>
+----
+&lt;1&gt; The `resources` block defines resource requirements.
+&lt;2&gt; `limits.cpu`: The maximum CPU an instance can use (e.g., 2 CPU cores).
+&lt;3&gt; `limits.memory`: The maximum memory an instance can use (e.g., 4 Gigabytes).
+&lt;4&gt; `requests.cpu`: The minimum CPU guaranteed to an instance.
+&lt;5&gt; `requests.memory`: The minimum memory guaranteed to an instance.</pre>
+</div>
+</div>
+<div class="literalblock">
+<div class="content">
+<pre>Modifying these values will trigger a rolling restart of the broker pods by the Operator, applying the new resource allocations without downtime if a highly available setup is configured.</pre>
+</div>
+</div>
+</li>
+</ul>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_operators_role_in_scaling"><a class="anchor" href="#_operators_role_in_scaling"></a>Operator&#8217;s Role in Scaling</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>The ActiveMQ Artemis Operator plays a crucial role in simplifying scaling operations on OpenShift:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>Automated Provisioning</strong>: When scaling horizontally, the Operator automatically provisions new broker pods, configures them to join the existing cluster, and sets up necessary network services.</p>
+</li>
+<li>
+<p><strong>Persistent Storage Management</strong>: For each new scaled-out broker, the Operator can automatically provision a new Persistent Volume Claim (PVC) if <code>spec.deploymentPlan.persistenceEnabled</code> is set to <code>true</code>, ensuring each broker has its own dedicated storage for message durability.</p>
+</li>
+<li>
+<p><strong>Configuration Consistency</strong>: The Operator ensures that all scaled instances share the same configuration, which is derived from the <code>ActiveMQArtemis</code> CR.</p>
+</li>
+<li>
+<p><strong>Rolling Updates</strong>: When scaling vertically or updating other configurations, the Operator performs rolling updates, replacing old pods with new ones without disrupting the entire cluster.</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_considerations_for_scaling_artemis_on_openshift"><a class="anchor" href="#_considerations_for_scaling_artemis_on_openshift"></a>Considerations for Scaling Artemis on OpenShift</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>When planning your scaling strategy, consider the following:</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p><strong>Shared-Nothing vs. Shared-Store Clustering</strong>:</p>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>Shared-Nothing (Recommended for Scale)</strong>: Each broker instance has its own persistence store. Messages are typically sharded across queues on different brokers, or topics are mirrored. This approach offers the best horizontal scalability and fault tolerance.</p>
+</li>
+<li>
+<p><strong>Shared-Store</strong>: Multiple brokers share a single persistent store. Only one active broker can write to the store at a time; others are standbys. This is primarily for high availability (failover) rather than horizontal scaling for throughput. For scaling throughput, shared-nothing is preferred. The Operator configures shared-nothing clustering by default when <code>size &gt; 1</code> and <code>persistenceEnabled: true</code>.</p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<p><strong>Client Connectivity and Load Balancing</strong>:
+When scaling horizontally, clients need a mechanism to connect to any available broker and distribute their workload.</p>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>OpenShift Routes/Services</strong>: OpenShift&#8217;s <code>Service</code> objects and <code>Routes</code> can act as a load balancer, distributing incoming client connections across the available broker pods.</p>
+</li>
+<li>
+<p><strong>Client-Side Discovery</strong>: ActiveMQ Artemis clients support discovery mechanisms (e.g., <code>failover:(tcp://broker-0-svc:61616,tcp://broker-1-svc:61616)</code> or using OpenShift service discovery) to find available brokers in a cluster. This allows clients to connect to multiple brokers and perform their own load balancing or failover.</p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<p><strong>Message Distribution</strong>:</p>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>Queues</strong>: For point-to-point messaging with queues, messages can be distributed across different broker instances. Clients can connect to specific brokers, or intelligent client-side routing can ensure messages are sent to the correct broker.</p>
+</li>
+<li>
+<p><strong>Topics/Subscriptions</strong>: For publish-subscribe messaging, a topic on one broker can replicate messages to other brokers in the cluster, ensuring all subscribers receive the message regardless of which broker they are connected to. Shared subscriptions and consumer groups are critical here to ensure messages are processed by a single consumer within a group, even across multiple brokers.</p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<p><strong>Persistent Storage</strong>:
+Ensure your OpenShift environment has a robust storage provisioner capable of dynamically provisioning Persistent Volumes for each broker instance when scaling horizontally. For a cluster of 3 brokers with persistence, the Operator will provision 3 separate PVCs.</p>
+</li>
+</ol>
+</div>
+<div class="paragraph">
+<p>By strategically combining horizontal and vertical scaling, and leveraging the ActiveMQ Artemis Operator, you can build a highly performant and resilient messaging infrastructure on OpenShift that can adapt to changing demands.</p>
+</div>
+</div>
+</div>
+<nav class="pagination">
+  <span class="prev"><a href="configuring-persistent-storage-for-artemis.html">Configuring persistent storage for Artemis</a></span>
+  <span class="next"><a href="monitoring-artemis-instances-on-openshift.html">Monitoring Artemis instances on OpenShift</a></span>
+</nav>
+</article>
+  </div>
+</main>
+</div>
+<footer class="footer">
+  <img src="../../../_/img/rhl-logo-red.png" height="40px" alt="Red Hat"  href="https://redhat.com" >
+</footer><script id="site-script" src="../../../_/js/site.js" data-ui-root-path="../../../_"></script>
+<script async src="../../../_/js/vendor/highlight.js"></script>
+  </body>
+</html>

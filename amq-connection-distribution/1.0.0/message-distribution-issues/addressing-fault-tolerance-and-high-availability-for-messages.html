@@ -1,0 +1,575 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Addressing fault tolerance and high availability for messages :: Building Resilient Messaging Applications with ActiveMQ Artemis and OpenShift</title>
+    <link rel="prev" href="handling-message-durability-and-reliability.html">
+    <link rel="next" href="../client-side-solution/client-side-solution.html">
+    <meta name="generator" content="Antora 3.1.3">
+    <link rel="stylesheet" href="../../../_/css/site.css">
+    <script>var uiRootPath = '../../../_'</script>
+  </head>
+  <body class="article">
+<header class="header">
+  <nav class="navbar">
+    <div class="navbar-brand">
+      <a class="navbar-item" href="https://www.redhat.com" target="_blank"><img src="../../../_/img/redhat-logo.png" height="40px" alt="Red Hat"></a>
+      <a class="navbar-item" style="font-size: 24px; color: white" href="../../..">Building Resilient Messaging Applications with ActiveMQ Artemis and OpenShift</a>
+      <button class="navbar-burger" data-target="topbar-nav">
+        <span></span>
+        <span></span>
+        <span></span>
+      </button>
+    </div>
+    <div id="topbar-nav" class="navbar-menu">
+      <div class="navbar-end">
+        <a class="navbar-item" href="https://github.com/RedHatQuickCourses/REPLACEREPONAME/issues" target="_blank">Report Issues</a>
+      </div>
+    </div>
+  </nav>
+</header>
+<div class="body">
+<div class="nav-container" data-component="amq-connection-distribution" data-version="1.0.0">
+  <aside class="nav">
+    <div class="panels">
+<div class="nav-panel-menu is-active" data-panel="menu">
+  <nav class="nav-menu">
+    <h3 class="title"><a href="../index.html">Building Resilient Messaging Applications with ActiveMQ Artemis and OpenShift</a></h3>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="../index.html">Home</a>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../deploying-activemq-artemis-on-openshift/deploying-activemq-artemis-on-openshift.html">Deploying ActiveMQ Artemis on OpenShift</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../deploying-activemq-artemis-on-openshift/introduction-to-openshift-for-messaging-applications.html">Introduction to OpenShift for messaging applications</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../deploying-activemq-artemis-on-openshift/understanding-activemq-artemis-on-openshift.html">Understanding ActiveMQ Artemis on OpenShift</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../deploying-activemq-artemis-on-openshift/using-the-activemq-artemis-operator.html">Using the ActiveMQ Artemis Operator</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../deploying-activemq-artemis-on-openshift/custom-resource-definitions-crds-for-artemis.html">Custom Resource Definitions (CRDs) for Artemis</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../deploying-activemq-artemis-on-openshift/configuring-persistent-storage-for-artemis.html">Configuring persistent storage for Artemis</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../deploying-activemq-artemis-on-openshift/scaling-artemis-brokers-on-openshift.html">Scaling Artemis brokers on OpenShift</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../deploying-activemq-artemis-on-openshift/monitoring-artemis-instances-on-openshift.html">Monitoring Artemis instances on OpenShift</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../deploying-activemq-artemis-on-openshift/hands-on-lab-deploying-a-highly-available-activemq-artemis-cluster-on-openshift.html">Hands-on Lab: Deploying a highly available ActiveMQ Artemis cluster on OpenShift</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="message-distribution-issues.html">Message distribution issues</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="understanding-distributed-messaging-patterns.html">Understanding distributed messaging patterns</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="load-balancing-messages-across-consumers.html">Load balancing messages across consumers</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="message-routing-strategies-and-challenges.html">Message routing strategies and challenges</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="consumer-groups-and-shared-subscriptions.html">Consumer groups and shared subscriptions</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="ensuring-message-ordering-in-distributed-systems.html">Ensuring message ordering in distributed systems</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="handling-message-durability-and-reliability.html">Handling message durability and reliability</a>
+  </li>
+  <li class="nav-item is-current-page" data-depth="2">
+    <a class="nav-link" href="addressing-fault-tolerance-and-high-availability-for-messages.html">Addressing fault tolerance and high availability for messages</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../client-side-solution/client-side-solution.html">Client Side Solution</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../client-side-solution/client-side-connection-management-and-pooling.html">Client-side connection management and pooling</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../client-side-solution/implementing-client-failover-mechanisms.html">Implementing client failover mechanisms</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../client-side-solution/client-side-load-balancing-for-message-consumption.html">Client-side load balancing for message consumption</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../client-side-solution/message-acknowledgment-patterns-auto_acknowledge-client_acknowledge.html">Message acknowledgment patterns (AUTO_ACKNOWLEDGE, CLIENT_ACKNOWLEDGE)</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../client-side-solution/transaction-management-for-message-producers-and-consumers.html">Transaction management for message producers and consumers</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../client-side-solution/best-practices-for-client-integration-with-distributed-brokers.html">Best practices for client integration with distributed brokers</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../quarkus-example/quarkus-example.html">Quarkus Example</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../quarkus-example/integrating-jmsamqp-clients-with-quarkus.html">Integrating JMS/AMQP clients with Quarkus</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../quarkus-example/configuring-quarkus-for-activemq-artemis-connectivity.html">Configuring Quarkus for ActiveMQ Artemis connectivity</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../quarkus-example/implementing-message-producers-in-quarkus.html">Implementing message producers in Quarkus</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../quarkus-example/implementing-message-consumers-in-quarkus.html">Implementing message consumers in Quarkus</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../quarkus-example/reactive-messaging-with-quarkus-and-artemis.html">Reactive messaging with Quarkus and Artemis</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../quarkus-example/deploying-quarkus-messaging-applications-on-openshift.html">Deploying Quarkus messaging applications on OpenShift</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../quarkus-example/hands-on-lab-developing-a-quarkus-microservice-with-distributed-messaging.html">Hands-on Lab: Developing a Quarkus microservice with distributed messaging</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../spring-boot-example/spring-boot-example.html">Spring Boot Example</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../spring-boot-example/integrating-jmsamqp-clients-with-spring-boot.html">Integrating JMS/AMQP clients with Spring Boot</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../spring-boot-example/configuring-spring-boot-for-activemq-artemis-connectivity.html">Configuring Spring Boot for ActiveMQ Artemis connectivity</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../spring-boot-example/using-spring-jmsamqp-templates-for-messaging.html">Using Spring JMS/AMQP templates for messaging</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../spring-boot-example/implementing-message-producers-in-spring-boot.html">Implementing message producers in Spring Boot</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../spring-boot-example/implementing-message-consumers-in-spring-boot.html">Implementing message consumers in Spring Boot</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../spring-boot-example/configuring-listener-containers-and-concurrency.html">Configuring listener containers and concurrency</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../spring-boot-example/deploying-spring-boot-messaging-applications-on-openshift.html">Deploying Spring Boot messaging applications on OpenShift</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../spring-boot-example/hands-on-lab-developing-a-spring-boot-microservice-with-distributed-messaging.html">Hands-on Lab: Developing a Spring Boot microservice with distributed messaging</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+</ul>
+  </nav>
+</div>
+<div class="nav-panel-explore" data-panel="explore">
+  <div class="context">
+    <span class="title">Building Resilient Messaging Applications with ActiveMQ Artemis and OpenShift</span>
+    <span class="version">1.0.0</span>
+  </div>
+  <ul class="components">
+    <li class="component is-current">
+      <a class="title" href="../index.html">Building Resilient Messaging Applications with ActiveMQ Artemis and OpenShift</a>
+      <ul class="versions">
+        <li class="version is-current is-latest">
+          <a href="../index.html">1.0.0</a>
+        </li>
+      </ul>
+    </li>
+  </ul>
+</div>
+    </div>
+  </aside>
+</div>
+<main class="article">
+<div class="toolbar" role="navigation">
+<button class="nav-toggle"></button>
+  <a href="../index.html" class="home-link"></a>
+<nav class="breadcrumbs" aria-label="breadcrumbs">
+  <ul>
+    <li><a href="../index.html">Building Resilient Messaging Applications with ActiveMQ Artemis and OpenShift</a></li>
+    <li><a href="message-distribution-issues.html">Message distribution issues</a></li>
+    <li><a href="addressing-fault-tolerance-and-high-availability-for-messages.html">Addressing fault tolerance and high availability for messages</a></li>
+  </ul>
+</nav>
+</div>
+  <div class="content">
+<aside class="toc sidebar" data-title="Contents" data-levels="2">
+  <div class="toc-menu"></div>
+</aside>
+<article class="doc">
+<h1 class="page">Addressing fault tolerance and high availability for messages</h1>
+<h1 id="_addressing_fault_tolerance_and_high_availability_for_messages" class="sect0"><a class="anchor" href="#_addressing_fault_tolerance_and_high_availability_for_messages"></a>Addressing Fault Tolerance and High Availability for Messages</h1>
+<div class="paragraph">
+<p>Ensuring that messages are reliably delivered and processed, even in the face of system failures, is paramount for resilient messaging applications. This section delves into the strategies and mechanisms for achieving fault tolerance and high availability (HA) in distributed messaging systems, with a particular focus on ActiveMQ Artemis and its deployment on OpenShift.</p>
+</div>
+<div class="sect1">
+<h2 id="_the_importance_of_fault_tolerance_and_high_availability_in_messaging"><a class="anchor" href="#_the_importance_of_fault_tolerance_and_high_availability_in_messaging"></a>The Importance of Fault Tolerance and High Availability in Messaging</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Messaging systems serve as the backbone for asynchronous communication, decoupling services and enabling complex distributed architectures. In such environments, the loss of messages or prolonged downtime of the messaging infrastructure can lead to data inconsistencies, service interruptions, and significant business impact.</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>Fault Tolerance (FT)</strong>: The ability of a system to continue operating without interruption when one or more of its components fail. For messaging, this means preventing message loss and ensuring continuous message processing despite hardware, software, or network failures.</p>
+</li>
+<li>
+<p><strong>High Availability (HA)</strong>: The goal of minimizing downtime and ensuring a high level of operational performance for a given period. In messaging, HA typically involves redundancy and failover mechanisms to ensure the broker service remains accessible and responsive.</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>Together, FT and HA guarantee the reliability and resilience of your messaging infrastructure, which is critical for mission-critical applications.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_broker_side_fault_tolerance_and_high_availability_with_activemq_artemis"><a class="anchor" href="#_broker_side_fault_tolerance_and_high_availability_with_activemq_artemis"></a>Broker-Side Fault Tolerance and High Availability with ActiveMQ Artemis</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>ActiveMQ Artemis provides robust features for achieving HA and FT at the broker level, particularly when deployed in containerized environments like OpenShift. The core strategies involve redundant brokers and persistent storage.</p>
+</div>
+<div class="sect2">
+<h3 id="_persistent_storage_for_message_durability"><a class="anchor" href="#_persistent_storage_for_message_durability"></a>Persistent Storage for Message Durability</h3>
+<div class="paragraph">
+<p>The foundation of message durability and recoverability in ActiveMQ Artemis is its persistent store. Messages marked as durable (e.g., non-temporary queues, persistent messages) are written to disk before being acknowledged by the broker.</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>Journal</strong>: Artemis uses a high-performance journaling system (based on append-only files) for storing messages, transactions, and configuration changes. This ensures that even if a broker crashes, unacknowledged persistent messages and transaction states can be recovered upon restart.</p>
+</li>
+<li>
+<p><strong>Large Messages</strong>: For messages exceeding a configured threshold, Artemis stores their payloads directly on the file system, referencing them from the journal.</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>When deploying on OpenShift, persistent storage is typically provided via Persistent Volumes (PVs) and Persistent Volume Claims (PVCs), ensuring that the broker&#8217;s data survives pod restarts and can be remounted by a new broker instance.</p>
+</div>
+<div class="listingblock">
+<div class="title">Example: Persistent Volume Claim for ActiveMQ Artemis</div>
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: artemis-data-pvc
+spec:
+  accessModes:
+    - ReadWriteOnce # Or ReadWriteMany for shared storage HA if your storage supports it
+  resources:
+    requests:
+      storage: 10Gi
+  storageClassName: standard # Or your specific OpenShift storage class</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_activemq_artemis_high_availability_architectures"><a class="anchor" href="#_activemq_artemis_high_availability_architectures"></a>ActiveMQ Artemis High Availability Architectures</h3>
+<div class="paragraph">
+<p>ActiveMQ Artemis supports several HA configurations to protect against broker failures:</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>==== Shared Storage HA
+In this classic HA setup, multiple broker instances (an active and one or more standbys) share a single persistent store (e.g., a shared file system via NFS or OpenShift&#8217;s <code>ReadWriteMany</code> PVs).</p>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>Active-Standby</strong>: Only one broker is active at any given time, serving clients and writing to the shared store. Standby brokers continuously monitor the active broker.</p>
+</li>
+<li>
+<p><strong>Failover</strong>: If the active broker fails, a standby broker takes over by acquiring a lock on the shared store and resuming operation. This minimizes message loss as all persistent data is already available.</p>
+</li>
+<li>
+<p><strong>Limitations</strong>: The shared storage itself becomes a single point of failure. Performance can also be limited by the shared storage solution.</p>
+<div class="literalblock">
+<div class="content">
+<pre>.Conceptual Flow of Shared Storage HA
+----
+Client ----&gt; Active Broker
+              |       ^
+              |       | (Monitors)
+              v       |
+            Shared Storage &lt;---- Standby Broker (waiting to take over)
+----</pre>
+</div>
+</div>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<p>==== Replicated HA (Recommended for Cloud-Native)
+This is the default and recommended HA strategy for ActiveMQ Artemis in cloud-native environments like OpenShift. It&#8217;s a "shared-nothing" architecture where each broker instance maintains its own persistent store and replicates its journal to other broker instances.</p>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>Active-Standby with Replication</strong>: One broker is active, and other standbys constantly receive replication updates from the active. Data is synchronously or asynchronously replicated between brokers.</p>
+</li>
+<li>
+<p><strong>Failover</strong>: If the active broker fails, a standby broker is promoted to active. Since it has an up-to-date copy of the journal, it can immediately take over without needing to re-read from a shared store.</p>
+</li>
+<li>
+<p><strong>Advantages</strong>: Eliminates the shared storage as a single point of failure, often provides better performance, and scales horizontally more effectively.</p>
+</li>
+<li>
+<p><strong>Disadvantages</strong>: Requires more storage resources (each broker has its own copy of data), and network latency can impact replication performance.</p>
+<div class="literalblock">
+<div class="content">
+<pre>When using the ActiveMQ Artemis Operator on OpenShift, replicated HA is typically configured automatically for clustered deployments using StatefulSets, where each pod gets its own PVC.</pre>
+</div>
+</div>
+<div class="literalblock">
+<div class="content">
+<pre>.Conceptual Flow of Replicated HA
+----
+Client ----&gt; Active Broker (Broker 1)
+              |       ^
+              |       | (Replicates data)
+              v       |
+            Local Store (Broker 1) &lt;---&gt; Local Store (Broker 2 - Standby)
+                                         |
+                                         | (Monitors)
+                                         v
+                                       Local Store (Broker 3 - Standby)
+----</pre>
+</div>
+</div>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<p>==== Broker Clustering
+Beyond HA pairs, ActiveMQ Artemis supports full clustering where multiple active brokers work together to distribute queues and topics. This provides not only HA but also load balancing for messages and consumers.</p>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>Distributed Queues</strong>: Messages for a queue can be distributed across multiple brokers in the cluster.</p>
+</li>
+<li>
+<p><strong>Seamless Failover</strong>: If a broker in the cluster fails, its clients can automatically fail over to another active broker in the cluster. Messages that were routed to the failed broker will be recovered by other brokers in the cluster (if configured with persistence and replication).</p>
+</li>
+<li>
+<p><strong>Scaling</strong>: Allows for horizontal scaling of messaging throughput by adding more brokers to the cluster.</p>
+</li>
+<li>
+<p><strong>OpenShift and the Operator</strong>: The ActiveMQ Artemis Operator simplifies the deployment of clustered brokers on OpenShift, managing the discovery, scaling, and configuration required for a robust cluster.</p>
+</li>
+</ul>
+</div>
+</li>
+</ol>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_quorum_and_split_brain_prevention"><a class="anchor" href="#_quorum_and_split_brain_prevention"></a>Quorum and Split-Brain Prevention</h3>
+<div class="paragraph">
+<p>In replicated HA and clustered environments, it&#8217;s crucial to prevent "split-brain" scenarios where multiple brokers falsely believe they are the active one, leading to data inconsistency. ActiveMQ Artemis uses a quorum mechanism to address this:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>Voting</strong>: Brokers in a replicated setup or cluster "vote" to elect an active master. A majority (quorum) of brokers must agree to elect a new master or to promote a standby.</p>
+</li>
+<li>
+<p><strong>Fencing</strong>: If a broker loses connectivity to the majority, it will "fence" itself (shut down) to prevent it from becoming a rogue active.</p>
+</li>
+<li>
+<p><strong><code>quorum-size</code></strong>: This setting specifies the minimum number of live servers required for the cluster to operate and prevent split-brain. For example, in a three-node cluster, a <code>quorum-size</code> of <code>2</code> means at least two nodes must be online.</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_client_side_solutions_for_fault_tolerance_and_high_availability"><a class="anchor" href="#_client_side_solutions_for_fault_tolerance_and_high_availability"></a>Client-Side Solutions for Fault Tolerance and High Availability</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>While broker-side HA ensures the messaging infrastructure&#8217;s resilience, client applications must also be designed to handle failures gracefully.</p>
+</div>
+<div class="sect2">
+<h3 id="_connection_failover"><a class="anchor" href="#_connection_failover"></a>Connection Failover</h3>
+<div class="paragraph">
+<p>ActiveMQ Artemis clients are designed to automatically reconnect to available brokers in an HA or clustered setup.</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>Connection URL</strong>: Clients typically specify a list of potential broker addresses in their connection URL.
+.Example: Connection URL with multiple hosts
+[source,java]
+----
+// JMS connection URL
+String url = "tcp://broker1.example.com:61616,tcp://broker2.example.com:61616,tcp://broker3.example.com:61616";</p>
+<div class="literalblock">
+<div class="content">
+<pre>    // AMQP connection URI (using failover options)
+    // For JMS/AMQP, ActiveMQ Artemis clients also support the 'failover:' prefix for advanced options
+    String amqpUrl = "failover:(amqp://broker1.example.com:5672,amqp://broker2.example.com:5672)?failover.maxReconnectAttempts=5";
+    ----
+*   *Automatic Reconnection*: If the currently connected broker fails, the client library attempts to connect to the next available broker in the list. This is often handled transparently by the client's underlying communication libraries.
+*   *OpenShift Service Discovery*: When deploying clients on OpenShift, using Kubernetes Services (e.g., a headless service for the Artemis cluster) simplifies this by providing a stable DNS name that resolves to the available broker pods.</pre>
+</div>
+</div>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_message_retries_and_idempotency"><a class="anchor" href="#_message_retries_and_idempotency"></a>Message Retries and Idempotency</h3>
+<div class="paragraph">
+<p>Client applications should implement retry logic for message production and consumption to handle transient network issues or temporary broker unavailability.</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>Producer Retries</strong>: If a producer fails to send a message (e.g., due to a network timeout or broker failover), it should retry sending the message.</p>
+</li>
+<li>
+<p><strong>Consumer Retries</strong>: If a consumer fails to process a message (e.g., due to an application error or downstream service unavailability), it should ideally either retry processing or move the message to a Dead Letter Queue (DLQ).</p>
+</li>
+<li>
+<p><strong>Idempotency</strong>: When implementing retries, it&#8217;s crucial to design applications to be idempotent. An idempotent operation is one that can be applied multiple times without changing the result beyond the initial application. This prevents adverse effects if a message is delivered and processed more than once (e.g., due to a producer retrying after the broker received the message but before it sent an acknowledgment).</p>
+<div class="literalblock">
+<div class="content">
+<pre>.Example: Ensuring idempotency for a payment processing message
+----
+// Each payment message should have a unique transaction ID
+String transactionId = message.getProperty("transactionId");</pre>
+</div>
+</div>
+<div class="literalblock">
+<div class="content">
+<pre>// Check if this transaction has already been processed
+if (processedTransactions.contains(transactionId)) {
+    log.warn("Duplicate message for transaction ID: {}", transactionId);
+    message.acknowledge(); // Acknowledge and discard
+    return;
+}</pre>
+</div>
+</div>
+<div class="literalblock">
+<div class="content">
+<pre>// Process the payment
+processPayment(message);</pre>
+</div>
+</div>
+<div class="literalblock">
+<div class="content">
+<pre>// Record the transaction as processed
+processedTransactions.add(transactionId);
+message.acknowledge();
+----</pre>
+</div>
+</div>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_transaction_management_for_atomic_operations"><a class="anchor" href="#_transaction_management_for_atomic_operations"></a>Transaction Management for Atomic Operations</h3>
+<div class="paragraph">
+<p>For critical workflows, messages should be produced and consumed within transactions to ensure atomicity.</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>Local Transactions</strong>: A message producer can send multiple messages within a single JMS/AMQP session transaction. If any part of the transaction fails, all messages are rolled back.</p>
+</li>
+<li>
+<p><strong>XA Transactions (Distributed Transactions)</strong>: For scenarios involving multiple resource managers (e.g., a database and a message broker), XA transactions ensure "all or nothing" atomicity across these systems. If the database update fails, the message send is also rolled back, and vice-versa. This is essential for guaranteeing consistency in complex distributed systems.</p>
+<div class="literalblock">
+<div class="content">
+<pre>.Conceptual Flow of XA Transaction
+----
+Client Application
+|
+|---- Begin XA Transaction
+|      |
+|      |---- Write to Database (Resource 1)
+|      |
+|      |---- Send Message to Broker (Resource 2)
+|      |
+|      |---- Commit XA Transaction
+|
+|---- If any step fails, entire XA transaction is rolled back
+----</pre>
+</div>
+</div>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_consumer_group_resilience"><a class="anchor" href="#_consumer_group_resilience"></a>Consumer Group Resilience</h3>
+<div class="paragraph">
+<p>When using consumer groups and shared subscriptions (e.g., with non-exclusive queues or topics), ActiveMQ Artemis automatically distributes messages across available consumers. If a consumer instance fails, other consumers in the same group can take over its share of messages, ensuring continuous processing. This inherently provides a level of fault tolerance for consumer applications.</p>
+</div>
+<div class="paragraph">
+<p>By combining robust broker-side HA features with intelligent client-side design, developers can build messaging applications that are highly resilient, fault-tolerant, and capable of operating continuously in dynamic environments like OpenShift.</p>
+</div>
+</div>
+</div>
+</div>
+<nav class="pagination">
+  <span class="prev"><a href="handling-message-durability-and-reliability.html">Handling message durability and reliability</a></span>
+  <span class="next"><a href="../client-side-solution/client-side-solution.html">Client Side Solution</a></span>
+</nav>
+</article>
+  </div>
+</main>
+</div>
+<footer class="footer">
+  <img src="../../../_/img/rhl-logo-red.png" height="40px" alt="Red Hat"  href="https://redhat.com" >
+</footer><script id="site-script" src="../../../_/js/site.js" data-ui-root-path="../../../_"></script>
+<script async src="../../../_/js/vendor/highlight.js"></script>
+  </body>
+</html>

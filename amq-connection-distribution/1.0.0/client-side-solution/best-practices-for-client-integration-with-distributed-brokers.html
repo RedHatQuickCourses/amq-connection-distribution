@@ -1,0 +1,1170 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Best practices for client integration with distributed brokers :: Building Resilient Messaging Applications with ActiveMQ Artemis and OpenShift</title>
+    <link rel="prev" href="transaction-management-for-message-producers-and-consumers.html">
+    <link rel="next" href="../quarkus-example/quarkus-example.html">
+    <meta name="generator" content="Antora 3.1.3">
+    <link rel="stylesheet" href="../../../_/css/site.css">
+    <script>var uiRootPath = '../../../_'</script>
+  </head>
+  <body class="article">
+<header class="header">
+  <nav class="navbar">
+    <div class="navbar-brand">
+      <a class="navbar-item" href="https://www.redhat.com" target="_blank"><img src="../../../_/img/redhat-logo.png" height="40px" alt="Red Hat"></a>
+      <a class="navbar-item" style="font-size: 24px; color: white" href="../../..">Building Resilient Messaging Applications with ActiveMQ Artemis and OpenShift</a>
+      <button class="navbar-burger" data-target="topbar-nav">
+        <span></span>
+        <span></span>
+        <span></span>
+      </button>
+    </div>
+    <div id="topbar-nav" class="navbar-menu">
+      <div class="navbar-end">
+        <a class="navbar-item" href="https://github.com/RedHatQuickCourses/REPLACEREPONAME/issues" target="_blank">Report Issues</a>
+      </div>
+    </div>
+  </nav>
+</header>
+<div class="body">
+<div class="nav-container" data-component="amq-connection-distribution" data-version="1.0.0">
+  <aside class="nav">
+    <div class="panels">
+<div class="nav-panel-menu is-active" data-panel="menu">
+  <nav class="nav-menu">
+    <h3 class="title"><a href="../index.html">Building Resilient Messaging Applications with ActiveMQ Artemis and OpenShift</a></h3>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="../index.html">Home</a>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../deploying-activemq-artemis-on-openshift/deploying-activemq-artemis-on-openshift.html">Deploying ActiveMQ Artemis on OpenShift</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../deploying-activemq-artemis-on-openshift/introduction-to-openshift-for-messaging-applications.html">Introduction to OpenShift for messaging applications</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../deploying-activemq-artemis-on-openshift/understanding-activemq-artemis-on-openshift.html">Understanding ActiveMQ Artemis on OpenShift</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../deploying-activemq-artemis-on-openshift/using-the-activemq-artemis-operator.html">Using the ActiveMQ Artemis Operator</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../deploying-activemq-artemis-on-openshift/custom-resource-definitions-crds-for-artemis.html">Custom Resource Definitions (CRDs) for Artemis</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../deploying-activemq-artemis-on-openshift/configuring-persistent-storage-for-artemis.html">Configuring persistent storage for Artemis</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../deploying-activemq-artemis-on-openshift/scaling-artemis-brokers-on-openshift.html">Scaling Artemis brokers on OpenShift</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../deploying-activemq-artemis-on-openshift/monitoring-artemis-instances-on-openshift.html">Monitoring Artemis instances on OpenShift</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../deploying-activemq-artemis-on-openshift/hands-on-lab-deploying-a-highly-available-activemq-artemis-cluster-on-openshift.html">Hands-on Lab: Deploying a highly available ActiveMQ Artemis cluster on OpenShift</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../message-distribution-issues/message-distribution-issues.html">Message distribution issues</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../message-distribution-issues/understanding-distributed-messaging-patterns.html">Understanding distributed messaging patterns</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../message-distribution-issues/load-balancing-messages-across-consumers.html">Load balancing messages across consumers</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../message-distribution-issues/message-routing-strategies-and-challenges.html">Message routing strategies and challenges</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../message-distribution-issues/consumer-groups-and-shared-subscriptions.html">Consumer groups and shared subscriptions</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../message-distribution-issues/ensuring-message-ordering-in-distributed-systems.html">Ensuring message ordering in distributed systems</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../message-distribution-issues/handling-message-durability-and-reliability.html">Handling message durability and reliability</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../message-distribution-issues/addressing-fault-tolerance-and-high-availability-for-messages.html">Addressing fault tolerance and high availability for messages</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="client-side-solution.html">Client Side Solution</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="client-side-connection-management-and-pooling.html">Client-side connection management and pooling</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="implementing-client-failover-mechanisms.html">Implementing client failover mechanisms</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="client-side-load-balancing-for-message-consumption.html">Client-side load balancing for message consumption</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="message-acknowledgment-patterns-auto_acknowledge-client_acknowledge.html">Message acknowledgment patterns (AUTO_ACKNOWLEDGE, CLIENT_ACKNOWLEDGE)</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="transaction-management-for-message-producers-and-consumers.html">Transaction management for message producers and consumers</a>
+  </li>
+  <li class="nav-item is-current-page" data-depth="2">
+    <a class="nav-link" href="best-practices-for-client-integration-with-distributed-brokers.html">Best practices for client integration with distributed brokers</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../quarkus-example/quarkus-example.html">Quarkus Example</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../quarkus-example/integrating-jmsamqp-clients-with-quarkus.html">Integrating JMS/AMQP clients with Quarkus</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../quarkus-example/configuring-quarkus-for-activemq-artemis-connectivity.html">Configuring Quarkus for ActiveMQ Artemis connectivity</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../quarkus-example/implementing-message-producers-in-quarkus.html">Implementing message producers in Quarkus</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../quarkus-example/implementing-message-consumers-in-quarkus.html">Implementing message consumers in Quarkus</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../quarkus-example/reactive-messaging-with-quarkus-and-artemis.html">Reactive messaging with Quarkus and Artemis</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../quarkus-example/deploying-quarkus-messaging-applications-on-openshift.html">Deploying Quarkus messaging applications on OpenShift</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../quarkus-example/hands-on-lab-developing-a-quarkus-microservice-with-distributed-messaging.html">Hands-on Lab: Developing a Quarkus microservice with distributed messaging</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../spring-boot-example/spring-boot-example.html">Spring Boot Example</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../spring-boot-example/integrating-jmsamqp-clients-with-spring-boot.html">Integrating JMS/AMQP clients with Spring Boot</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../spring-boot-example/configuring-spring-boot-for-activemq-artemis-connectivity.html">Configuring Spring Boot for ActiveMQ Artemis connectivity</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../spring-boot-example/using-spring-jmsamqp-templates-for-messaging.html">Using Spring JMS/AMQP templates for messaging</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../spring-boot-example/implementing-message-producers-in-spring-boot.html">Implementing message producers in Spring Boot</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../spring-boot-example/implementing-message-consumers-in-spring-boot.html">Implementing message consumers in Spring Boot</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../spring-boot-example/configuring-listener-containers-and-concurrency.html">Configuring listener containers and concurrency</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../spring-boot-example/deploying-spring-boot-messaging-applications-on-openshift.html">Deploying Spring Boot messaging applications on OpenShift</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../spring-boot-example/hands-on-lab-developing-a-spring-boot-microservice-with-distributed-messaging.html">Hands-on Lab: Developing a Spring Boot microservice with distributed messaging</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+</ul>
+  </nav>
+</div>
+<div class="nav-panel-explore" data-panel="explore">
+  <div class="context">
+    <span class="title">Building Resilient Messaging Applications with ActiveMQ Artemis and OpenShift</span>
+    <span class="version">1.0.0</span>
+  </div>
+  <ul class="components">
+    <li class="component is-current">
+      <a class="title" href="../index.html">Building Resilient Messaging Applications with ActiveMQ Artemis and OpenShift</a>
+      <ul class="versions">
+        <li class="version is-current is-latest">
+          <a href="../index.html">1.0.0</a>
+        </li>
+      </ul>
+    </li>
+  </ul>
+</div>
+    </div>
+  </aside>
+</div>
+<main class="article">
+<div class="toolbar" role="navigation">
+<button class="nav-toggle"></button>
+  <a href="../index.html" class="home-link"></a>
+<nav class="breadcrumbs" aria-label="breadcrumbs">
+  <ul>
+    <li><a href="../index.html">Building Resilient Messaging Applications with ActiveMQ Artemis and OpenShift</a></li>
+    <li><a href="client-side-solution.html">Client Side Solution</a></li>
+    <li><a href="best-practices-for-client-integration-with-distributed-brokers.html">Best practices for client integration with distributed brokers</a></li>
+  </ul>
+</nav>
+</div>
+  <div class="content">
+<aside class="toc sidebar" data-title="Contents" data-levels="2">
+  <div class="toc-menu"></div>
+</aside>
+<article class="doc">
+<h1 class="page">Best practices for client integration with distributed brokers</h1>
+<h1 id="_best_practices_for_client_integration_with_distributed_brokers" class="sect0"><a class="anchor" href="#_best_practices_for_client_integration_with_distributed_brokers"></a>Best Practices for Client Integration with Distributed Brokers</h1>
+<div class="paragraph">
+<p>This section outlines essential best practices for integrating client applications with distributed messaging brokers like ActiveMQ Artemis. Adhering to these guidelines ensures robust, efficient, and resilient messaging solutions, crucial for building fault-tolerant messaging applications on platforms like OpenShift.</p>
+</div>
+<div class="sect1">
+<h2 id="_connection_management_and_pooling"><a class="anchor" href="#_connection_management_and_pooling"></a>Connection Management and Pooling</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Clients often interact with brokers frequently, especially in microservice architectures. Establishing a new connection for every message or operation is resource-intensive and adds unnecessary latency.</p>
+</div>
+<div class="sect2">
+<h3 id="_detailed_technical_explanation"><a class="anchor" href="#_detailed_technical_explanation"></a>Detailed Technical Explanation</h3>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>Connection Lifecycle Overhead:</strong> Each time a client creates a <code>Connection</code> to the broker, it involves network handshake, authentication, and resource allocation on both the client and broker sides. This process consumes network sockets, memory, and CPU cycles. Repeatedly opening and closing connections can lead to performance bottlenecks, resource exhaustion, and increased garbage collection overhead.</p>
+</li>
+<li>
+<p><strong>Resource Management:</strong> A <code>Connection</code> object is typically used to create <code>Session</code> objects, which in turn are used to create <code>MessageProducer</code> and <code>MessageConsumer</code> instances. These are all valuable resources that need careful management.</p>
+</li>
+<li>
+<p><strong>Connection Pooling Solution:</strong> The industry-standard practice is to employ a connection pool. A connection pool pre-establishes and manages a set of active connections to the broker. When a client application needs to interact with the broker, it requests a connection from the pool. If an idle connection is available, it&#8217;s immediately provided, avoiding the overhead of creating a new one. After use, the connection is returned to the pool for reuse by other threads or operations. This significantly reduces latency, improves throughput, and conserves resources.</p>
+</li>
+<li>
+<p><strong>Benefits of Pooling:</strong></p>
+</li>
+<li>
+<p><strong>Reduced Latency:</strong> Eliminates the connection establishment time for most operations.</p>
+</li>
+<li>
+<p><strong>Improved Throughput:</strong> Allows more concurrent operations by reusing existing connections.</p>
+</li>
+<li>
+<p><strong>Resource Efficiency:</strong> Minimizes resource consumption on both client and broker.</p>
+</li>
+<li>
+<p><strong>Stability:</strong> Prevents "connection storm" scenarios during high load.</p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_hands_on_activity_implementing_a_pooled_connection_factory_conceptual"><a class="anchor" href="#_hands_on_activity_implementing_a_pooled_connection_factory_conceptual"></a>Hands-on Activity: Implementing a Pooled Connection Factory (Conceptual)</h3>
+<div class="paragraph">
+<p>While a full lab setup is beyond this section, understanding how to configure a pooled connection factory is key. Most JMS client libraries, especially within frameworks like Spring Boot, provide built-in pooling capabilities. For ActiveMQ Artemis, this typically involves wrapping its native <code>ActiveMQJMSConnectionFactory</code> with a pooling implementation.</p>
+</div>
+<div class="sect3">
+<h4 id="_code_snippet_basic_jms_connection_pooling_example_with_springs_cachingconnectionfactory"><a class="anchor" href="#_code_snippet_basic_jms_connection_pooling_example_with_springs_cachingconnectionfactory"></a>Code Snippet: Basic JMS Connection Pooling Example with Spring&#8217;s <code>CachingConnectionFactory</code></h4>
+<div class="paragraph">
+<p>This example demonstrates how to use Spring Framework&#8217;s <code>CachingConnectionFactory</code> to pool JMS resources when integrating with ActiveMQ Artemis. This is a common approach in Spring-based applications.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-java hljs" data-lang="java">import org.springframework.jms.connection.CachingConnectionFactory;
+import org.apache.activemq.artemis.jms.client.ActiveMQJMSConnectionFactory;
+import jakarta.jms.ConnectionFactory; // For Jakarta EE/JMS 2.0+ (JMS 1.1 uses javax.jms.ConnectionFactory)
+import jakarta.jms.Connection;
+import jakarta.jms.Session;
+import jakarta.jms.MessageProducer;
+import jakarta.jms.Queue;
+import jakarta.jms.TextMessage;
+
+public class PooledConnectionExample {
+
+    /**
+     * Creates and configures a pooled JMS ConnectionFactory for ActiveMQ Artemis.
+     *
+     * @param brokerUrl The URL of the ActiveMQ Artemis broker (e.g., "tcp://localhost:61616").
+     * @return A CachingConnectionFactory instance.
+     */
+    public static ConnectionFactory createPooledConnectionFactory(String brokerUrl) {
+        // 1. Create the underlying ActiveMQ Artemis-specific ConnectionFactory.
+        // This factory handles the low-level connection details.
+        ActiveMQJMSConnectionFactory artemisConnectionFactory = new ActiveMQJMSConnectionFactory(brokerUrl);
+
+        // 2. Wrap the Artemis factory with Spring's CachingConnectionFactory.
+        // This factory caches JMS connections, sessions, producers, and consumers for reuse.
+        CachingConnectionFactory cachingConnectionFactory = new CachingConnectionFactory();
+        cachingConnectionFactory.setTargetConnectionFactory(artemisConnectionFactory);
+
+        // Configure pooling parameters
+        cachingConnectionFactory.setSessionCacheSize(10); // Cache up to 10 sessions per connection
+        cachingConnectionFactory.setCacheConsumers(true); // Cache consumers for reuse
+        cachingConnectionFactory.setCacheProducers(true); // Cache producers for reuse
+        // Other useful settings: setReconnectOnException(true) for automatic reconnection
+
+        System.out.println("Pooled ConnectionFactory created for broker: " + brokerUrl);
+        return cachingConnectionFactory;
+    }
+
+    public static void main(String[] args) {
+        String brokerUrl = "tcp://localhost:61616"; // Replace with your Artemis broker URL
+        ConnectionFactory pooledFactory = createPooledConnectionFactory(brokerUrl);
+
+        // --- Demonstrate usage of the pooled connection factory ---
+        try (Connection connection = pooledFactory.createConnection()) {
+            connection.start(); // Connections from a pooling factory are typically started once
+            System.out.println("Connection obtained from pool.");
+
+            // Session, Producer, and Consumer will also be cached and reused
+            try (Session session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE)) {
+                System.out.println("Session obtained from pool.");
+                Queue queue = session.createQueue("myPooledQueue");
+
+                try (MessageProducer producer = session.createProducer(queue)) {
+                    System.out.println("Producer obtained from pool.");
+                    TextMessage message = session.createTextMessage("Hello from pooled producer!");
+                    producer.send(message);
+                    System.out.println("Sent message: " + message.getText());
+                } // Producer is returned to cache/pool
+            } // Session is returned to cache/pool
+        } catch (Exception e) {
+            System.err.println("Error during pooled connection usage: " + e.getMessage());
+            e.printStackTrace();
+        }
+        System.out.println("Application finished. Resources returned to pool (not explicitly closed here).");
+    }
+}</code></pre>
+</div>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>Explanation:</strong> The <code>CachingConnectionFactory</code> wraps the <code>ActiveMQJMSConnectionFactory</code>. When <code>createConnection()</code>, <code>createSession()</code>, <code>createProducer()</code>, or <code>createConsumer()</code> are called on <code>cachingConnectionFactory</code> or its derived resources, it attempts to return a cached instance. If none is available, it creates a new one and adds it to the cache. When <code>close()</code> is called on a cached resource, it&#8217;s not actually closed but returned to the pool for reuse.</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_client_side_failover_mechanisms"><a class="anchor" href="#_client_side_failover_mechanisms"></a>Client-side Failover Mechanisms</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>In a highly available ActiveMQ Artemis cluster deployed on OpenShift, brokers can fail (e.g., pod restarts, node failures). Clients must be able to gracefully switch to an available broker instance without manual intervention to maintain continuous operation.</p>
+</div>
+<div class="sect2">
+<h3 id="_detailed_technical_explanation_2"><a class="anchor" href="#_detailed_technical_explanation_2"></a>Detailed Technical Explanation</h3>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>High Availability (HA) in Artemis:</strong> An ActiveMQ Artemis cluster provides HA by deploying multiple broker instances. This can be achieved through shared storage (master-slave) or by distributing queues across multiple active brokers. On OpenShift, the Artemis Operator manages the deployment of these clustered instances.</p>
+</li>
+<li>
+<p><strong>Client Failover Principle:</strong> The client-side failover mechanism is a crucial component of application resilience. It involves the client library automatically detecting a loss of connection to its current broker, and then systematically attempting to establish a new connection to another operational broker within the configured cluster.</p>
+</li>
+<li>
+<p><strong>Failover URLs/Configuration:</strong> Messaging clients typically rely on a list of broker URLs or a specially formatted failover URL string. This string informs the client library about all potential broker endpoints it can connect to.</p>
+</li>
+<li>
+<p><strong>Initial Connection:</strong> The client attempts to connect to the first broker in the list.</p>
+</li>
+<li>
+<p><strong>Failure Detection:</strong> If the connection drops or the broker becomes unresponsive, the client&#8217;s internal failover logic kicks in.</p>
+</li>
+<li>
+<p><strong>Reconnection Attempts:</strong> The client iterates through the remaining broker URLs, attempting to reconnect. It often incorporates parameters like <code>maxAttempts</code> (maximum retries) and <code>retryInterval</code> (delay between retries) to prevent overwhelming the network or brokers.</p>
+</li>
+<li>
+<p><strong>Topology Discovery (Optional):</strong> Some advanced clients can discover the cluster topology dynamically after an initial connection, rather than relying solely on a static list of URLs.</p>
+</li>
+<li>
+<p><strong>Transparent Failover:</strong> For well-implemented client libraries (like ActiveMQ Artemis&#8217;s own client), this failover process can be largely transparent to the application. Messages in transit might be lost if not transactional or durable, but the application can continue sending/receiving messages once a new connection is established.</p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_hands_on_activity_configuring_activemq_artemis_client_failover"><a class="anchor" href="#_hands_on_activity_configuring_activemq_artemis_client_failover"></a>Hands-on Activity: Configuring ActiveMQ Artemis Client Failover</h3>
+<div class="paragraph">
+<p>ActiveMQ Artemis clients support a specific URI format for configuring failover, allowing you to specify multiple broker endpoints.</p>
+</div>
+<div class="sect3">
+<h4 id="_code_snippet_configuring_activemq_artemis_client_failover"><a class="anchor" href="#_code_snippet_configuring_activemq_artemis_client_failover"></a>Code Snippet: Configuring ActiveMQ Artemis Client Failover</h4>
+<div class="paragraph">
+<p>This example demonstrates how to configure a client to use ActiveMQ Artemis&#8217;s failover mechanism by providing a comma-separated list of broker URLs within a <code>failover:</code> URI.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-java hljs" data-lang="java">import org.apache.activemq.artemis.jms.client.ActiveMQJMSConnectionFactory;
+import jakarta.jms.ConnectionFactory;
+import jakarta.jms.Connection;
+import jakarta.jms.Session;
+import jakarta.jms.MessageConsumer;
+import jakarta.jms.Queue;
+import jakarta.jms.TextMessage;
+import jakarta.jms.JMSException;
+
+public class ClientFailoverExample {
+
+    public static void main(String[] args) {
+        // Define a failover URL. The client will try brokers at 61616, then 61617, then 61618.
+        // Parameters:
+        //   maxAttempts: Maximum number of reconnection attempts (0 for infinite).
+        //   retryInterval: Initial delay between reconnection attempts in milliseconds.
+        //   initialConnectAttempts: Number of attempts to connect to the primary URL initially.
+        //   reconnectDelayMultiplier: Multiplier for exponential backoff (retryInterval * multiplier^attempt).
+        //   maxReconnectDelay: Maximum delay between retries.
+        String failoverBrokerUrl = "failover:(" +
+                                   "tcp://localhost:61616," + // Primary broker
+                                   "tcp://localhost:61617," + // Secondary broker
+                                   "tcp://localhost:61618" +  // Tertiary broker
+                                   ")?maxAttempts=-1&amp;retryInterval=1000&amp;reconnectDelayMultiplier=2.0&amp;maxReconnectDelay=30000";
+
+        ConnectionFactory connectionFactory = null;
+        Connection connection = null;
+        Session session = null;
+        MessageConsumer consumer = null;
+
+        try {
+            connectionFactory = new ActiveMQJMSConnectionFactory(failoverBrokerUrl);
+            connection = connectionFactory.createConnection();
+            connection.start(); // Start the connection to enable message delivery
+
+            session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
+            Queue queue = session.createQueue("myFailoverQueue");
+            consumer = session.createConsumer(queue);
+
+            System.out.println("Client connected and consuming from: " + failoverBrokerUrl);
+            System.out.println("Waiting for messages... (Try stopping/starting brokers at 61616, 61617 to observe failover)");
+
+            // In a real application, you'd have a message listener or a loop to receive messages.
+            // For this example, we'll just keep the connection open for a while to observe failover.
+            // You can manually stop one of the broker instances (e.g., the one at 61616)
+            // and observe the client automatically reconnecting to another.
+            Thread.sleep(120000); // Keep client alive for 2 minutes
+
+        } catch (JMSException e) {
+            System.err.println("JMS Error during client operation or failover: " + e.getMessage());
+            e.printStackTrace();
+        } catch (InterruptedException e) {
+            System.err.println("Client interrupted: " + e.getMessage());
+        } catch (Exception e) {
+            System.err.println("General error: " + e.getMessage());
+            e.printStackTrace();
+        } finally {
+            try {
+                if (consumer != null) consumer.close();
+                if (session != null) session.close();
+                if (connection != null) connection.close();
+            } catch (JMSException e) {
+                System.err.println("Error closing resources: " + e.getMessage());
+            }
+        }
+    }
+}</code></pre>
+</div>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>Failover URI Parameters:</strong></p>
+</li>
+<li>
+<p><code>maxAttempts=-1</code>: Specifies infinite reconnection attempts. Use a positive number for a limited count.</p>
+</li>
+<li>
+<p><code>retryInterval=1000</code>: Sets the initial delay to 1 second before the first retry.</p>
+</li>
+<li>
+<p><code>reconnectDelayMultiplier=2.0</code>: Implements exponential backoff, doubling the delay with each attempt (e.g., 1s, 2s, 4s, 8s&#8230;&#8203;).</p>
+</li>
+<li>
+<p><code>maxReconnectDelay=30000</code>: Caps the maximum delay between retries at 30 seconds.</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_message_acknowledgment_patterns"><a class="anchor" href="#_message_acknowledgment_patterns"></a>Message Acknowledgment Patterns</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>How a client acknowledges a message is fundamental to message reliability, ensuring that messages are not lost and are processed exactly once (or at least once, depending on the strategy).</p>
+</div>
+<div class="sect2">
+<h3 id="_detailed_technical_explanation_3"><a class="anchor" href="#_detailed_technical_explanation_3"></a>Detailed Technical Explanation</h3>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>Purpose of Acknowledgment:</strong> An acknowledgment (ACK) is a signal from the consumer to the broker, indicating that a message has been successfully received and processed. Upon receiving an ACK, the broker can then safely remove the message from its queue or mark it as delivered. Without proper acknowledgment, messages might be redelivered unnecessarily or, in worst-case scenarios, permanently lost.</p>
+</li>
+<li>
+<p><strong>JMS Acknowledgment Modes:</strong> JMS (Java Message Service) defines several acknowledgment modes that provide different trade-offs between reliability and performance:</p>
+</li>
+<li>
+<p><code>Session.AUTO_ACKNOWLEDGE</code>: This is the simplest mode. The JMS provider (broker) automatically acknowledges a message as soon as it has been successfully delivered to the client. This is efficient but offers the lowest reliability. If the consumer crashes <strong>after</strong> receiving the message but <strong>before</strong> fully processing it, the message is considered acknowledged and might be lost.</p>
+</li>
+<li>
+<p><code>Session.CLIENT_ACKNOWLEDGE</code>: This mode gives the client application explicit control. The client must call <code>message.acknowledge()</code> on the received message once it has completed all processing steps. If the client fails before calling <code>acknowledge()</code>, the message is <strong>not</strong> acknowledged and will be redelivered to an available consumer (potentially the same one after restart or another in a consumer group). This provides "at least once" delivery semantics and is generally preferred for critical applications requiring high reliability.</p>
+</li>
+<li>
+<p><code>Session.DUPS_OK_ACKNOWLEDGE</code>: A lazy acknowledgment mode. The JMS provider may defer acknowledgments to reduce overhead and improve performance. However, this comes at the cost of potentially delivering duplicate messages if a failure occurs before the deferred acknowledgment is sent. Not typically recommended for applications that cannot tolerate duplicates.</p>
+</li>
+<li>
+<p><code>Session.SESSION_TRANSACTED</code>: When a session is transactional (see next section), all messages sent and received within that session are acknowledged as part of the transaction commit. If the transaction is rolled back, consumed messages are redelivered. This offers the highest level of reliability and consistency when coordinating messaging with other operations (e.g., database updates).</p>
+</li>
+<li>
+<p><strong>AMQP Acknowledgment:</strong> AMQP (Advanced Message Queuing Protocol), which ActiveMQ Artemis also supports, has similar concepts:</p>
+</li>
+<li>
+<p><code>Basic.Ack</code>: Explicit positive acknowledgment.</p>
+</li>
+<li>
+<p><code>Basic.Nack</code>: Negative acknowledgment, often used to indicate processing failure and request redelivery.</p>
+</li>
+<li>
+<p><code>Basic.Reject</code>: Rejects a message, potentially with an option to requeue it or send it to a Dead Letter Queue.</p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_hands_on_activity_exploring_client_acknowledge_mode"><a class="anchor" href="#_hands_on_activity_exploring_client_acknowledge_mode"></a>Hands-on Activity: Exploring Client Acknowledge Mode</h3>
+<div class="paragraph">
+<p>This activity demonstrates the behavior of <code>CLIENT_ACKNOWLEDGE</code> mode, highlighting how messages are redelivered if not explicitly acknowledged.</p>
+</div>
+<div class="sect3">
+<h4 id="_code_snippet_using_client_acknowledge"><a class="anchor" href="#_code_snippet_using_client_acknowledge"></a>Code Snippet: Using <code>CLIENT_ACKNOWLEDGE</code></h4>
+<div class="paragraph">
+<p>This Java example illustrates how to produce a message and then consume it using <code>CLIENT_ACKNOWLEDGE</code> mode. You can uncomment the simulated error to observe message redelivery.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-java hljs" data-lang="java">import jakarta.jms.Connection;
+import jakarta.jms.ConnectionFactory;
+import jakarta.jms.MessageConsumer;
+import jakarta.jms.MessageProducer;
+import jakarta.jms.Queue;
+import jakarta.jms.Session;
+import jakarta.jms.TextMessage;
+import jakarta.jms.JMSException;
+
+import org.apache.activemq.artemis.jms.client.ActiveMQJMSConnectionFactory;
+
+public class ClientAcknowledgeExample {
+
+    private static final String BROKER_URL = "tcp://localhost:61616";
+    private static final String QUEUE_NAME = "myAckQueue";
+
+    public static void main(String[] args) throws Exception {
+        // Step 1: Send a message to the queue using AUTO_ACKNOWLEDGE for simplicity.
+        sendMessage();
+        System.out.println("--- Message sent to " + QUEUE_NAME + " ---");
+
+        // Step 2: Consume the message using CLIENT_ACKNOWLEDGE.
+        // Try running this first as-is. Then, uncomment the "throw new RuntimeException"
+        // inside consumeMessageWithClientAck() and run again.
+        // You'll see the message being redelivered on subsequent runs until it's acknowledged.
+        consumeMessageWithClientAck();
+        System.out.println("--- Consumer finished ---");
+    }
+
+    /**
+     * Sends a single text message to the specified queue.
+     */
+    private static void sendMessage() throws JMSException {
+        ConnectionFactory connectionFactory = new ActiveMQJMSConnectionFactory(BROKER_URL);
+        try (Connection connection = connectionFactory.createConnection();
+             Session session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE)) {
+            connection.start();
+            Queue queue = session.createQueue(QUEUE_NAME);
+            try (MessageProducer producer = session.createProducer(queue)) {
+                TextMessage message = session.createTextMessage("Hello, reliable world!");
+                producer.send(message);
+                System.out.println("Producer: Sent message: '" + message.getText() + "'");
+            }
+        }
+    }
+
+    /**
+     * Consumes a message using CLIENT_ACKNOWLEDGE mode.
+     * Demonstrates explicit acknowledgment and potential redelivery on failure.
+     */
+    private static void consumeMessageWithClientAck() throws JMSException, InterruptedException {
+        ConnectionFactory connectionFactory = new ActiveMQJMSConnectionFactory(BROKER_URL);
+        Connection connection = null;
+        Session session = null;
+        MessageConsumer consumer = null;
+
+        try {
+            connection = connectionFactory.createConnection();
+            connection.start();
+
+            // Create a session with CLIENT_ACKNOWLEDGE mode
+            session = connection.createSession(false, Session.CLIENT_ACKNOWLEDGE);
+            Queue queue = session.createQueue(QUEUE_NAME);
+            consumer = session.createConsumer(queue);
+
+            System.out.println("Consumer: Started with CLIENT_ACKNOWLEDGE mode. Waiting for messages...");
+
+            // Receive a message synchronously with a timeout
+            TextMessage receivedMessage = (TextMessage) consumer.receive(5000); // Wait up to 5 seconds
+
+            if (receivedMessage != null) {
+                System.out.println("Consumer: Received message: '" + receivedMessage.getText() + "'");
+
+                // --- Simulate processing logic ---
+                // Uncomment the line below to simulate a processing failure.
+                // If an exception occurs here, acknowledge() will not be called,
+                // and the message will be redelivered.
+                // if (true) throw new RuntimeException("Simulating processing error!");
+
+                // If processing is successful, explicitly acknowledge the message.
+                // This tells the broker that the message can be removed from the queue.
+                receivedMessage.acknowledge();
+                System.out.println("Consumer: Message '" + receivedMessage.getText() + "' acknowledged.");
+
+            } else {
+                System.out.println("Consumer: No message received within timeout.");
+            }
+
+        } catch (Exception e) {
+            System.err.println("Consumer: Error during consumption or processing: " + e.getMessage());
+            // If an exception occurs before acknowledge(), the message is *not* acknowledged.
+            // When the session (or connection) closes, the message will be returned to the queue
+            // and redelivered to an available consumer.
+        } finally {
+            // Ensure resources are closed. If an unacknowledged message exists in a CLIENT_ACKNOWLEDGE
+            // session when it's closed, the message will be redelivered.
+            try {
+                if (consumer != null) consumer.close();
+                if (session != null) session.close();
+                if (connection != null) connection.close();
+            } catch (JMSException e) {
+                System.err.println("Consumer: Error closing resources: " + e.getMessage());
+            }
+        }
+    }
+}</code></pre>
+</div>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>Key takeaway:</strong> With <code>CLIENT_ACKNOWLEDGE</code>, the responsibility of confirming message processing lies solely with the client. This provides stronger guarantees for "at least once" delivery, making it suitable for applications where data loss is unacceptable.</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_transaction_management_for_message_operations"><a class="anchor" href="#_transaction_management_for_message_operations"></a>Transaction Management for Message Operations</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>For operations that demand atomicity, such as sending multiple messages that must either all succeed or all fail, or consuming a message and then updating a database, transactions are indispensable. They ensure data consistency and reliability.</p>
+</div>
+<div class="sect2">
+<h3 id="_detailed_technical_explanation_4"><a class="anchor" href="#_detailed_technical_explanation_4"></a>Detailed Technical Explanation</h3>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>Atomicity Principle:</strong> A transaction guarantees that a set of related operations is treated as a single, indivisible unit. This means either all operations within the transaction successfully complete (<code>commit</code>), or if any part fails, all operations are undone (<code>rollback</code>), leaving the system in its original state. This prevents partial updates and maintains data integrity.</p>
+</li>
+<li>
+<p><strong>JMS Local Transactions:</strong> In JMS, a <code>Session</code> can be created as transactional (<code>session.createSession(true, &#8230;&#8203;)</code>). When a session is transactional:</p>
+</li>
+<li>
+<p><strong>Producers:</strong> Messages sent by <code>MessageProducer</code> instances created from this session are not actually delivered to the broker until <code>session.commit()</code> is called. If <code>session.rollback()</code> is called (or if the session/connection closes abnormally), all pending messages sent within that transaction are discarded.</p>
+</li>
+<li>
+<p><strong>Consumers:</strong> Messages received by <code>MessageConsumer</code> instances from this session are not acknowledged to the broker until <code>session.commit()</code> is called. If <code>session.rollback()</code> is called, all messages received within that transaction are unacknowledged and returned to the queue for redelivery.</p>
+</li>
+<li>
+<p><strong>XA Transactions (Distributed Transactions):</strong> When messaging operations need to be coordinated with other <strong>distinct</strong> resource managers (e.g., a JMS broker and a relational database, or two different JMS brokers), XA transactions (using the <code>javax.transaction.xa.XAResource</code> API) are required. XA transactions are managed by a central Transaction Manager (e.g., JBoss Narayana, Spring&#8217;s <code>JtaTransactionManager</code>). They implement the two-phase commit protocol to ensure atomicity across multiple participants. While more complex to set up, XA transactions provide the strongest consistency guarantees for distributed operations.</p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_hands_on_activity_implementing_transactional_messaging"><a class="anchor" href="#_hands_on_activity_implementing_transactional_messaging"></a>Hands-on Activity: Implementing Transactional Messaging</h3>
+<div class="paragraph">
+<p>This activity demonstrates JMS local transactions for both message production and consumption, showing how <code>commit()</code> and <code>rollback()</code> affect message delivery and acknowledgment.</p>
+</div>
+<div class="sect3">
+<h4 id="_code_snippet_jms_local_transaction_example"><a class="anchor" href="#_code_snippet_jms_local_transaction_example"></a>Code Snippet: JMS Local Transaction Example</h4>
+<div class="paragraph">
+<p>This example illustrates transactional message production and consumption. You can uncomment <code>RuntimeException</code> lines to observe rollback behavior.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-java hljs" data-lang="java">import jakarta.jms.Connection;
+import jakarta.jms.ConnectionFactory;
+import jakarta.jms.MessageConsumer;
+import jakarta.jms.MessageProducer;
+import jakarta.jms.Queue;
+import jakarta.jms.Session;
+import jakarta.jms.TextMessage;
+import jakarta.jms.JMSException;
+
+import org.apache.activemq.artemis.jms.client.ActiveMQJMSConnectionFactory;
+
+public class TransactionalMessagingExample {
+
+    private static final String BROKER_URL = "tcp://localhost:61616";
+    private static final String QUEUE_NAME = "myTransactionalQueue";
+
+    public static void main(String[] args) throws Exception {
+        System.out.println("--- Starting Transactional Messaging Example ---");
+
+        // Example 1: Producing messages in a transaction
+        // Run this first. Then, uncomment the error simulation and run again to see rollback.
+        System.out.println("\n--- Producing Transactional Messages ---");
+        produceTransactionalMessages();
+
+        // Give some time for broker to update (if messages were committed)
+        Thread.sleep(1000);
+
+        // Example 2: Consuming and acknowledging in a transaction
+        // Ensure there are messages on the queue (by successfully running produceTransactionalMessages).
+        // Then, uncomment the error simulation in consumeTransactionalMessage() and run again to see redelivery.
+        System.out.println("\n--- Consuming Transactional Messages ---");
+        consumeTransactionalMessage();
+
+        System.out.println("\n--- Transactional Messaging Example Finished ---");
+    }
+
+    /**
+     * Demonstrates sending multiple messages within a single JMS local transaction.
+     */
+    private static void produceTransactionalMessages() throws JMSException {
+        ConnectionFactory connectionFactory = new ActiveMQJMSConnectionFactory(BROKER_URL);
+        Connection connection = null;
+        Session session = null;
+        try {
+            connection = connectionFactory.createConnection();
+            connection.start();
+            // Create a transactional session: first param = true (transacted), second param = AcknowledgeMode (ignored for transacted)
+            session = connection.createSession(true, Session.SESSION_TRANSACTED);
+            Queue queue = session.createQueue(QUEUE_NAME);
+            try (MessageProducer producer = session.createProducer(queue)) {
+                TextMessage msg1 = session.createTextMessage("Transactional Message 1");
+                producer.send(msg1);
+                System.out.println("Producer: Sent (but not committed) message: '" + msg1.getText() + "'");
+
+                TextMessage msg2 = session.createTextMessage("Transactional Message 2");
+                producer.send(msg2);
+                System.out.println("Producer: Sent (but not committed) message: '" + msg2.getText() + "'");
+
+                // --- Simulate an error before commit ---
+                // Uncomment the line below to simulate a failure.
+                // If this exception occurs, the subsequent commit() will not be reached,
+                // and the transaction will implicitly rollback when the session closes.
+                // if (true) throw new RuntimeException("Simulating producer processing error!");
+
+                session.commit(); // Commit both messages. They become visible on the queue.
+                System.out.println("Producer: Transaction committed. Messages are now durable on the broker.");
+
+            } catch (Exception e) {
+                System.err.println("Producer: Error during production, rolling back transaction: " + e.getMessage());
+                if (session != null) {
+                    try {
+                        session.rollback(); // Explicitly roll back the transaction
+                        System.out.println("Producer: Transaction rolled back. Messages discarded.");
+                    } catch (JMSException ex) {
+                        System.err.println("Producer: Error during rollback: " + ex.getMessage());
+                    }
+                }
+            }
+        } finally {
+            try {
+                if (session != null) session.close();
+                if (connection != null) connection.close();
+            } catch (JMSException e) {
+                System.err.println("Producer: Error closing resources: " + e.getMessage());
+            }
+        }
+    }
+
+    /**
+     * Demonstrates consuming and acknowledging messages within a single JMS local transaction.
+     */
+    private static void consumeTransactionalMessage() throws JMSException, InterruptedException {
+        ConnectionFactory connectionFactory = new ActiveMQJMSConnectionFactory(BROKER_URL);
+        Connection connection = null;
+        Session session = null;
+        MessageConsumer consumer = null;
+        try {
+            connection = connectionFactory.createConnection();
+            connection.start();
+            // Create a transactional session
+            session = connection.createSession(true, Session.SESSION_TRANSACTED);
+            Queue queue = session.createQueue(QUEUE_NAME);
+            consumer = session.createConsumer(queue);
+
+            System.out.println("Consumer: Started with transactional session. Waiting for messages...");
+
+            TextMessage receivedMessage = (TextMessage) consumer.receive(5000); // Wait up to 5 seconds
+            if (receivedMessage != null) {
+                System.out.println("Consumer: Received message: '" + receivedMessage.getText() + "'");
+
+                // --- Simulate processing failure ---
+                // Uncomment the line below to simulate a processing error.
+                // If this exception occurs, the subsequent commit() will not be reached,
+                // and the transaction will implicitly rollback when the session closes.
+                // The message will then be redelivered.
+                // if (true) throw new RuntimeException("Simulating consumer processing error!");
+
+                session.commit(); // Acknowledge the message(s) and commit the transaction
+                System.out.println("Consumer: Transaction committed. Message acknowledged and removed from queue.");
+            } else {
+                System.out.println("Consumer: No message received within timeout.");
+            }
+
+        } catch (Exception e) {
+            System.err.println("Consumer: Error during consumption or processing, rolling back transaction: " + e.getMessage());
+            if (session != null) {
+                try {
+                    session.rollback(); // Explicitly roll back the transaction
+                    System.out.println("Consumer: Transaction rolled back. Message will be redelivered.");
+                } catch (JMSException ex) {
+                    System.err.println("Consumer: Error during rollback: " + ex.getMessage());
+                }
+            }
+        } finally {
+            try {
+                if (consumer != null) consumer.close();
+                if (session != null) session.close();
+                if (connection != null) connection.close();
+            } catch (JMSException e) {
+                System.err.println("Consumer: Error closing resources: " + e.getMessage());
+            }
+        }
+    }
+}</code></pre>
+</div>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>Key takeaway:</strong> Transactions provide strong guarantees for atomicity. For producers, messages are held until committed. For consumers, messages are only removed from the queue upon commit. Rollback ensures that any failed operation leaves the messaging state unchanged.</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_resource_management"><a class="anchor" href="#_resource_management"></a>Resource Management</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Properly managing and closing messaging resources is paramount to prevent resource leaks, ensure application stability, and optimize performance, especially in long-running applications or microservices on OpenShift.</p>
+</div>
+<div class="sect2">
+<h3 id="_detailed_technical_explanation_5"><a class="anchor" href="#_detailed_technical_explanation_5"></a>Detailed Technical Explanation</h3>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>Resource Hierarchy:</strong> Messaging clients interact with brokers through a hierarchical set of resources:</p>
+</li>
+<li>
+<p><code>Connection</code>: The primary link to the messaging broker.</p>
+</li>
+<li>
+<p><code>Session</code>: A single-threaded context for producing and consuming messages, created from a <code>Connection</code>.</p>
+</li>
+<li>
+<p><code>MessageProducer</code>: An object used to send messages to destinations.</p>
+</li>
+<li>
+<p><code>MessageConsumer</code>: An object used to receive messages from destinations.</p>
+</li>
+<li>
+<p><strong>System Resource Consumption:</strong> Each of these objects, particularly <code>Connection</code> and <code>Session</code>, consumes underlying operating system resources such as network sockets, file handles, memory, and CPU threads. Leaving these resources open indefinitely without proper closure can lead to:</p>
+</li>
+<li>
+<p><strong>Resource Exhaustion:</strong> Running out of available network sockets, memory, or file descriptors, causing application crashes or system instability.</p>
+</li>
+<li>
+<p><strong>Memory Leaks:</strong> Unclosed resources can prevent garbage collection of associated objects, leading to increased memory usage over time.</p>
+</li>
+<li>
+<p><strong>Dangling Connections:</strong> Connections that are no longer actively used but remain open, consuming broker resources unnecessarily.</p>
+</li>
+<li>
+<p><strong>Graceful Shutdown:</strong> Proper resource closure ensures that all pending operations are completed, messages are acknowledged correctly, and resources are released back to the operating system or pool.</p>
+</li>
+<li>
+<p><strong>Best Practices for Closure:</strong></p>
+</li>
+<li>
+<p><strong><code>finally</code> Blocks:</strong> Traditionally, resources were closed in <code>finally</code> blocks to ensure execution even if exceptions occurred.</p>
+</li>
+<li>
+<p><strong>Try-with-Resources (Java 7+):</strong> For objects that implement the <code>AutoCloseable</code> interface (which most JMS resources do), Java&#8217;s <code>try-with-resources</code> statement is the preferred and most robust method. It automatically closes resources at the end of the <code>try</code> block, regardless of whether it completes normally or via an exception.</p>
+</li>
+<li>
+<p><strong>Order of Closure:</strong> Resources should be closed in the reverse order of their creation to avoid dependencies and potential issues. For example: <code>MessageConsumer</code>/<code>MessageProducer</code> &#8594; <code>Session</code> &#8594; <code>Connection</code>.</p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_hands_on_activity_demonstrating_proper_resource_closure"><a class="anchor" href="#_hands_on_activity_demonstrating_proper_resource_closure"></a>Hands-on Activity: Demonstrating Proper Resource Closure</h3>
+<div class="paragraph">
+<p>This activity highlights the use of <code>try-with-resources</code> for automatic and safe management of JMS resources.</p>
+</div>
+<div class="sect3">
+<h4 id="_code_snippet_proper_resource_closure_with_try_with_resources"><a class="anchor" href="#_code_snippet_proper_resource_closure_with_try_with_resources"></a>Code Snippet: Proper Resource Closure with <code>try-with-resources</code></h4>
+<div class="paragraph">
+<p>This Java example demonstrates how to use the <code>try-with-resources</code> statement to ensure that JMS <code>Connection</code>, <code>Session</code>, and <code>MessageConsumer</code> (or <code>MessageProducer</code>) objects are automatically closed.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-java hljs" data-lang="java">import jakarta.jms.Connection;
+import jakarta.jms.ConnectionFactory;
+import jakarta.jms.MessageConsumer;
+import jakarta.jms.Queue;
+import jakarta.jms.Session;
+import jakarta.jms.TextMessage;
+import jakarta.jms.JMSException;
+
+import org.apache.activemq.artemis.jms.client.ActiveMQJMSConnectionFactory;
+
+public class ResourceClosureExample {
+
+    private static final String BROKER_URL = "tcp://localhost:61616";
+    private static final String QUEUE_NAME = "myResourceQueue";
+
+    public static void main(String[] args) {
+        System.out.println("--- Starting Resource Closure Example ---");
+
+        // Use try-with-resources for Connection, Session, and Consumer/Producer.
+        // This ensures resources are closed automatically and correctly, even if exceptions occur.
+        try (Connection connection = new ActiveMQJMSConnectionFactory(BROROKER_URL).createConnection()) {
+            connection.start(); // Start the connection once
+            System.out.println("Connection established.");
+
+            try (Session session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE)) {
+                System.out.println("Session created.");
+                Queue queue = session.createQueue(QUEUE_NAME);
+
+                // Example for producing a message
+                try (MessageProducer producer = session.createProducer(queue)) {
+                    TextMessage message = session.createTextMessage("Test message for resource closure");
+                    producer.send(message);
+                    System.out.println("Message sent: " + message.getText());
+                } // producer.close() is called automatically here
+                System.out.println("MessageProducer closed.");
+
+                // Example for consuming a message
+                try (MessageConsumer consumer = session.createConsumer(queue)) {
+                    System.out.println("MessageConsumer created. Waiting for message...");
+                    TextMessage receivedMessage = (TextMessage) consumer.receive(1000); // Wait 1 second
+                    if (receivedMessage != null) {
+                        System.out.println("Received: '" + receivedMessage.getText() + "'");
+                    } else {
+                        System.out.println("No message received within timeout.");
+                    }
+                } // consumer.close() is called automatically here
+                System.out.println("MessageConsumer closed.");
+
+            } // session.close() is called automatically here
+            System.out.println("Session closed.");
+
+        } catch (JMSException e) {
+            System.err.println("A JMS error occurred: " + e.getMessage());
+            e.printStackTrace();
+        } catch (Exception e) {
+            System.err.println("A general error occurred: " + e.getMessage());
+            e.printStackTrace();
+        } // connection.close() is called automatically here
+        System.out.println("Connection closed.");
+
+        System.out.println("--- Resource Closure Example Finished ---");
+    }
+}</code></pre>
+</div>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>Explanation:</strong> The <code>try-with-resources</code> statement ensures that all resources declared within its parentheses (e.g., <code>connection</code>, <code>session</code>, <code>producer</code>, <code>consumer</code>) are automatically closed when the <code>try</code> block exits, either normally or due to an exception. This pattern is concise, readable, and prevents common resource leak issues.</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_error_handling_and_dead_letter_queues_dlq"><a class="anchor" href="#_error_handling_and_dead_letter_queues_dlq"></a>Error Handling and Dead Letter Queues (DLQ)</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Robust error handling is paramount for reliable messaging systems. Messages that cannot be successfully processed after several attempts need a mechanism to be isolated and managed, rather than endlessly retried or lost.</p>
+</div>
+<div class="sect2">
+<h3 id="_detailed_technical_explanation_6"><a class="anchor" href="#_detailed_technical_explanation_6"></a>Detailed Technical Explanation</h3>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>Idempotency:</strong> A fundamental best practice for message processing is to design consumer logic to be idempotent. This means that processing the same message multiple times should yield the same result and not cause adverse side effects. Idempotency simplifies error recovery and retry mechanisms.</p>
+</li>
+<li>
+<p><strong>Retry Mechanisms:</strong> For transient errors (e.g., a temporary network glitch, a database timeout, a dependent service being temporarily unavailable), it&#8217;s often appropriate to retry message processing.</p>
+</li>
+<li>
+<p><strong>Exponential Backoff:</strong> A common and effective retry strategy is exponential backoff, where the delay between retries increases exponentially (e.g., 1s, 2s, 4s, 8s&#8230;&#8203;). This prevents overwhelming a failing resource and gives it time to recover.</p>
+</li>
+<li>
+<p><strong>Maximum Retries:</strong> A finite number of retries should be configured. Continuous retries for persistent failures consume resources and block other messages.</p>
+</li>
+<li>
+<p><strong>Dead Letter Queue (DLQ):</strong> Messages that fail to be processed successfully after exhausting all retry attempts (or immediately for non-recoverable errors) should be moved to a Dead Letter Queue (DLQ).</p>
+</li>
+<li>
+<p><strong>Purpose:</strong> The DLQ acts as a holding area for "poison messages" or messages that cannot be delivered. This prevents them from blocking the main queue, allows for manual inspection by operators, and enables post-mortem analysis, reprocessing, or discarding.</p>
+</li>
+<li>
+<p><strong>Broker-side DLQ (ActiveMQ Artemis):</strong> ActiveMQ Artemis can be configured to automatically manage DLQs. Through its address settings, you can define rules that automatically move messages to a specified DLQ address after a certain number of delivery attempts (<code>max-delivery-attempts</code>) or if they expire without being consumed.</p>
+</li>
+<li>
+<p><strong>Client-side DLQ:</strong> In more complex scenarios, the client application&#8217;s logic might explicitly determine that a message is fundamentally unprocessable (e.g., malformed data) and directly send it to a DLQ using a separate producer, providing more granular control over error routing.</p>
+</li>
+<li>
+<p><strong>Monitoring DLQs:</strong> DLQs should be actively monitored. A growing DLQ indicates persistent issues in message processing or application logic that require investigation.</p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_hands_on_activity_broker_side_dlq_configuration_with_activemq_artemis"><a class="anchor" href="#_hands_on_activity_broker_side_dlq_configuration_with_activemq_artemis"></a>Hands-on Activity: Broker-side DLQ Configuration with ActiveMQ Artemis</h3>
+<div class="paragraph">
+<p>While client-side DLQ logic varies per application, configuring the broker to handle dead lettering automatically is a powerful feature of ActiveMQ Artemis. This demonstrates the configuration within <code>broker.xml</code>.</p>
+</div>
+<div class="sect3">
+<h4 id="_artemis_broker_configuration_snippet_broker_xml"><a class="anchor" href="#_artemis_broker_configuration_snippet_broker_xml"></a>Artemis Broker Configuration Snippet (<code>broker.xml</code>)</h4>
+<div class="paragraph">
+<p>This snippet shows how to configure an ActiveMQ Artemis broker to automatically move messages to a <code>DLQ</code> queue if they fail to be acknowledged after a specified number of delivery attempts for addresses matching <code>my.dlq.queue.#</code>.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-xml hljs" data-lang="xml">&lt;!-- ActiveMQ Artemis broker.xml configuration snippet --&gt;
+&lt;configuration&gt;
+   &lt;!-- Global settings for addresses and queues --&gt;
+   &lt;address-settings&gt;
+      &lt;!-- Apply these settings to any address that starts with 'my.dlq.queue.' --&gt;
+      &lt;address-setting match="my.dlq.queue.#"&gt;
+         &lt;!-- Specifies the address where dead messages will be sent --&gt;
+         &lt;dead-letter-address&gt;DLQ&lt;/dead-letter-address&gt;
+         &lt;!-- Specifies the queue to which expired messages will be sent --&gt;
+         &lt;expiry-address&gt;ExpiryQueue&lt;/expiry-address&gt;
+
+         &lt;!-- Maximum number of times a message will be delivered before being moved to the DLQ --&gt;
+         &lt;max-delivery-attempts&gt;3&lt;/max-delivery-attempts&gt;
+         &lt;!-- Initial delay (in ms) before the first redelivery attempt --&gt;
+         &lt;redelivery-delay&gt;500&lt;/redelivery-delay&gt;
+         &lt;!-- Multiplier for exponential backoff on redelivery delay --&gt;
+         &lt;redelivery-multiplier&gt;2.0&lt;/redelivery-multiplier&gt;
+         &lt;!-- Maximum redelivery delay (in ms) --&gt;
+         &lt;max-redelivery-delay&gt;30000&lt;/max-redelivery-delay&gt;
+
+         &lt;!-- Allow auto-creation of queues and addresses for matching patterns --&gt;
+         &lt;auto-create-queues&gt;true&lt;/auto-create-queues&gt;
+         &lt;auto-create-addresses&gt;true&lt;/auto-create-addresses&gt;
+      &lt;/address-setting&gt;
+
+      &lt;!-- Default settings for all other addresses/queues --&gt;
+      &lt;address-setting match="#"&gt;
+         &lt;dead-letter-address&gt;DLQ&lt;/dead-letter-address&gt;
+         &lt;expiry-address&gt;ExpiryQueue&lt;/expiry-address&gt;
+         &lt;max-delivery-attempts&gt;10&lt;/max-delivery-attempts&gt;
+         &lt;redelivery-delay&gt;0&lt;/redelivery-delay&gt;
+         &lt;max-redelivery-delay&gt;0&lt;/max-redelivery-delay&gt;
+         &lt;redelivery-multiplier&gt;1.0&lt;/redelivery-multiplier&gt;
+         &lt;durable-queue&gt;true&lt;/durable-queue&gt;
+         &lt;last-value-queue&gt;false&lt;/last-value-queue&gt;
+         &lt;non-destructive&gt;false&lt;/non-destructive&gt;
+         &lt;max-size-bytes&gt;-1&lt;/max-size-bytes&gt;
+         &lt;page-size-bytes&gt;10485760&lt;/page-size-bytes&gt;
+         &lt;address-full-policy&gt;PAGE&lt;/address-full-policy&gt;
+         &lt;message-counter-history-day-limit&gt;10&lt;/message-counter-history-day-limit&gt;
+         &lt;check-for-duplicate-id&gt;false&lt;/check-for-duplicate-id&gt;
+         &lt;send-to-dla-on-no-route&gt;true&lt;/send-to-dla-on-no-route&gt;
+         &lt;enable-last-value-queue-non-destructive&gt;false&lt;/enable-last-value-queue-non-destructive&gt;
+      &lt;/address-setting&gt;
+   &lt;/address-settings&gt;
+
+   &lt;!-- Define the Dead Letter Queue (DLQ) address and queue --&gt;
+   &lt;addresses&gt;
+      &lt;address name="DLQ"&gt;
+         &lt;anycast&gt;
+            &lt;queue name="DLQ"/&gt;
+         &lt;/anycast&gt;
+      &lt;/address&gt;
+      &lt;!-- Define the Expiry Queue address and queue --&gt;
+      &lt;address name="ExpiryQueue"&gt;
+         &lt;anycast&gt;
+            &lt;queue name="ExpiryQueue"/&gt;
+         &lt;/anycast&gt;
+      &lt;/address&gt;
+   &lt;/addresses&gt;
+&lt;/configuration&gt;</code></pre>
+</div>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>Explanation:</strong> With this configuration, if a message sent to, for example, <code>my.dlq.queue.orders</code> is delivered to a consumer and the consumer fails to acknowledge it (e.g., due to an exception causing a rollback in a transactional session or not calling <code>acknowledge()</code> in <code>CLIENT_ACKNOWLEDGE</code> mode), ActiveMQ Artemis will redeliver it. After 3 unsuccessful delivery attempts (controlled by <code>max-delivery-attempts</code>), the message will be automatically moved from <code>my.dlq.queue.orders</code> to the <code>DLQ</code> queue within the <code>DLQ</code> address. This process helps ensure that problematic messages do not perpetually block the main processing queue. The <code>redelivery-delay</code> and <code>redelivery-multiplier</code> implement an exponential backoff strategy for redelivery attempts.</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+</div>
+</div>
+<nav class="pagination">
+  <span class="prev"><a href="transaction-management-for-message-producers-and-consumers.html">Transaction management for message producers and consumers</a></span>
+  <span class="next"><a href="../quarkus-example/quarkus-example.html">Quarkus Example</a></span>
+</nav>
+</article>
+  </div>
+</main>
+</div>
+<footer class="footer">
+  <img src="../../../_/img/rhl-logo-red.png" height="40px" alt="Red Hat"  href="https://redhat.com" >
+</footer><script id="site-script" src="../../../_/js/site.js" data-ui-root-path="../../../_"></script>
+<script async src="../../../_/js/vendor/highlight.js"></script>
+  </body>
+</html>

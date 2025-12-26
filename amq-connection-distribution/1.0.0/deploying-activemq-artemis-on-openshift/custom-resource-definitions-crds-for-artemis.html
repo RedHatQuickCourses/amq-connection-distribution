@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Custom Resource Definitions (CRDs) for Artemis :: Building Resilient Messaging Applications with ActiveMQ Artemis and OpenShift</title>
+    <link rel="prev" href="using-the-activemq-artemis-operator.html">
+    <link rel="next" href="configuring-persistent-storage-for-artemis.html">
+    <meta name="generator" content="Antora 3.1.3">
+    <link rel="stylesheet" href="../../../_/css/site.css">
+    <script>var uiRootPath = '../../../_'</script>
+  </head>
+  <body class="article">
+<header class="header">
+  <nav class="navbar">
+    <div class="navbar-brand">
+      <a class="navbar-item" href="https://www.redhat.com" target="_blank"><img src="../../../_/img/redhat-logo.png" height="40px" alt="Red Hat"></a>
+      <a class="navbar-item" style="font-size: 24px; color: white" href="../../..">Building Resilient Messaging Applications with ActiveMQ Artemis and OpenShift</a>
+      <button class="navbar-burger" data-target="topbar-nav">
+        <span></span>
+        <span></span>
+        <span></span>
+      </button>
+    </div>
+    <div id="topbar-nav" class="navbar-menu">
+      <div class="navbar-end">
+        <a class="navbar-item" href="https://github.com/RedHatQuickCourses/REPLACEREPONAME/issues" target="_blank">Report Issues</a>
+      </div>
+    </div>
+  </nav>
+</header>
+<div class="body">
+<div class="nav-container" data-component="amq-connection-distribution" data-version="1.0.0">
+  <aside class="nav">
+    <div class="panels">
+<div class="nav-panel-menu is-active" data-panel="menu">
+  <nav class="nav-menu">
+    <h3 class="title"><a href="../index.html">Building Resilient Messaging Applications with ActiveMQ Artemis and OpenShift</a></h3>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="../index.html">Home</a>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="deploying-activemq-artemis-on-openshift.html">Deploying ActiveMQ Artemis on OpenShift</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="introduction-to-openshift-for-messaging-applications.html">Introduction to OpenShift for messaging applications</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="understanding-activemq-artemis-on-openshift.html">Understanding ActiveMQ Artemis on OpenShift</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="using-the-activemq-artemis-operator.html">Using the ActiveMQ Artemis Operator</a>
+  </li>
+  <li class="nav-item is-current-page" data-depth="2">
+    <a class="nav-link" href="custom-resource-definitions-crds-for-artemis.html">Custom Resource Definitions (CRDs) for Artemis</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="configuring-persistent-storage-for-artemis.html">Configuring persistent storage for Artemis</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="scaling-artemis-brokers-on-openshift.html">Scaling Artemis brokers on OpenShift</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="monitoring-artemis-instances-on-openshift.html">Monitoring Artemis instances on OpenShift</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="hands-on-lab-deploying-a-highly-available-activemq-artemis-cluster-on-openshift.html">Hands-on Lab: Deploying a highly available ActiveMQ Artemis cluster on OpenShift</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../message-distribution-issues/message-distribution-issues.html">Message distribution issues</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../message-distribution-issues/understanding-distributed-messaging-patterns.html">Understanding distributed messaging patterns</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../message-distribution-issues/load-balancing-messages-across-consumers.html">Load balancing messages across consumers</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../message-distribution-issues/message-routing-strategies-and-challenges.html">Message routing strategies and challenges</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../message-distribution-issues/consumer-groups-and-shared-subscriptions.html">Consumer groups and shared subscriptions</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../message-distribution-issues/ensuring-message-ordering-in-distributed-systems.html">Ensuring message ordering in distributed systems</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../message-distribution-issues/handling-message-durability-and-reliability.html">Handling message durability and reliability</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../message-distribution-issues/addressing-fault-tolerance-and-high-availability-for-messages.html">Addressing fault tolerance and high availability for messages</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../client-side-solution/client-side-solution.html">Client Side Solution</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../client-side-solution/client-side-connection-management-and-pooling.html">Client-side connection management and pooling</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../client-side-solution/implementing-client-failover-mechanisms.html">Implementing client failover mechanisms</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../client-side-solution/client-side-load-balancing-for-message-consumption.html">Client-side load balancing for message consumption</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../client-side-solution/message-acknowledgment-patterns-auto_acknowledge-client_acknowledge.html">Message acknowledgment patterns (AUTO_ACKNOWLEDGE, CLIENT_ACKNOWLEDGE)</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../client-side-solution/transaction-management-for-message-producers-and-consumers.html">Transaction management for message producers and consumers</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../client-side-solution/best-practices-for-client-integration-with-distributed-brokers.html">Best practices for client integration with distributed brokers</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../quarkus-example/quarkus-example.html">Quarkus Example</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../quarkus-example/integrating-jmsamqp-clients-with-quarkus.html">Integrating JMS/AMQP clients with Quarkus</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../quarkus-example/configuring-quarkus-for-activemq-artemis-connectivity.html">Configuring Quarkus for ActiveMQ Artemis connectivity</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../quarkus-example/implementing-message-producers-in-quarkus.html">Implementing message producers in Quarkus</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../quarkus-example/implementing-message-consumers-in-quarkus.html">Implementing message consumers in Quarkus</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../quarkus-example/reactive-messaging-with-quarkus-and-artemis.html">Reactive messaging with Quarkus and Artemis</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../quarkus-example/deploying-quarkus-messaging-applications-on-openshift.html">Deploying Quarkus messaging applications on OpenShift</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../quarkus-example/hands-on-lab-developing-a-quarkus-microservice-with-distributed-messaging.html">Hands-on Lab: Developing a Quarkus microservice with distributed messaging</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../spring-boot-example/spring-boot-example.html">Spring Boot Example</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../spring-boot-example/integrating-jmsamqp-clients-with-spring-boot.html">Integrating JMS/AMQP clients with Spring Boot</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../spring-boot-example/configuring-spring-boot-for-activemq-artemis-connectivity.html">Configuring Spring Boot for ActiveMQ Artemis connectivity</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../spring-boot-example/using-spring-jmsamqp-templates-for-messaging.html">Using Spring JMS/AMQP templates for messaging</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../spring-boot-example/implementing-message-producers-in-spring-boot.html">Implementing message producers in Spring Boot</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../spring-boot-example/implementing-message-consumers-in-spring-boot.html">Implementing message consumers in Spring Boot</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../spring-boot-example/configuring-listener-containers-and-concurrency.html">Configuring listener containers and concurrency</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../spring-boot-example/deploying-spring-boot-messaging-applications-on-openshift.html">Deploying Spring Boot messaging applications on OpenShift</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../spring-boot-example/hands-on-lab-developing-a-spring-boot-microservice-with-distributed-messaging.html">Hands-on Lab: Developing a Spring Boot microservice with distributed messaging</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+</ul>
+  </nav>
+</div>
+<div class="nav-panel-explore" data-panel="explore">
+  <div class="context">
+    <span class="title">Building Resilient Messaging Applications with ActiveMQ Artemis and OpenShift</span>
+    <span class="version">1.0.0</span>
+  </div>
+  <ul class="components">
+    <li class="component is-current">
+      <a class="title" href="../index.html">Building Resilient Messaging Applications with ActiveMQ Artemis and OpenShift</a>
+      <ul class="versions">
+        <li class="version is-current is-latest">
+          <a href="../index.html">1.0.0</a>
+        </li>
+      </ul>
+    </li>
+  </ul>
+</div>
+    </div>
+  </aside>
+</div>
+<main class="article">
+<div class="toolbar" role="navigation">
+<button class="nav-toggle"></button>
+  <a href="../index.html" class="home-link"></a>
+<nav class="breadcrumbs" aria-label="breadcrumbs">
+  <ul>
+    <li><a href="../index.html">Building Resilient Messaging Applications with ActiveMQ Artemis and OpenShift</a></li>
+    <li><a href="deploying-activemq-artemis-on-openshift.html">Deploying ActiveMQ Artemis on OpenShift</a></li>
+    <li><a href="custom-resource-definitions-crds-for-artemis.html">Custom Resource Definitions (CRDs) for Artemis</a></li>
+  </ul>
+</nav>
+</div>
+  <div class="content">
+<aside class="toc sidebar" data-title="Contents" data-levels="2">
+  <div class="toc-menu"></div>
+</aside>
+<article class="doc">
+<h1 class="page">Custom Resource Definitions (CRDs) for Artemis</h1>
+<h1 id="_custom_resource_definitions_crds_for_artemis" class="sect0"><a class="anchor" href="#_custom_resource_definitions_crds_for_artemis"></a>Custom Resource Definitions (CRDs) for Artemis</h1>
+<div class="paragraph">
+<p>In the dynamic environment of OpenShift, managing complex applications like ActiveMQ Artemis often requires extending the native Kubernetes API. This is where Custom Resource Definitions (CRDs) come into play. CRDs allow you to define your own resource types, making them first-class citizens within the OpenShift/Kubernetes ecosystem, managed just like built-in resources such as Pods, Deployments, or Services.</p>
+</div>
+<div class="sect1">
+<h2 id="_understanding_custom_resource_definitions_crds"><a class="anchor" href="#_understanding_custom_resource_definitions_crds"></a>Understanding Custom Resource Definitions (CRDs)</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>A Custom Resource Definition (CRD) is a powerful Kubernetes feature that allows cluster administrators to define custom resources. These custom resources extend the Kubernetes API, enabling you to store and retrieve structured data that represents an instance of your custom object.</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>Extension of Kubernetes API:</strong> CRDs enable you to introduce new kinds of objects into Kubernetes, beyond the built-in types.</p>
+</li>
+<li>
+<p><strong>Declarative Management:</strong> Once a CRD is defined, you can create instances of the custom resource using standard Kubernetes YAML manifest files. These manifest files declaratively describe the desired state of your application.</p>
+</li>
+<li>
+<p><strong>Operator Integration:</strong> CRDs are the backbone for Kubernetes Operators. An Operator watches for changes to instances of its custom resources and then takes specific actions to bring the actual state of the application into alignment with the desired state declared in the custom resource.</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>For ActiveMQ Artemis on OpenShift, the ActiveMQ Artemis Operator leverages a specific CRD, typically named <code>ActiveMQArtemis</code>, to provide a declarative way to deploy and manage Artemis brokers.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_the_activemqartemis_custom_resource_definition"><a class="anchor" href="#_the_activemqartemis_custom_resource_definition"></a>The <code>ActiveMQArtemis</code> Custom Resource Definition</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>The ActiveMQ Artemis Operator introduces the <code>ActiveMQArtemis</code> CRD into your OpenShift cluster. This CRD defines the schema for how you can declare an ActiveMQ Artemis broker (or a cluster of brokers) and its configuration within a YAML manifest.</p>
+</div>
+<div class="paragraph">
+<p>Instead of manually creating Deployment, Service, ConfigMap, and StatefulSet resources for Artemis, you simply create an <code>ActiveMQArtemis</code> custom resource. The Operator then reads this custom resource and orchestrates all the necessary underlying Kubernetes resources to deploy and manage your Artemis instance according to the specification you provide.</p>
+</div>
+<div class="sect2">
+<h3 id="_key_components_of_an_activemqartemis_custom_resource"><a class="anchor" href="#_key_components_of_an_activemqartemis_custom_resource"></a>Key Components of an <code>ActiveMQArtemis</code> Custom Resource</h3>
+<div class="paragraph">
+<p>When you define an <code>ActiveMQArtemis</code> custom resource, you are primarily specifying the desired state of your Artemis deployment through its <code>spec</code> section. Here are some critical components you&#8217;ll typically configure:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><code>apiVersion</code> and <code>kind</code>: Identifies the resource as an <code>ActiveMQArtemis</code> custom resource.</p>
+</li>
+<li>
+<p><code>apiVersion: broker.amq.io/v1beta1</code> (or similar, depending on Operator version)</p>
+</li>
+<li>
+<p><code>kind: ActiveMQArtemis</code></p>
+</li>
+<li>
+<p><code>metadata</code>: Standard Kubernetes metadata like <code>name</code> and <code>namespace</code>.</p>
+</li>
+<li>
+<p><code>spec</code>: This is the core, defining the desired configuration of your Artemis broker(s).</p>
+</li>
+<li>
+<p><code>deploymentPlan</code>: Configures the number of brokers (<code>size</code>), the container image to use, messaging ports, cluster user/password, and other deployment-specific settings.</p>
+</li>
+<li>
+<p><code>acceptors</code>: Defines how clients connect to the broker (e.g., AMQP, OpenWire, STOMP, MQTT protocols, SSL/TLS settings).</p>
+</li>
+<li>
+<p><code>connectors</code>: Defines how brokers connect to each other for clustering or how they connect to external systems.</p>
+</li>
+<li>
+<p><code>addressSettings</code>: Configures policies for queues and addresses, such as message expiry, max delivery attempts, and dead-letter queueing.</p>
+</li>
+<li>
+<p><code>securitySettings</code>: Manages security roles and permissions.</p>
+</li>
+<li>
+<p><code>persistence</code>: Crucial for message durability. Configures whether the broker uses persistent storage and how it&#8217;s provisioned. This links directly to "Configuring persistent storage for Artemis".</p>
+</li>
+<li>
+<p><code>storage</code>: Specifies the storage class and size for persistent volumes.</p>
+</li>
+<li>
+<p><code>console</code>: Enables and configures the Artemis management console.</p>
+</li>
+<li>
+<p><code>metrics</code>: Enables and configures Prometheus-compatible metrics for monitoring. This relates to "Monitoring Artemis instances on OpenShift".</p>
+</li>
+<li>
+<p><code>env</code>: Allows injecting custom environment variables into the broker pods.</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>The flexibility of the <code>ActiveMQArtemis</code> CRD allows for a wide range of configurations, from a single standalone broker to a complex, highly available clustered setup, directly addressing "Scaling Artemis brokers on OpenShift".</p>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_hands_on_activity_exploring_a_basic_activemqartemis_crd"><a class="anchor" href="#_hands_on_activity_exploring_a_basic_activemqartemis_crd"></a>Hands-on Activity: Exploring a Basic <code>ActiveMQArtemis</code> CRD</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Let&#8217;s examine a minimal <code>ActiveMQArtemis</code> custom resource definition to understand its structure. This example will deploy a single-node Artemis broker.</p>
+</div>
+<div class="listingblock">
+<div class="title">Create a new file named <code>artemis-single-broker.yaml</code>:</div>
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">apiVersion: broker.amq.io/v1beta1
+kind: ActiveMQArtemis
+metadata:
+  name: my-artemis-broker
+  namespace: my-messaging-project # Replace with your OpenShift project name
+spec:
+  deploymentPlan:
+    size: 1 # A single broker instance
+    image: registry.redhat.io/amq7/amq-broker-rhel8:7.12 # Or a suitable Artemis image
+    messageMigration: true
+  acceptors:
+    - name: amqp
+      port: 5672
+      protocols: amqp
+      sslEnabled: false
+    - name: openwire
+      port: 61616
+      protocols: openwire
+      sslEnabled: false
+  persistence:
+    enabled: true # Enable persistent storage
+    size: 2Gi # Request 2GB of storage
+    storageClassName: gp2 # Or another suitable storage class available in your cluster
+  console:
+    expose: true # Expose the management console
+    sslEnabled: false
+  addressSettings:
+    - name: '#.#'
+      maxDeliveryAttempts: 3
+      deadLetterAddress: DLQ
+      expiryAddress: ExpiryQueue
+  securitySettings:
+    - name: '#.#'
+      roles:
+        - name: amq
+          send: true
+          consume: true
+          createDurableQueue: true
+          createNonDurableQueue: true
+          browse: true
+          manage: true</code></pre>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_explanation_of_the_example_crd"><a class="anchor" href="#_explanation_of_the_example_crd"></a>Explanation of the Example CRD</h3>
+<div class="ulist">
+<ul>
+<li>
+<p><strong><code>apiVersion</code>, <code>kind</code>, <code>metadata</code></strong>: Standard identifiers for our custom resource. The <code>name: my-artemis-broker</code> will be used as the base name for the generated Kubernetes resources.</p>
+</li>
+<li>
+<p><strong><code>deploymentPlan.size: 1</code></strong>: Specifies that we want a single instance of the Artemis broker. Changing this to <code>2</code> or more would deploy a clustered setup (assuming <code>messageMigration</code> is enabled for high availability).</p>
+</li>
+<li>
+<p><strong><code>deploymentPlan.image</code></strong>: Defines the container image for the Artemis broker. Always use a supported and stable image.</p>
+</li>
+<li>
+<p><strong><code>acceptors</code></strong>: Configures client access. Here, we enable AMQP on port 5672 and OpenWire on port 61616 without SSL for simplicity. In production, SSL should always be enabled.</p>
+</li>
+<li>
+<p><strong><code>persistence.enabled: true</code> and <code>persistence.size: 2Gi</code></strong>: This tells the Operator to provision a PersistentVolumeClaim (PVC) of 2GB and mount it to the broker pod(s) for durable message storage. <code>storageClassName</code> specifies which storage provisioner to use.</p>
+</li>
+<li>
+<p><strong><code>console.expose: true</code></strong>: Makes the Artemis management console accessible via an OpenShift Route or Service.</p>
+</li>
+<li>
+<p><strong><code>addressSettings</code> and <code>securitySettings</code></strong>: Provide basic configurations for message policies and user roles, demonstrating how fine-grained control is achieved directly within the CRD.</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>This example showcases how CRDs abstract away the complexities of Kubernetes primitives, allowing you to focus on the desired state of your messaging application. The ActiveMQ Artemis Operator then translates this high-level declaration into the necessary low-level Kubernetes objects, ensuring your broker is deployed and managed efficiently on OpenShift.</p>
+</div>
+</div>
+</div>
+</div>
+<nav class="pagination">
+  <span class="prev"><a href="using-the-activemq-artemis-operator.html">Using the ActiveMQ Artemis Operator</a></span>
+  <span class="next"><a href="configuring-persistent-storage-for-artemis.html">Configuring persistent storage for Artemis</a></span>
+</nav>
+</article>
+  </div>
+</main>
+</div>
+<footer class="footer">
+  <img src="../../../_/img/rhl-logo-red.png" height="40px" alt="Red Hat"  href="https://redhat.com" >
+</footer><script id="site-script" src="../../../_/js/site.js" data-ui-root-path="../../../_"></script>
+<script async src="../../../_/js/vendor/highlight.js"></script>
+  </body>
+</html>

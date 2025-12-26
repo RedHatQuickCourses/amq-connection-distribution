@@ -1,0 +1,582 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Message acknowledgment patterns (AUTO_ACKNOWLEDGE, CLIENT_ACKNOWLEDGE) :: Building Resilient Messaging Applications with ActiveMQ Artemis and OpenShift</title>
+    <link rel="prev" href="client-side-load-balancing-for-message-consumption.html">
+    <link rel="next" href="transaction-management-for-message-producers-and-consumers.html">
+    <meta name="generator" content="Antora 3.1.3">
+    <link rel="stylesheet" href="../../../_/css/site.css">
+    <script>var uiRootPath = '../../../_'</script>
+  </head>
+  <body class="article">
+<header class="header">
+  <nav class="navbar">
+    <div class="navbar-brand">
+      <a class="navbar-item" href="https://www.redhat.com" target="_blank"><img src="../../../_/img/redhat-logo.png" height="40px" alt="Red Hat"></a>
+      <a class="navbar-item" style="font-size: 24px; color: white" href="../../..">Building Resilient Messaging Applications with ActiveMQ Artemis and OpenShift</a>
+      <button class="navbar-burger" data-target="topbar-nav">
+        <span></span>
+        <span></span>
+        <span></span>
+      </button>
+    </div>
+    <div id="topbar-nav" class="navbar-menu">
+      <div class="navbar-end">
+        <a class="navbar-item" href="https://github.com/RedHatQuickCourses/REPLACEREPONAME/issues" target="_blank">Report Issues</a>
+      </div>
+    </div>
+  </nav>
+</header>
+<div class="body">
+<div class="nav-container" data-component="amq-connection-distribution" data-version="1.0.0">
+  <aside class="nav">
+    <div class="panels">
+<div class="nav-panel-menu is-active" data-panel="menu">
+  <nav class="nav-menu">
+    <h3 class="title"><a href="../index.html">Building Resilient Messaging Applications with ActiveMQ Artemis and OpenShift</a></h3>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="../index.html">Home</a>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../deploying-activemq-artemis-on-openshift/deploying-activemq-artemis-on-openshift.html">Deploying ActiveMQ Artemis on OpenShift</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../deploying-activemq-artemis-on-openshift/introduction-to-openshift-for-messaging-applications.html">Introduction to OpenShift for messaging applications</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../deploying-activemq-artemis-on-openshift/understanding-activemq-artemis-on-openshift.html">Understanding ActiveMQ Artemis on OpenShift</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../deploying-activemq-artemis-on-openshift/using-the-activemq-artemis-operator.html">Using the ActiveMQ Artemis Operator</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../deploying-activemq-artemis-on-openshift/custom-resource-definitions-crds-for-artemis.html">Custom Resource Definitions (CRDs) for Artemis</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../deploying-activemq-artemis-on-openshift/configuring-persistent-storage-for-artemis.html">Configuring persistent storage for Artemis</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../deploying-activemq-artemis-on-openshift/scaling-artemis-brokers-on-openshift.html">Scaling Artemis brokers on OpenShift</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../deploying-activemq-artemis-on-openshift/monitoring-artemis-instances-on-openshift.html">Monitoring Artemis instances on OpenShift</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../deploying-activemq-artemis-on-openshift/hands-on-lab-deploying-a-highly-available-activemq-artemis-cluster-on-openshift.html">Hands-on Lab: Deploying a highly available ActiveMQ Artemis cluster on OpenShift</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../message-distribution-issues/message-distribution-issues.html">Message distribution issues</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../message-distribution-issues/understanding-distributed-messaging-patterns.html">Understanding distributed messaging patterns</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../message-distribution-issues/load-balancing-messages-across-consumers.html">Load balancing messages across consumers</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../message-distribution-issues/message-routing-strategies-and-challenges.html">Message routing strategies and challenges</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../message-distribution-issues/consumer-groups-and-shared-subscriptions.html">Consumer groups and shared subscriptions</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../message-distribution-issues/ensuring-message-ordering-in-distributed-systems.html">Ensuring message ordering in distributed systems</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../message-distribution-issues/handling-message-durability-and-reliability.html">Handling message durability and reliability</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../message-distribution-issues/addressing-fault-tolerance-and-high-availability-for-messages.html">Addressing fault tolerance and high availability for messages</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="client-side-solution.html">Client Side Solution</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="client-side-connection-management-and-pooling.html">Client-side connection management and pooling</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="implementing-client-failover-mechanisms.html">Implementing client failover mechanisms</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="client-side-load-balancing-for-message-consumption.html">Client-side load balancing for message consumption</a>
+  </li>
+  <li class="nav-item is-current-page" data-depth="2">
+    <a class="nav-link" href="message-acknowledgment-patterns-auto_acknowledge-client_acknowledge.html">Message acknowledgment patterns (AUTO_ACKNOWLEDGE, CLIENT_ACKNOWLEDGE)</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="transaction-management-for-message-producers-and-consumers.html">Transaction management for message producers and consumers</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="best-practices-for-client-integration-with-distributed-brokers.html">Best practices for client integration with distributed brokers</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../quarkus-example/quarkus-example.html">Quarkus Example</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../quarkus-example/integrating-jmsamqp-clients-with-quarkus.html">Integrating JMS/AMQP clients with Quarkus</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../quarkus-example/configuring-quarkus-for-activemq-artemis-connectivity.html">Configuring Quarkus for ActiveMQ Artemis connectivity</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../quarkus-example/implementing-message-producers-in-quarkus.html">Implementing message producers in Quarkus</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../quarkus-example/implementing-message-consumers-in-quarkus.html">Implementing message consumers in Quarkus</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../quarkus-example/reactive-messaging-with-quarkus-and-artemis.html">Reactive messaging with Quarkus and Artemis</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../quarkus-example/deploying-quarkus-messaging-applications-on-openshift.html">Deploying Quarkus messaging applications on OpenShift</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../quarkus-example/hands-on-lab-developing-a-quarkus-microservice-with-distributed-messaging.html">Hands-on Lab: Developing a Quarkus microservice with distributed messaging</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../spring-boot-example/spring-boot-example.html">Spring Boot Example</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../spring-boot-example/integrating-jmsamqp-clients-with-spring-boot.html">Integrating JMS/AMQP clients with Spring Boot</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../spring-boot-example/configuring-spring-boot-for-activemq-artemis-connectivity.html">Configuring Spring Boot for ActiveMQ Artemis connectivity</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../spring-boot-example/using-spring-jmsamqp-templates-for-messaging.html">Using Spring JMS/AMQP templates for messaging</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../spring-boot-example/implementing-message-producers-in-spring-boot.html">Implementing message producers in Spring Boot</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../spring-boot-example/implementing-message-consumers-in-spring-boot.html">Implementing message consumers in Spring Boot</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../spring-boot-example/configuring-listener-containers-and-concurrency.html">Configuring listener containers and concurrency</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../spring-boot-example/deploying-spring-boot-messaging-applications-on-openshift.html">Deploying Spring Boot messaging applications on OpenShift</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../spring-boot-example/hands-on-lab-developing-a-spring-boot-microservice-with-distributed-messaging.html">Hands-on Lab: Developing a Spring Boot microservice with distributed messaging</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+</ul>
+  </nav>
+</div>
+<div class="nav-panel-explore" data-panel="explore">
+  <div class="context">
+    <span class="title">Building Resilient Messaging Applications with ActiveMQ Artemis and OpenShift</span>
+    <span class="version">1.0.0</span>
+  </div>
+  <ul class="components">
+    <li class="component is-current">
+      <a class="title" href="../index.html">Building Resilient Messaging Applications with ActiveMQ Artemis and OpenShift</a>
+      <ul class="versions">
+        <li class="version is-current is-latest">
+          <a href="../index.html">1.0.0</a>
+        </li>
+      </ul>
+    </li>
+  </ul>
+</div>
+    </div>
+  </aside>
+</div>
+<main class="article">
+<div class="toolbar" role="navigation">
+<button class="nav-toggle"></button>
+  <a href="../index.html" class="home-link"></a>
+<nav class="breadcrumbs" aria-label="breadcrumbs">
+  <ul>
+    <li><a href="../index.html">Building Resilient Messaging Applications with ActiveMQ Artemis and OpenShift</a></li>
+    <li><a href="client-side-solution.html">Client Side Solution</a></li>
+    <li><a href="message-acknowledgment-patterns-auto_acknowledge-client_acknowledge.html">Message acknowledgment patterns (AUTO_ACKNOWLEDGE, CLIENT_ACKNOWLEDGE)</a></li>
+  </ul>
+</nav>
+</div>
+  <div class="content">
+<aside class="toc sidebar" data-title="Contents" data-levels="2">
+  <div class="toc-menu"></div>
+</aside>
+<article class="doc">
+<h1 class="page">Message acknowledgment patterns (AUTO_ACKNOWLEDGE, CLIENT_ACKNOWLEDGE)</h1>
+<h1 id="_message_acknowledgment_patterns" class="sect0"><a class="anchor" href="#_message_acknowledgment_patterns"></a>Message Acknowledgment Patterns</h1>
+<div class="paragraph">
+<p>When building resilient messaging applications, ensuring that messages are reliably processed is paramount. A core concept that underpins this reliability is <strong>message acknowledgment</strong>. Message acknowledgment is the mechanism by which a consumer informs the message broker (like ActiveMQ Artemis) that it has successfully received and processed a message. This process is crucial for preventing message loss and managing message redelivery in case of consumer failures.</p>
+</div>
+<div class="paragraph">
+<p>ActiveMQ Artemis, through its support for various messaging protocols (like JMS, AMQP), provides different acknowledgment patterns, each offering a distinct trade-off between simplicity, performance, and reliability. This section will focus on two fundamental JMS acknowledgment modes: <code>AUTO_ACKNOWLEDGE</code> and <code>CLIENT_ACKNOWLEDGE</code>.</p>
+</div>
+<div class="sect1">
+<h2 id="_understanding_message_acknowledgment"><a class="anchor" href="#_understanding_message_acknowledgment"></a>Understanding Message Acknowledgment</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>At its core, message acknowledgment ensures that messages are not lost if a consumer fails before processing them. When a message is delivered to a consumer, it remains "unacknowledged" by the broker until the consumer explicitly or implicitly confirms its receipt and successful processing. If a consumer fails before acknowledging a message, the broker can redeliver that message to another available consumer, or to the same consumer upon restart, ensuring that no message is lost.</p>
+</div>
+<div class="paragraph">
+<p>The choice of acknowledgment mode directly impacts:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>Reliability</strong>: How confident you can be that a message is processed exactly once or at least once.</p>
+</li>
+<li>
+<p><strong>Performance</strong>: The overhead associated with acknowledgment operations.</p>
+</li>
+<li>
+<p><strong>Complexity</strong>: The development effort required to implement reliable message processing.</p>
+</li>
+</ul>
+</div>
+<div class="sect2">
+<h3 id="_auto_acknowledge"><a class="anchor" href="#_auto_acknowledge"></a>AUTO_ACKNOWLEDGE</h3>
+<div class="paragraph">
+<p>The <code>AUTO_ACKNOWLEDGE</code> mode is the simplest acknowledgment pattern, often chosen for its ease of use and reduced boilerplate code. In this mode, the JMS session automatically acknowledges messages upon successful delivery <strong>to the consumer</strong>.</p>
+</div>
+<div class="sect3">
+<h4 id="_technical_explanation"><a class="anchor" href="#_technical_explanation"></a>Technical Explanation</h4>
+<div class="paragraph">
+<p>With <code>AUTO_ACKNOWLEDGE</code>, the acknowledgment happens automatically by the JMS session immediately after a message is received (either by <code>MessageConsumer.receive()</code> or by the <code>MessageListener</code> completing its <code>onMessage()</code> method execution without throwing an unhandled exception). The exact timing can vary slightly depending on the JMS provider and the underlying protocol, but the intent is for the broker to consider the message "consumed" as soon as it has been successfully dispatched to the client and before the client&#8217;s business logic has necessarily completed.</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>How it works</strong>: When a consumer receives a message, the JMS session implicitly sends an acknowledgment to the broker. The broker then removes the message from its queue or marks it as consumed, preventing its redelivery.</p>
+</li>
+<li>
+<p><strong>Pros</strong>:</p>
+</li>
+<li>
+<p><strong>Simplicity</strong>: Requires minimal code from the developer.</p>
+</li>
+<li>
+<p><strong>Performance</strong>: Generally offers higher throughput as there&#8217;s no explicit acknowledgment overhead from the application.</p>
+</li>
+<li>
+<p><strong>Cons</strong>:</p>
+</li>
+<li>
+<p><strong>Potential for Message Loss</strong>: If the consumer application receives a message but crashes <strong>before</strong> fully processing it (e.g., saving to a database, calling an external service), the message is already acknowledged and will not be redelivered. This can lead to lost messages if the processing is not atomic.</p>
+</li>
+<li>
+<p><strong>At-most-once delivery</strong>: Due to the potential for loss, <code>AUTO_ACKNOWLEDGE</code> provides an "at-most-once" delivery guarantee, meaning a message is delivered zero or one time.</p>
+</li>
+<li>
+<p><strong>When to use</strong>: Suitable for scenarios where some message loss is acceptable, or where the message content itself is idempotent, allowing for safe reprocessing from other sources if needed. Examples include logging data, monitoring metrics, or non-critical notifications.</p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_code_example_jms_with_auto_acknowledge"><a class="anchor" href="#_code_example_jms_with_auto_acknowledge"></a>Code Example (JMS with AUTO_ACKNOWLEDGE)</h4>
+<div class="paragraph">
+<p>The following Java code snippet demonstrates how to configure a JMS session with <code>AUTO_ACKNOWLEDGE</code> mode.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-java hljs" data-lang="java">import javax.jms.*;
+import javax.naming.InitialContext;
+
+public class AutoAcknowledgeConsumer {
+
+    public static void main(String[] args) throws Exception {
+        Connection connection = null;
+        InitialContext initialContext = null;
+
+        try {
+            // 1. Create an InitialContext to look up JMS resources
+            initialContext = new InitialContext();
+
+            // 2. Look up the ConnectionFactory and Queue
+            ConnectionFactory connectionFactory = (ConnectionFactory) initialContext.lookup("java:jboss/exported/jms/RemoteConnectionFactory");
+            Queue queue = (Queue) initialContext.lookup("queue/myQueue"); // Replace with your queue name
+
+            // 3. Create a connection
+            connection = connectionFactory.createConnection();
+            connection.start();
+
+            // 4. Create a session with AUTO_ACKNOWLEDGE mode
+            // Session.AUTO_ACKNOWLEDGE specifies that the session automatically acknowledges messages.
+            Session session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
+
+            // 5. Create a MessageConsumer
+            MessageConsumer consumer = session.createConsumer(queue);
+
+            // 6. Set a MessageListener to process incoming messages
+            consumer.setMessageListener(new MessageListener() {
+                public void onMessage(Message message) {
+                    try {
+                        if (message instanceof TextMessage) {
+                            TextMessage textMessage = (TextMessage) message;
+                            System.out.println("Received message: " + textMessage.getText());
+                            // Simulate some processing time
+                            Thread.sleep(100);
+                        }
+                        // IMPORTANT: With AUTO_ACKNOWLEDGE, the message is acknowledged
+                        // automatically after onMessage() completes successfully.
+                        // If an exception is thrown here, the message might be redelivered
+                        // depending on broker configuration (e.g., max redelivery attempts)
+                        // or become a "poison pill" if redelivery is not handled properly.
+                    } catch (JMSException e) {
+                        System.err.println("JMS Exception in listener: " + e.getMessage());
+                        // Consider how to handle exceptions. In AUTO_ACKNOWLEDGE,
+                        // throwing an unchecked exception will usually cause the message
+                        // to be redelivered up to max delivery attempts, then dead-lettered.
+                    } catch (InterruptedException e) {
+                        Thread.currentThread().interrupt();
+                        System.err.println("Interrupted during message processing: " + e.getMessage());
+                    }
+                }
+            });
+
+            System.out.println("Consumer started. Waiting for messages (AUTO_ACKNOWLEDGE)...");
+            // Keep the main thread alive to allow the listener to receive messages
+            Thread.sleep(Long.MAX_VALUE);
+
+        } finally {
+            if (connection != null) {
+                connection.close();
+            }
+            if (initialContext != null) {
+                initialContext.close();
+            }
+        }
+    }
+}</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_client_acknowledge"><a class="anchor" href="#_client_acknowledge"></a>CLIENT_ACKNOWLEDGE</h3>
+<div class="paragraph">
+<p>The <code>CLIENT_ACKNOWLEDGE</code> mode provides explicit control over message acknowledgment, giving the developer the responsibility to signal successful processing to the broker. This mode is preferred for applications requiring higher reliability and "at-least-once" delivery guarantees.</p>
+</div>
+<div class="sect3">
+<h4 id="_technical_explanation_2"><a class="anchor" href="#_technical_explanation_2"></a>Technical Explanation</h4>
+<div class="paragraph">
+<p>In <code>CLIENT_ACKNOWLEDGE</code> mode, the JMS session does <strong>not</strong> automatically acknowledge messages. Instead, the consumer application must explicitly call the <code>acknowledge()</code> method on the <code>Message</code> object once it has successfully processed the message. All messages received by the session since the last call to <code>acknowledge()</code> are acknowledged when <code>acknowledge()</code> is invoked.</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>How it works</strong>:</p>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>The broker delivers a message to the consumer. The message remains "unacknowledged" on the broker.</p>
+</li>
+<li>
+<p>The consumer application processes the message. This often involves critical business logic, database transactions, or calls to external services.</p>
+</li>
+<li>
+<p>Once the application has <strong>successfully</strong> processed the message, it calls <code>message.acknowledge()</code>.</p>
+</li>
+<li>
+<p>The <code>acknowledge()</code> call signals the broker that the message (and any prior unacknowledged messages on that session) can be safely removed or marked as consumed.</p>
+</li>
+<li>
+<p>If the consumer crashes <strong>before</strong> calling <code>message.acknowledge()</code>, the message will <strong>not</strong> be acknowledged. Upon reconnection or redelivery to another consumer, the message will be delivered again.</p>
+</li>
+</ol>
+</div>
+</li>
+<li>
+<p><strong>Pros</strong>:</p>
+</li>
+<li>
+<p><strong>High Reliability</strong>: Guarantees "at-least-once" delivery because messages are redelivered until explicitly acknowledged. This significantly reduces the risk of message loss due to consumer failure during processing.</p>
+</li>
+<li>
+<p><strong>Fine-grained Control</strong>: Developers have precise control over <strong>when</strong> a message is considered successfully processed. This is crucial for transactional workflows.</p>
+</li>
+<li>
+<p><strong>Batch Acknowledgment</strong>: A single <code>acknowledge()</code> call on any message in a session will acknowledge <strong>all</strong> messages received by that session since the last acknowledgment. This can be efficient for processing batches of messages.</p>
+</li>
+<li>
+<p><strong>Cons</strong>:</p>
+</li>
+<li>
+<p><strong>Increased Complexity</strong>: Requires the developer to explicitly manage acknowledgments, which adds to the application&#8217;s complexity.</p>
+</li>
+<li>
+<p><strong>Potential for Duplicate Processing</strong>: If the consumer processes a message but crashes <strong>before</strong> calling <code>acknowledge()</code>, the message will be redelivered. The application must be designed to handle duplicate messages gracefully (i.e., ensure idempotency of message processing logic).</p>
+</li>
+<li>
+<p><strong>Performance Overhead</strong>: Each <code>acknowledge()</code> call might incur a network round trip or other overhead, potentially affecting throughput compared to <code>AUTO_ACKNOWLEDGE</code> if not batched effectively.</p>
+</li>
+<li>
+<p><strong>When to use</strong>: Essential for applications where message loss is unacceptable and "at-least-once" delivery is required. This includes financial transactions, order processing, inventory updates, or any system where data integrity is critical.</p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_code_example_jms_with_client_acknowledge"><a class="anchor" href="#_code_example_jms_with_client_acknowledge"></a>Code Example (JMS with CLIENT_ACKNOWLEDGE)</h4>
+<div class="paragraph">
+<p>The following Java code snippet demonstrates how to configure a JMS session with <code>CLIENT_ACKNOWLEDGE</code> mode and explicitly acknowledge messages.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-java hljs" data-lang="java">import javax.jms.*;
+import javax.naming.InitialContext;
+
+public class ClientAcknowledgeConsumer {
+
+    public static void main(String[] args) throws Exception {
+        Connection connection = null;
+        InitialContext initialContext = null;
+
+        try {
+            initialContext = new InitialContext();
+            ConnectionFactory connectionFactory = (ConnectionFactory) initialContext.lookup("java:jboss/exported/jms/RemoteConnectionFactory");
+            Queue queue = (Queue) initialContext.lookup("queue/myQueue"); // Replace with your queue name
+
+            connection = connectionFactory.createConnection();
+            connection.start();
+
+            // 4. Create a session with CLIENT_ACKNOWLEDGE mode
+            // Session.CLIENT_ACKNOWLEDGE requires the client to explicitly acknowledge messages.
+            Session session = connection.createSession(false, Session.CLIENT_ACKNOWLEDGE);
+
+            MessageConsumer consumer = session.createConsumer(queue);
+
+            consumer.setMessageListener(new MessageListener() {
+                public void onMessage(Message message) {
+                    try {
+                        if (message instanceof TextMessage) {
+                            TextMessage textMessage = (TextMessage) message;
+                            String msgText = textMessage.getText();
+                            System.out.println("Received message: " + msgText);
+
+                            // Simulate some processing time and potential failure
+                            if (msgText.contains("fail")) {
+                                System.err.println("Simulating processing failure for message: " + msgText);
+                                throw new RuntimeException("Simulated processing error!");
+                            }
+                            Thread.sleep(200); // Simulate successful processing
+
+                            // 7. IMPORTANT: Explicitly acknowledge the message after successful processing
+                            message.acknowledge();
+                            System.out.println("Message acknowledged: " + msgText);
+
+                        }
+                    } catch (JMSException e) {
+                        System.err.println("JMS Exception in listener: " + e.getMessage());
+                        // In CLIENT_ACKNOWLEDGE, if an exception occurs *before* acknowledge(),
+                        // the message will NOT be acknowledged and will be redelivered.
+                        // The session's unacknowledged messages remain unacknowledged.
+                    } catch (RuntimeException e) {
+                        System.err.println("Processing error for message. Will NOT acknowledge. Message: " + e.getMessage());
+                        // If we don't acknowledge, the message will be redelivered.
+                        // For persistent failures (poison pills), consider moving to a Dead Letter Queue (DLQ).
+                    } catch (InterruptedException e) {
+                        Thread.currentThread().interrupt();
+                        System.err.println("Interrupted during message processing: " + e.getMessage());
+                    }
+                }
+            });
+
+            System.out.println("Consumer started. Waiting for messages (CLIENT_ACKNOWLEDGE)...");
+            Thread.sleep(Long.MAX_VALUE);
+
+        } finally {
+            if (connection != null) {
+                connection.close();
+            }
+            if (initialContext != null) {
+                initialContext.close();
+            }
+        }
+    }
+}</code></pre>
+</div>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_practical_considerations_for_client_acknowledge"><a class="anchor" href="#_practical_considerations_for_client_acknowledge"></a>Practical Considerations for CLIENT_ACKNOWLEDGE</h4>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>Idempotency</strong>: When using <code>CLIENT_ACKNOWLEDGE</code>, your message processing logic <strong>must</strong> be idempotent. This means that processing the same message multiple times should produce the same result as processing it once, without causing unintended side effects (e.g., duplicate database entries, double debits).</p>
+</li>
+<li>
+<p><strong>Error Handling</strong>: If a message cannot be processed successfully, the application should <strong>not</strong> acknowledge it. This will cause the message to be redelivered. For messages that consistently fail (often called "poison pills"), implement a mechanism to move them to a Dead Letter Queue (DLQ) after a configured number of redelivery attempts to prevent them from endlessly blocking the queue.</p>
+</li>
+<li>
+<p><strong>Batching</strong>: To improve performance, applications can process multiple messages before issuing a single <code>acknowledge()</code> call. Remember that <code>acknowledge()</code> on any message in a session acknowledges <strong>all</strong> previously received but unacknowledged messages for that session. Care must be taken: if any message in the batch fails, and you acknowledge the batch, the failed message will be lost. It is often safer to acknowledge messages individually or in small, carefully managed batches.</p>
+</li>
+<li>
+<p><strong>Session Scope</strong>: All <code>MessageConsumer</code> objects created from the same <code>Session</code> share the same acknowledgment scope. Acknowledging a message received by one consumer will acknowledge all unacknowledged messages received by <strong>any</strong> consumer created from that <strong>same</strong> session.</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_conclusion"><a class="anchor" href="#_conclusion"></a>Conclusion</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>The choice between <code>AUTO_ACKNOWLEDGE</code> and <code>CLIENT_ACKNOWLEDGE</code> is a critical design decision that impacts the reliability and complexity of your messaging application. <code>AUTO_ACKNOWLEDGE</code> offers simplicity and potentially higher throughput at the risk of message loss in failure scenarios. <code>CLIENT_ACKNOWLEDGE</code> provides robust "at-least-once" delivery guarantees and fine-grained control, but demands careful implementation of idempotency and error handling to prevent duplicate processing. Understanding these patterns is fundamental to building resilient messaging systems with ActiveMQ Artemis.</p>
+</div>
+</div>
+</div>
+<nav class="pagination">
+  <span class="prev"><a href="client-side-load-balancing-for-message-consumption.html">Client-side load balancing for message consumption</a></span>
+  <span class="next"><a href="transaction-management-for-message-producers-and-consumers.html">Transaction management for message producers and consumers</a></span>
+</nav>
+</article>
+  </div>
+</main>
+</div>
+<footer class="footer">
+  <img src="../../../_/img/rhl-logo-red.png" height="40px" alt="Red Hat"  href="https://redhat.com" >
+</footer><script id="site-script" src="../../../_/js/site.js" data-ui-root-path="../../../_"></script>
+<script async src="../../../_/js/vendor/highlight.js"></script>
+  </body>
+</html>

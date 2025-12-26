@@ -1,0 +1,562 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Monitoring Artemis instances on OpenShift :: Building Resilient Messaging Applications with ActiveMQ Artemis and OpenShift</title>
+    <link rel="prev" href="scaling-artemis-brokers-on-openshift.html">
+    <link rel="next" href="hands-on-lab-deploying-a-highly-available-activemq-artemis-cluster-on-openshift.html">
+    <meta name="generator" content="Antora 3.1.3">
+    <link rel="stylesheet" href="../../../_/css/site.css">
+    <script>var uiRootPath = '../../../_'</script>
+  </head>
+  <body class="article">
+<header class="header">
+  <nav class="navbar">
+    <div class="navbar-brand">
+      <a class="navbar-item" href="https://www.redhat.com" target="_blank"><img src="../../../_/img/redhat-logo.png" height="40px" alt="Red Hat"></a>
+      <a class="navbar-item" style="font-size: 24px; color: white" href="../../..">Building Resilient Messaging Applications with ActiveMQ Artemis and OpenShift</a>
+      <button class="navbar-burger" data-target="topbar-nav">
+        <span></span>
+        <span></span>
+        <span></span>
+      </button>
+    </div>
+    <div id="topbar-nav" class="navbar-menu">
+      <div class="navbar-end">
+        <a class="navbar-item" href="https://github.com/RedHatQuickCourses/REPLACEREPONAME/issues" target="_blank">Report Issues</a>
+      </div>
+    </div>
+  </nav>
+</header>
+<div class="body">
+<div class="nav-container" data-component="amq-connection-distribution" data-version="1.0.0">
+  <aside class="nav">
+    <div class="panels">
+<div class="nav-panel-menu is-active" data-panel="menu">
+  <nav class="nav-menu">
+    <h3 class="title"><a href="../index.html">Building Resilient Messaging Applications with ActiveMQ Artemis and OpenShift</a></h3>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="../index.html">Home</a>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="deploying-activemq-artemis-on-openshift.html">Deploying ActiveMQ Artemis on OpenShift</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="introduction-to-openshift-for-messaging-applications.html">Introduction to OpenShift for messaging applications</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="understanding-activemq-artemis-on-openshift.html">Understanding ActiveMQ Artemis on OpenShift</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="using-the-activemq-artemis-operator.html">Using the ActiveMQ Artemis Operator</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="custom-resource-definitions-crds-for-artemis.html">Custom Resource Definitions (CRDs) for Artemis</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="configuring-persistent-storage-for-artemis.html">Configuring persistent storage for Artemis</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="scaling-artemis-brokers-on-openshift.html">Scaling Artemis brokers on OpenShift</a>
+  </li>
+  <li class="nav-item is-current-page" data-depth="2">
+    <a class="nav-link" href="monitoring-artemis-instances-on-openshift.html">Monitoring Artemis instances on OpenShift</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="hands-on-lab-deploying-a-highly-available-activemq-artemis-cluster-on-openshift.html">Hands-on Lab: Deploying a highly available ActiveMQ Artemis cluster on OpenShift</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../message-distribution-issues/message-distribution-issues.html">Message distribution issues</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../message-distribution-issues/understanding-distributed-messaging-patterns.html">Understanding distributed messaging patterns</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../message-distribution-issues/load-balancing-messages-across-consumers.html">Load balancing messages across consumers</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../message-distribution-issues/message-routing-strategies-and-challenges.html">Message routing strategies and challenges</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../message-distribution-issues/consumer-groups-and-shared-subscriptions.html">Consumer groups and shared subscriptions</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../message-distribution-issues/ensuring-message-ordering-in-distributed-systems.html">Ensuring message ordering in distributed systems</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../message-distribution-issues/handling-message-durability-and-reliability.html">Handling message durability and reliability</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../message-distribution-issues/addressing-fault-tolerance-and-high-availability-for-messages.html">Addressing fault tolerance and high availability for messages</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../client-side-solution/client-side-solution.html">Client Side Solution</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../client-side-solution/client-side-connection-management-and-pooling.html">Client-side connection management and pooling</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../client-side-solution/implementing-client-failover-mechanisms.html">Implementing client failover mechanisms</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../client-side-solution/client-side-load-balancing-for-message-consumption.html">Client-side load balancing for message consumption</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../client-side-solution/message-acknowledgment-patterns-auto_acknowledge-client_acknowledge.html">Message acknowledgment patterns (AUTO_ACKNOWLEDGE, CLIENT_ACKNOWLEDGE)</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../client-side-solution/transaction-management-for-message-producers-and-consumers.html">Transaction management for message producers and consumers</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../client-side-solution/best-practices-for-client-integration-with-distributed-brokers.html">Best practices for client integration with distributed brokers</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../quarkus-example/quarkus-example.html">Quarkus Example</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../quarkus-example/integrating-jmsamqp-clients-with-quarkus.html">Integrating JMS/AMQP clients with Quarkus</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../quarkus-example/configuring-quarkus-for-activemq-artemis-connectivity.html">Configuring Quarkus for ActiveMQ Artemis connectivity</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../quarkus-example/implementing-message-producers-in-quarkus.html">Implementing message producers in Quarkus</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../quarkus-example/implementing-message-consumers-in-quarkus.html">Implementing message consumers in Quarkus</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../quarkus-example/reactive-messaging-with-quarkus-and-artemis.html">Reactive messaging with Quarkus and Artemis</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../quarkus-example/deploying-quarkus-messaging-applications-on-openshift.html">Deploying Quarkus messaging applications on OpenShift</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../quarkus-example/hands-on-lab-developing-a-quarkus-microservice-with-distributed-messaging.html">Hands-on Lab: Developing a Quarkus microservice with distributed messaging</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../spring-boot-example/spring-boot-example.html">Spring Boot Example</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../spring-boot-example/integrating-jmsamqp-clients-with-spring-boot.html">Integrating JMS/AMQP clients with Spring Boot</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../spring-boot-example/configuring-spring-boot-for-activemq-artemis-connectivity.html">Configuring Spring Boot for ActiveMQ Artemis connectivity</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../spring-boot-example/using-spring-jmsamqp-templates-for-messaging.html">Using Spring JMS/AMQP templates for messaging</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../spring-boot-example/implementing-message-producers-in-spring-boot.html">Implementing message producers in Spring Boot</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../spring-boot-example/implementing-message-consumers-in-spring-boot.html">Implementing message consumers in Spring Boot</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../spring-boot-example/configuring-listener-containers-and-concurrency.html">Configuring listener containers and concurrency</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../spring-boot-example/deploying-spring-boot-messaging-applications-on-openshift.html">Deploying Spring Boot messaging applications on OpenShift</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../spring-boot-example/hands-on-lab-developing-a-spring-boot-microservice-with-distributed-messaging.html">Hands-on Lab: Developing a Spring Boot microservice with distributed messaging</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+</ul>
+  </nav>
+</div>
+<div class="nav-panel-explore" data-panel="explore">
+  <div class="context">
+    <span class="title">Building Resilient Messaging Applications with ActiveMQ Artemis and OpenShift</span>
+    <span class="version">1.0.0</span>
+  </div>
+  <ul class="components">
+    <li class="component is-current">
+      <a class="title" href="../index.html">Building Resilient Messaging Applications with ActiveMQ Artemis and OpenShift</a>
+      <ul class="versions">
+        <li class="version is-current is-latest">
+          <a href="../index.html">1.0.0</a>
+        </li>
+      </ul>
+    </li>
+  </ul>
+</div>
+    </div>
+  </aside>
+</div>
+<main class="article">
+<div class="toolbar" role="navigation">
+<button class="nav-toggle"></button>
+  <a href="../index.html" class="home-link"></a>
+<nav class="breadcrumbs" aria-label="breadcrumbs">
+  <ul>
+    <li><a href="../index.html">Building Resilient Messaging Applications with ActiveMQ Artemis and OpenShift</a></li>
+    <li><a href="deploying-activemq-artemis-on-openshift.html">Deploying ActiveMQ Artemis on OpenShift</a></li>
+    <li><a href="monitoring-artemis-instances-on-openshift.html">Monitoring Artemis instances on OpenShift</a></li>
+  </ul>
+</nav>
+</div>
+  <div class="content">
+<aside class="toc sidebar" data-title="Contents" data-levels="2">
+  <div class="toc-menu"></div>
+</aside>
+<article class="doc">
+<h1 class="page">Monitoring Artemis instances on OpenShift</h1>
+<h1 id="_monitoring_activemq_artemis_instances_on_openshift" class="sect0"><a class="anchor" href="#_monitoring_activemq_artemis_instances_on_openshift"></a>Monitoring ActiveMQ Artemis Instances on OpenShift</h1>
+<div class="paragraph">
+<p>Monitoring is a critical aspect of managing any production application, and ActiveMQ Artemis instances running on OpenShift are no exception. Effective monitoring allows you to track the health, performance, and resource utilization of your messaging brokers, enabling proactive issue detection, performance optimization, and capacity planning. OpenShift provides a robust, integrated monitoring stack based on Prometheus and Grafana, which can be leveraged to gain deep insights into your Artemis deployments.</p>
+</div>
+<div class="sect1">
+<h2 id="_understanding_activemq_artemis_monitoring_mechanisms"><a class="anchor" href="#_understanding_activemq_artemis_monitoring_mechanisms"></a>Understanding ActiveMQ Artemis Monitoring Mechanisms</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>ActiveMQ Artemis exposes a wealth of operational metrics that are essential for monitoring. These metrics can be accessed through various mechanisms:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>JMX (Java Management Extensions)</strong>: Artemis is a Java application and exposes most of its internal state and statistics via JMX MBeans. This provides a standardized way for Java-based monitoring tools to gather data.</p>
+</li>
+<li>
+<p><strong>Jolokia</strong>: Jolokia is an HTTP-JSON bridge for JMX. It allows you to access JMX MBeans via standard HTTP requests, making it easier for non-Java applications or scripts to query Artemis metrics. The ActiveMQ Artemis Operator often leverages Jolokia for internal monitoring and metric exposition.</p>
+</li>
+<li>
+<p><strong>Prometheus JMX Exporter</strong>: For seamless integration with Prometheus, a popular approach is to use a JMX Exporter. This is a small application that runs alongside the Artemis broker, scrapes JMX metrics, and exposes them in a Prometheus-compatible format on a dedicated HTTP endpoint.</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_openshift_monitoring_stack_integration"><a class="anchor" href="#_openshift_monitoring_stack_integration"></a>OpenShift Monitoring Stack Integration</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>OpenShift ships with a powerful, integrated monitoring solution powered by:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>Prometheus</strong>: A widely adopted open-source monitoring system that collects and stores metrics as time-series data.</p>
+</li>
+<li>
+<p><strong>Alertmanager</strong>: Handles alerts sent by Prometheus, deduping, grouping, and routing them to the correct receiver.</p>
+</li>
+<li>
+<p><strong>Grafana</strong>: An open-source analytics and visualization web application that allows you to create customizable dashboards to visualize Prometheus data.</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>The ActiveMQ Artemis Operator is designed to integrate natively with the OpenShift monitoring stack. When monitoring is enabled for an <code>ActiveMQArtemis</code> custom resource, the Operator automatically:</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p><strong>Deploys a JMX Exporter sidecar container</strong> within each Artemis pod. This sidecar retrieves JMX metrics from the Artemis broker and exposes them on a dedicated HTTP port (e.g., <code>8778</code>) in a Prometheus-friendly format.</p>
+</li>
+<li>
+<p><strong>Creates a <code>ServiceMonitor</code> resource</strong>. This <code>ServiceMonitor</code> instructs Prometheus (running in the OpenShift monitoring namespace) to discover and scrape metrics from the JMX Exporter endpoints of the Artemis pods.</p>
+</li>
+</ol>
+</div>
+<div class="paragraph">
+<p>This automated setup significantly simplifies the process of getting your Artemis brokers monitored by the OpenShift platform.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_key_metrics_to_monitor_for_activemq_artemis"><a class="anchor" href="#_key_metrics_to_monitor_for_activemq_artemis"></a>Key Metrics to Monitor for ActiveMQ Artemis</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Monitoring Artemis instances effectively involves tracking a combination of broker-level, destination-level, and JVM-level metrics. Here are some critical metrics to consider:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>Broker Health and Resources</strong>:</p>
+</li>
+<li>
+<p><code>artemis_broker_memory_usage_bytes</code>: Current memory usage of the broker.</p>
+</li>
+<li>
+<p><code>artemis_broker_cpu_usage_seconds_total</code>: CPU time consumed by the broker.</p>
+</li>
+<li>
+<p><code>artemis_broker_number_of_connections</code>: Total active client connections.</p>
+</li>
+<li>
+<p><code>artemis_broker_uptime_seconds</code>: How long the broker has been running.</p>
+</li>
+<li>
+<p><code>artemis_broker_storage_usage_bytes</code>: Disk usage for message journal, paging, and large messages.</p>
+</li>
+<li>
+<p><code>artemis_broker_message_load</code>: Overall message load on the broker.</p>
+</li>
+<li>
+<p><strong>Queue and Topic Metrics</strong>:</p>
+</li>
+<li>
+<p><code>artemis_queue_messages_added_total</code>: Total messages added to a specific queue/topic.</p>
+</li>
+<li>
+<p><code>artemis_queue_messages_acknowledged_total</code>: Total messages acknowledged from a specific queue/topic.</p>
+</li>
+<li>
+<p><code>artemis_queue_messages_in_total</code>: Total messages currently in a specific queue/topic.</p>
+</li>
+<li>
+<p><code>artemis_queue_delivering_messages_total</code>: Number of messages currently being delivered.</p>
+</li>
+<li>
+<p><code>artemis_queue_consumers_total</code>: Number of active consumers on a specific queue/topic.</p>
+</li>
+<li>
+<p><code>artemis_queue_producers_total</code>: Number of active producers on a specific queue/topic.</p>
+</li>
+<li>
+<p><code>artemis_address_messages_expired_total</code>: Total messages expired from an address.</p>
+</li>
+<li>
+<p><strong>JVM Metrics (via JMX Exporter)</strong>:</p>
+</li>
+<li>
+<p>Garbage Collection statistics (<code>jvm_gc_memory_allocated_bytes_total</code>, <code>jvm_gc_collection_seconds_total</code>).</p>
+</li>
+<li>
+<p>Memory pools (<code>jvm_memory_bytes_used</code>, <code>jvm_memory_bytes_committed</code>).</p>
+</li>
+<li>
+<p>Thread counts (<code>jvm_threads_current</code>, <code>jvm_threads_deadlocked</code>).</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>Monitoring these metrics helps identify bottlenecks, anticipate resource exhaustion, and ensure the reliability and performance of your messaging infrastructure.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_configuring_monitoring_with_the_activemq_artemis_operator"><a class="anchor" href="#_configuring_monitoring_with_the_activemq_artemis_operator"></a>Configuring Monitoring with the ActiveMQ Artemis Operator</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>To enable monitoring for your ActiveMQ Artemis cluster deployed by the Operator, you need to set the <code>spec.deploymentPlan.enableMetrics</code> field to <code>true</code> in your <code>ActiveMQArtemis</code> custom resource.</p>
+</div>
+<div class="paragraph">
+<p>Let&#8217;s look at an example of an <code>ActiveMQArtemis</code> CR snippet that enables monitoring:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">apiVersion: broker.amq.io/v1beta1
+kind: ActiveMQArtemis
+metadata:
+  name: my-artemis-cluster
+spec:
+  # ... other configuration for your Artemis cluster ...
+  deploymentPlan:
+    size: 3 # Example: a 3-node cluster
+    image: registry.redhat.io/amq7/amq-broker-rhel8:7.10
+    enableMetrics: true <i class="conum" data-value="1"></i><b>(1)</b>
+    # ... other deployment plan details ...
+  # ... rest of the ActiveMQArtemis CR ...</code></pre>
+</div>
+</div>
+<div class="colist arabic">
+<table>
+<tr>
+<td><i class="conum" data-value="1"></i><b>1</b></td>
+<td>Setting <code>enableMetrics: true</code> instructs the Operator to deploy the JMX Exporter sidecar and create the necessary <code>ServiceMonitor</code> resources.</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>Once you apply this <code>ActiveMQArtemis</code> CR, the Operator will reconfigure your broker pods to include the JMX Exporter.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_hands_on_activity_verifying_artemis_monitoring_on_openshift"><a class="anchor" href="#_hands_on_activity_verifying_artemis_monitoring_on_openshift"></a>Hands-on Activity: Verifying Artemis Monitoring on OpenShift</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>This activity guides you through verifying that ActiveMQ Artemis monitoring is active and how to access its metrics using OpenShift&#8217;s integrated monitoring tools.</p>
+</div>
+<div class="sect2">
+<h3 id="_prerequisites"><a class="anchor" href="#_prerequisites"></a>Prerequisites</h3>
+<div class="ulist">
+<ul>
+<li>
+<p>An OpenShift cluster with cluster monitoring enabled.</p>
+</li>
+<li>
+<p>The ActiveMQ Artemis Operator installed.</p>
+</li>
+<li>
+<p>An <code>ActiveMQArtemis</code> cluster deployed with <code>spec.deploymentPlan.enableMetrics: true</code> in your project.</p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_steps"><a class="anchor" href="#_steps"></a>Steps</h3>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p><strong>Verify the JMX Exporter Sidecar</strong>:
+First, ensure that the JMX Exporter sidecar container is running within your Artemis pods.</p>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>Get the name of one of your Artemis pods:
+[source,bash]
+----
+oc get pods -l app.kubernetes.io/name=my-artemis-cluster # Replace my-artemis-cluster with your broker&#8217;s name
+----
+You should see pods like <code>my-artemis-cluster-ss-0</code>, <code>my-artemis-cluster-ss-1</code>, etc.</p>
+</li>
+<li>
+<p>Inspect the pod to confirm the <code>jmx-exporter</code> container is present:
+[source,bash]
+----
+oc describe pod &lt;your-artemis-pod-name&gt;
+----
+In the output, under <code>Containers</code>, you should see entries for both <code>broker</code> and <code>jmx-exporter</code>.</p>
+</li>
+</ol>
+</div>
+</li>
+<li>
+<p><strong>Verify the <code>ServiceMonitor</code> Resource</strong>:
+The Operator creates a <code>ServiceMonitor</code> in the same namespace as your Artemis instance. This resource tells Prometheus where to scrape metrics from.</p>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>List the <code>ServiceMonitor</code> resources in your project:
+[source,bash]
+----
+oc get servicemonitor
+----
+You should see a <code>ServiceMonitor</code> with a name similar to <code>activemq-artemis-&lt;your-artemis-cluster-name&gt;-sm</code>.</p>
+</li>
+<li>
+<p>Inspect the <code>ServiceMonitor</code> to see its configuration:
+[source,bash]
+----
+oc describe servicemonitor activemq-artemis-&lt;your-artemis-cluster-name&gt;-sm
+----
+Pay attention to the <code>spec.endpoints</code> section, which defines the port and path Prometheus should use (typically <code>http-metrics</code> on port <code>8778</code>).</p>
+</li>
+</ol>
+</div>
+</li>
+<li>
+<p><strong>Access Prometheus to Query Artemis Metrics</strong>:
+OpenShift&#8217;s integrated Prometheus instance will now be scraping your Artemis metrics. You can query these directly.</p>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>Log in to the OpenShift Web Console.</p>
+</li>
+<li>
+<p>Navigate to <strong>Observe</strong> &gt; <strong>Metrics</strong>.</p>
+</li>
+<li>
+<p>In the <strong>Expression</strong> field, type a Prometheus query to find Artemis metrics. For example:</p>
+<div class="ulist">
+<ul>
+<li>
+<p>To see all available Artemis metrics: <code>artemis_</code></p>
+</li>
+<li>
+<p>To view messages in a specific queue: <code>artemis_queue_messages_in_total{queue_name="myQueue"}</code> (replace <code>myQueue</code> with an actual queue name on your broker).</p>
+</li>
+<li>
+<p>To view current connections: <code>artemis_broker_number_of_connections</code></p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<p>Click <strong>Run Queries</strong>. You should see the metric data plotted on a graph.</p>
+</li>
+</ol>
+</div>
+</li>
+<li>
+<p><strong>Access Grafana for Visual Dashboards</strong>:
+Grafana provides powerful visualization capabilities. OpenShift often includes pre-built dashboards, or you can import/create custom ones.</p>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>In the OpenShift Web Console, navigate to <strong>Observe</strong> &gt; <strong>Dashboards</strong>.</p>
+</li>
+<li>
+<p>Look for pre-existing dashboards related to "ActiveMQ Artemis" or "JMX Exporter." If none are present, you would typically import a community-contributed Grafana dashboard for ActiveMQ Artemis, configuring it to use the OpenShift Prometheus data source.</p>
+</li>
+<li>
+<p>Explore the graphs and panels to visualize key Artemis metrics like message rates, queue sizes, memory usage, and connection counts over time.</p>
+</li>
+</ol>
+</div>
+</li>
+</ol>
+</div>
+<div class="paragraph">
+<p>By following these steps, you can confirm that your ActiveMQ Artemis instances are being actively monitored by the OpenShift platform, providing you with the necessary visibility into their operational status.</p>
+</div>
+</div>
+</div>
+</div>
+<nav class="pagination">
+  <span class="prev"><a href="scaling-artemis-brokers-on-openshift.html">Scaling Artemis brokers on OpenShift</a></span>
+  <span class="next"><a href="hands-on-lab-deploying-a-highly-available-activemq-artemis-cluster-on-openshift.html">Hands-on Lab: Deploying a highly available ActiveMQ Artemis cluster on OpenShift</a></span>
+</nav>
+</article>
+  </div>
+</main>
+</div>
+<footer class="footer">
+  <img src="../../../_/img/rhl-logo-red.png" height="40px" alt="Red Hat"  href="https://redhat.com" >
+</footer><script id="site-script" src="../../../_/js/site.js" data-ui-root-path="../../../_"></script>
+<script async src="../../../_/js/vendor/highlight.js"></script>
+  </body>
+</html>
