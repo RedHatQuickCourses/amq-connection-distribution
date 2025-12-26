@@ -1,0 +1,343 @@
+#  Configuring Quarkus for ActiveMQ Artemis connectivity
+
+= Configuring Quarkus for ActiveMQ Artemis Connectivity
+
+This section details how to configure Quarkus applications to connect to an ActiveMQ Artemis broker, laying the groundwork for developing resilient messaging applications. Quarkus, with its rapid startup time and low memory footprint, combined with ActiveMQ Artemis's robust messaging capabilities, provides an excellent platform for building cloud-native microservices.
+
+== Understanding Quarkus Messaging Integrations
+
+Quarkus offers flexible options for integrating with messaging brokers:
+
+. *JMS (Jakarta Messaging Service)*: A standard Java API for enterprise messaging, providing a robust, transaction-aware interface for producers and consumers.
+. *Eclipse MicroProfile Reactive Messaging*: A specification that simplifies event-driven microservices development by integrating with various messaging technologies in a reactive, non-blocking manner. Quarkus provides excellent support for this.
+. *AMQP (Advanced Message Queuing Protocol)*: While JMS is an API, AMQP is a wire protocol. Quarkus can interact with Artemis over AMQP, often through a client that implements the JMS API or directly using AMQP client libraries.
+
+This guide focuses on configuring the underlying connection details that are typically used by both JMS and Reactive Messaging extensions in Quarkus.
+
+== Core Dependencies
+
+To enable ActiveMQ Artemis connectivity in your Quarkus application, you typically need to add the appropriate Maven or Gradle dependency. For standard JMS integration with ActiveMQ Artemis, the `quarkus-artemis-jms` extension is the most straightforward choice.
+
+.Maven Dependency (pom.xml)
+[source,xml]
+----
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-artemis-jms</artifactId>
+</dependency>
+----
+
+This dependency brings in the necessary ActiveMQ Artemis client libraries and integrates them with the Quarkus build and runtime environment, including auto-configuration capabilities.
+
+For Reactive Messaging with AMQP, you would typically use `quarkus-smallrye-reactive-messaging-amqp`:
+
+.Maven Dependency (pom.xml) for Reactive Messaging AMQP
+[source,xml]
+----
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-smallrye-reactive-messaging-amqp</artifactId>
+</dependency>
+----
+
+This module leverages the AMQP 1.0 protocol and integrates seamlessly with the SmallRye Reactive Messaging framework provided by Quarkus. While `quarkus-artemis-jms` provides a JMS-compliant client, `quarkus-smallrye-reactive-messaging-amqp` provides a reactive, non-blocking client that communicates directly over AMQP. For basic connection, the configuration discussed below applies to both, though specific messaging patterns will differ.
+
+== Configuring ActiveMQ Artemis Connectivity
+
+Quarkus applications are configured primarily through the `src/main/resources/application.properties` file. For ActiveMQ Artemis, you'll specify connection details and client-side behavior.
+
+=== Essential Connection Properties
+
+The most critical properties define how your Quarkus application locates and connects to the Artemis broker.
+
+.Example `application.properties` for Artemis JMS
+[source,properties]
+----
+# Basic connection to ActiveMQ Artemis
+quarkus.artemis.url=tcp://localhost:61616
+quarkus.artemis.username=artemis
+quarkus.artemis.password=artemis
+
+# Optional: Configure a client ID for durable subscriptions
+quarkus.artemis.client-id=my-quarkus-app-client
+
+# Optional: Connection pooling settings
+quarkus.artemis.pool.enabled=true
+quarkus.artemis.pool.max-pool-size=10
+quarkus.artemis.pool.min-pool-size=2
+quarkus.artemis.pool.initial-pool-size=5
+----
+
+Let's break down these properties:
+
+*   `quarkus.artemis.url`:
+    *   *Purpose*: Specifies the URL for connecting to the ActiveMQ Artemis broker. This can be a single broker or a comma-separated list of URLs for failover scenarios.
+    *   *Format*: `tcp://host:port` or `tcp://host1:port1,tcp://host2:port2` for failover. For SSL/TLS, use `ssl://host:port`.
+    *   *Example*: `tcp://artemis-broker-0.artemis-cluster.svc.cluster.local:61616` (OpenShift internal service).
+
+*   `quarkus.artemis.username`:
+    *   *Purpose*: The username required for authentication with the Artemis broker.
+    *   *Security Note*: In production environments, sensitive information like passwords should be injected via environment variables or a secret management system, not hardcoded.
+
+*   `quarkus.artemis.password`:
+    *   *Purpose*: The password for authentication.
+    *   *Security Note*: As with the username, avoid hardcoding in production.
+
+*   `quarkus.artemis.client-id`:
+    *   *Purpose*: An optional, unique identifier for the client connection. This is crucial for *durable subscriptions* in JMS, where the broker needs to identify a specific client to store messages when it's offline. If not set, a unique ID will be generated, but this is problematic for durable subscriptions that rely on a consistent client ID.
+
+=== Connection Pooling Configuration
+
+For robust and performant applications, especially microservices handling frequent messaging, connection pooling is essential. Quarkus's Artemis extension provides configuration for the underlying connection pool.
+
+*   `quarkus.artemis.pool.enabled`:
+    *   *Purpose*: Enables or disables connection pooling. It's highly recommended to enable this for production.
+    *   *Default*: `false`.
+
+*   `quarkus.artemis.pool.max-pool-size`:
+    *   *Purpose*: The maximum number of pooled connections. This limits the number of concurrent connections your application will maintain to the broker.
+    *   *Default*: `10`.
+
+*   `quarkus.artemis.pool.min-pool-size`:
+    *   *Purpose*: The minimum number of idle connections that the pool tries to maintain. Connections beyond this number might be closed if idle for too long.
+    *   *Default*: `1`.
+
+*   `quarkus.artemis.pool.initial-pool-size`:
+    *   *Purpose*: The number of connections to create when the pool is initialized. This helps avoid latency spikes during the first few connection requests.
+    *   *Default*: `1`.
+
+=== SSL/TLS Configuration
+
+Securing communication with the Artemis broker is paramount, especially over public networks or within shared clusters. Quarkus allows configuring SSL/TLS for Artemis connections.
+
+.Example `application.properties` for SSL/TLS
+[source,properties]
+----
+# SSL/TLS connection to ActiveMQ Artemis
+quarkus.artemis.url=ssl://artemis-broker.example.com:61617
+quarkus.artemis.ssl.trust-store=classpath:client-truststore.jks
+quarkus.artemis.ssl.trust-store-password=truststorepass
+quarkus.artemis.ssl.key-store=classpath:client-keystore.jks
+quarkus.artemis.ssl.key-store-password=keystorepass
+quarkus.artemis.ssl.enabled-cipher-suites=TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256
+quarkus.artemis.ssl.enabled-protocols=TLSv1.2,TLSv1.3
+----
+
+*   `quarkus.artemis.ssl.trust-store`:
+    *   *Purpose*: Path to the client's trust store, containing the trusted certificates (e.g., the CA certificate that signed the broker's certificate).
+    *   *Format*: Can be a path on the filesystem or `classpath:` prefix for a resource within the JAR.
+
+*   `quarkus.artemis.ssl.trust-store-password`:
+    *   *Purpose*: Password for the client trust store.
+
+*   `quarkus.artemis.ssl.key-store`:
+    *   *Purpose*: Path to the client's key store, containing the client's certificate and private key for two-way (mutual) TLS authentication.
+    *   *Note*: Only required if the Artemis broker is configured for mutual TLS.
+
+*   `quarkus.artemis.ssl.key-store-password`:
+    *   *Purpose*: Password for the client key store.
+
+*   `quarkus.artemis.ssl.enabled-cipher-suites`:
+    *   *Purpose*: Comma-separated list of enabled cipher suites. This enhances security by restricting communication to strong cryptographic algorithms.
+
+*   `quarkus.artemis.ssl.enabled-protocols`:
+    *   *Purpose*: Comma-separated list of enabled SSL/TLS protocols (e.g., `TLSv1.2`, `TLSv1.3`).
+
+=== Multiple Connection Factories
+
+For more advanced scenarios, such as connecting to multiple Artemis brokers or using different authentication/pooling settings for different parts of your application, Quarkus allows configuring named connection factories.
+
+.Example `application.properties` for Multiple Connection Factories
+[source,properties]
+----
+# Default connection factory (used by @Inject ConnectionFactory)
+quarkus.artemis.url=tcp://localhost:61616
+quarkus.artemis.username=defaultUser
+quarkus.artemis.password=defaultPass
+
+# Named connection factory 'my-secondary-broker'
+quarkus.artemis."my-secondary-broker".url=tcp://secondary-broker:61616
+quarkus.artemis."my-secondary-broker".username=secondaryUser
+quarkus.artemis."my-secondary-broker".password=secondaryPass
+quarkus.artemis."my-secondary-broker".pool.max-pool-size=5
+----
+
+To use a named connection factory in your code, you would inject it using the `@jakarta.inject.Named` annotation:
+
+[source,java]
+----
+import jakarta.inject.Inject;
+import jakarta.inject.Named;
+import jakarta.jms.ConnectionFactory;
+
+// ...
+
+@Inject
+@Named("my-secondary-broker") // Inject the specific named connection factory
+ConnectionFactory secondaryConnectionFactory;
+
+@Inject // This will inject the default connection factory
+ConnectionFactory defaultConnectionFactory;
+----
+
+=== Reactive Messaging AMQP Specifics
+
+When using `quarkus-smallrye-reactive-messaging-amqp`, the configuration is slightly different, though it often overlaps for basic connection. The prefix changes to `mp.messaging.connector.amqp-external.` where `amqp-external` is the name of your connector (can be `amqp` or any custom name).
+
+.Example `application.properties` for Reactive Messaging AMQP
+[source,properties]
+----
+# Reactive Messaging AMQP connection
+mp.messaging.connector.my-amqp-connector.url=amqp://localhost:5672
+mp.messaging.connector.my-amqp-connector.username=artemis
+mp.messaging.connector.my-amqp-connector.password=artemis
+mp.messaging.connector.my-amqp-connector.ssl=false # Set to true for SSL/TLS
+----
+
+*   `mp.messaging.connector.<connector_name>.url`:
+    *   *Purpose*: The URL for the AMQP broker. The default AMQP port for Artemis is 5672.
+    *   *Format*: `amqp://host:port` or `amqps://host:port` for SSL/TLS.
+
+*   `mp.messaging.connector.<connector_name>.username`
+*   `mp.messaging.connector.<connector_name>.password`
+    *   *Purpose*: Authentication credentials for the AMQP broker.
+
+*   `mp.messaging.connector.<connector_name>.ssl`:
+    *   *Purpose*: Boolean to enable SSL/TLS for the AMQP connection. Further SSL configuration (trust stores, key stores) can be done with additional `mp.messaging.connector.<connector_name>.trust-store.path`, etc. properties.
+
+=== Hands-on Activity: Basic Quarkus Artemis Configuration
+
+Let's set up a basic Quarkus project and configure it to connect to a local ActiveMQ Artemis instance.
+
+.Prerequisites
+*   JDK 17+ installed
+*   Maven 3.8.2+ installed
+*   ActiveMQ Artemis running locally (e.g., via Docker or a standalone installation). If using Docker:
+    +
+    [source,bash]
+    ----
+    docker run -it --rm --name artemis -p 8161:8161 -p 61616:61616 \
+        -e ARTEMIS_USERNAME=artemis -e ARTEMIS_PASSWORD=artemis \
+        apache/activemq-artemis:latest-alpine
+    ----
+    +
+    This command starts an Artemis broker with `artemis`/`artemis` as credentials on `tcp://localhost:61616`.
+
+.Steps
+
+.  **Create a new Quarkus project:**
+    +
+    [source,bash]
+    ----
+    mvn io.quarkus.platform:quarkus-maven-plugin:3.8.3:create \
+        -DprojectGroupId=org.quarkus.artemis \
+        -DprojectArtifactId=artemis-config-example \
+        -Dextensions="artemis-jms,resteasy-reactive" \
+        -DnoTests
+    cd artemis-config-example
+    ----
+    +
+    This creates a basic Quarkus project with the `artemis-jms` extension included.
+
+.  **Configure `application.properties`:**
+    +
+    Open `src/main/resources/application.properties` and add the following:
+    +
+    [source,properties]
+    ----
+    # Basic connection to ActiveMQ Artemis
+    quarkus.artemis.url=tcp://localhost:61616
+    quarkus.artemis.username=artemis
+    quarkus.artemis.password=artemis
+    quarkus.artemis.client-id=my-first-quarkus-app
+    quarkus.artemis.pool.enabled=true
+    quarkus.artemis.pool.max-pool-size=5
+    ----
+
+.  **Create a simple Quarkus component to verify connection:**
+    +
+    Create a new Java class `src/main/java/org/quarkus/artemis/ArtemisConnectionCheck.java`:
+    +
+    [source,java]
+    ----
+    package org.quarkus.artemis;
+
+    import jakarta.enterprise.context.ApplicationScoped;
+    import jakarta.enterprise.event.Observes;
+    import jakarta.inject.Inject;
+    import jakarta.jms.Connection;
+    import jakarta.jms.ConnectionFactory;
+    import jakarta.jms.JMSException;
+
+    import io.quarkus.runtime.StartupEvent;
+    import org.jboss.logging.Logger;
+
+    @ApplicationScoped
+    public class ArtemisConnectionCheck {
+
+        private static final Logger LOG = Logger.getLogger(ArtemisConnectionCheck.class);
+
+        @Inject
+        ConnectionFactory connectionFactory; // Injects the default connection factory
+
+        void onStart(@Observes StartupEvent ev) {
+            LOG.info("The application is starting...");
+            try (Connection connection = connectionFactory.createConnection()) {
+                LOG.info("Successfully connected to ActiveMQ Artemis at " + connection.getMetaData().getJMSProviderName());
+            } catch (JMSException e) {
+                LOG.error("Failed to connect to ActiveMQ Artemis: " + e.getMessage(), e);
+            }
+        }
+    }
+    ----
+    +
+    This component observes the Quarkus `StartupEvent`, attempts to create a JMS connection using the injected `ConnectionFactory`, and logs the outcome.
+
+.  **Run the Quarkus application:**
+    +
+    [source,bash]
+    ----
+    mvn quarkus:dev
+    ----
+    +
+    Observe the console output. You should see a log message similar to:
+    +
+    [source,text]
+    ----
+    ...
+    INFO  org.quarkus.artemis.ArtemisConnectionCheck - The application is starting...
+    INFO  org.quarkus.artemis.ArtemisConnectionCheck - Successfully connected to ActiveMQ Artemis at ActiveMQ Artemis JMS Provider
+    ...
+    ----
+    +
+    If the connection fails, you will see an `ERROR` message indicating the problem (e.g., connection refused, invalid credentials). Ensure your Artemis broker is running and accessible at `localhost:61616` with the specified credentials.
+
+.  **Stop the application:**
+    +
+    Press `q` in the terminal where `mvn quarkus:dev` is running.
+
+This hands-on activity demonstrates the basic configuration and verification of a Quarkus application connecting to ActiveMQ Artemis.
+
+== Troubleshooting Common Configuration Issues
+
+*   **Connection Refused**:
+    *   *Cause*: The Artemis broker is not running, or it's not accessible at the specified `url` and `port`. Firewall rules might also be blocking the connection.
+    *   *Resolution*: Verify the Artemis broker status. Check the broker's listener configuration. Ensure the `url` in `application.properties` is correct. Open necessary firewall ports.
+
+*   **Authentication Failure**:
+    *   *Cause*: Incorrect `username` or `password` in `application.properties`.
+    *   *Resolution*: Double-check credentials against the Artemis broker's security configuration.
+
+*   **SSL Handshake Failure**:
+    *   *Cause*: Issues with trust stores, key stores, or certificate validation. The client might not trust the broker's certificate, or the broker might not trust the client's certificate (for mutual TLS).
+    *   *Resolution*: Verify `trust-store` and `key-store` paths and passwords. Ensure the trust store contains the correct CA certificates. Check broker logs for SSL-related errors.
+
+*   **No Such Method Error/Class Not Found**:
+    *   *Cause*: Dependency conflicts or missing dependencies.
+    *   *Resolution*: Ensure `quarkus-artemis-jms` or `quarkus-smallrye-reactive-messaging-amqp` (or other relevant extensions) are correctly added to your `pom.xml` (or `build.gradle`). Check `mvn dependency:tree` for conflicts.
+
+*   **Connection Pooling Exhaustion**:
+    *   *Cause*: The application is attempting to use more connections than `max-pool-size`, or connections are not being properly closed (though the pool manages this, very high demand can lead to this).
+    *   *Resolution*: Increase `max-pool-size` if necessary, or analyze your application's connection usage patterns. Ensure your application is designed to release resources.
+
+Proper configuration is the first step towards building robust messaging applications with Quarkus and ActiveMQ Artemis, ensuring reliable and secure communication.

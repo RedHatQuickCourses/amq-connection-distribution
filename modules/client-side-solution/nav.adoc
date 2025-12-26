@@ -1,0 +1,7 @@
+* xref:client-side-solution.adoc[]
+** xref:client-side-connection-management-and-pooling.adoc[]
+** xref:implementing-client-failover-mechanisms.adoc[]
+** xref:client-side-load-balancing-for-message-consumption.adoc[]
+** xref:message-acknowledgment-patterns-auto_acknowledge-client_acknowledge.adoc[]
+** xref:transaction-management-for-message-producers-and-consumers.adoc[]
+** xref:best-practices-for-client-integration-with-distributed-brokers.adoc[]

@@ -1,0 +1,276 @@
+#  Integrating JMS/AMQP clients with Quarkus
+
+= Integrating JMS/AMQP Clients with Quarkus
+
+Quarkus is a Kubernetes-native Java stack tailored for OpenJDK HotSpot and GraalVM, making it an excellent choice for developing high-performance, lightweight microservices. When building messaging applications, Quarkus offers robust support for integrating with messaging brokers like ActiveMQ Artemis, leveraging standard protocols such as JMS (Java Message Service) and AMQP (Advanced Message Queuing Protocol). This section explores how to integrate these clients with Quarkus applications.
+
+== Understanding Quarkus Messaging Extensions
+
+Quarkus provides specific extensions to facilitate integration with messaging systems. For ActiveMQ Artemis, the primary extensions are:
+
+*   `quarkus-activemq-artemis`: This extension provides traditional JMS client capabilities and is suitable for synchronous messaging patterns. It allows your Quarkus application to act as a standard JMS producer or consumer.
+*   `quarkus-smallrye-reactive-messaging-amqp`: This extension leverages SmallRye Reactive Messaging for event-driven, reactive message processing using the AMQP 1.0 protocol. It's ideal for building asynchronous, non-blocking messaging microservices.
+
+Choosing between JMS and AMQP often depends on existing infrastructure, protocol preference, and the need for reactive vs. traditional synchronous processing.
+
+== Integrating with JMS Clients
+
+For applications requiring traditional JMS semantics, Quarkus provides first-class support.
+
+=== Dependencies
+
+To use JMS with ActiveMQ Artemis in your Quarkus application, you need to add the `quarkus-activemq-artemis` extension to your `pom.xml`:
+
+[source,xml]
+----
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-activemq-artemis</artifactId>
+</dependency>
+----
+
+=== Configuration
+
+Once the dependency is added, you can configure the JMS connection in your `application.properties` file. The most basic configuration involves specifying the ActiveMQ Artemis broker URL:
+
+[source,properties]
+----
+quarkus.artemis.url=tcp://localhost:61616
+# Optional: Configure username and password if required by the broker
+# quarkus.artemis.username=your_username
+# quarkus.artemis.password=your_password
+----
+
+Quarkus automatically configures a `JMSContext` or `ConnectionFactory` based on these properties, which can then be injected into your application components.
+
+=== Hands-on Activity: Basic JMS Producer Setup
+
+Let's create a simple JMS producer in a Quarkus application.
+
+. Create a new Quarkus project (if you don't have one):
++
+[source,bash]
+----
+quarkus create app my-quarkus-jms-app --extension='activemq-artemis'
+cd my-quarkus-jms-app
+----
+
+. Open `src/main/java/org/acme/GreetingResource.java` and modify it, or create a new class `JMSProducer.java`.
++
+[source,java]
+----
+package org.acme;
+
+import javax.enterprise.context.ApplicationScoped;
+import javax.inject.Inject;
+import javax.jms.ConnectionFactory;
+import javax.jms.JMSContext;
+import javax.jms.Session;
+
+@ApplicationScoped
+public class JMSProducer {
+
+    @Inject
+    ConnectionFactory connectionFactory; // Quarkus injects the configured ConnectionFactory
+
+    public void sendMessage(String messageContent) {
+        try (JMSContext context = connectionFactory.createContext(Session.AUTO_ACKNOWLEDGE)) {
+            context.createProducer().send(context.createQueue("myQueue"), messageContent);
+            System.out.println("Message sent: " + messageContent);
+        } catch (Exception e) {
+            System.err.println("Error sending message: " + e.getMessage());
+        }
+    }
+}
+----
+
+. Create a simple REST endpoint to trigger message sending:
++
+[source,java]
+----
+package org.acme;
+
+import javax.inject.Inject;
+import javax.ws.rs.GET;
+import javax.ws.rs.Path;
+import javax.ws.rs.PathParam;
+import javax.ws.rs.Produces;
+import javax.ws.rs.core.MediaType;
+
+@Path("/messages")
+public class MessageResource {
+
+    @Inject
+    JMSProducer jmsProducer;
+
+    @GET
+    @Path("/send/{message}")
+    @Produces(MediaType.TEXT_PLAIN)
+    public String sendMessage(@PathParam("message") String message) {
+        jmsProducer.sendMessage(message);
+        return "Message '" + message + "' sent to myQueue!";
+    }
+}
+----
+
+. Update `src/main/resources/application.properties` to configure the Artemis broker:
++
+[source,properties]
+----
+quarkus.artemis.url=tcp://localhost:61616
+quarkus.artemis.devservices.enabled=false # Disable dev services if you have a running broker
+----
+
+. You would typically need an ActiveMQ Artemis broker running at `localhost:61616` for this to work.
+
+== Integrating with AMQP Clients (SmallRye Reactive Messaging)
+
+For reactive and non-blocking messaging patterns, Quarkus integrates with SmallRye Reactive Messaging, which supports AMQP 1.0. This approach is highly recommended for event-driven microservices.
+
+=== Dependencies
+
+To use AMQP with SmallRye Reactive Messaging, you need to add the `quarkus-smallrye-reactive-messaging-amqp` extension:
+
+[source,xml]
+----
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-smallrye-reactive-messaging-amqp</artifactId>
+</dependency>
+----
+
+=== Configuration
+
+Configuration for Reactive Messaging AMQP is done via `application.properties`, defining channels and their connection details.
+
+[source,properties]
+----
+# AMQP Broker Connection
+mp.messaging.connector.amqp-external.url=amqp://localhost:5672
+# mp.messaging.connector.amqp-external.username=user
+# mp.messaging.connector.amqp-external.password=password
+
+# Outgoing channel configuration
+mp.messaging.outgoing.my-outgoing-channel.connector=amqp-external
+mp.messaging.outgoing.my-outgoing-channel.address=myQueue
+
+# Incoming channel configuration
+mp.messaging.incoming.my-incoming-channel.connector=amqp-external
+mp.messaging.incoming.my-incoming-channel.address=myQueue
+----
+
+In this configuration:
+*   `mp.messaging.connector.amqp-external.url`: Specifies the AMQP broker URL. `amqp-external` is an arbitrary name for the connector instance.
+*   `mp.messaging.outgoing.my-outgoing-channel`: Defines an *outgoing* channel named `my-outgoing-channel`.
+    *   `connector=amqp-external`: Links this channel to the previously defined AMQP connector.
+    *   `address=myQueue`: Specifies the target queue or topic on the broker.
+*   `mp.messaging.incoming.my-incoming-channel`: Defines an *incoming* channel named `my-incoming-channel`, similarly linked to the broker and address.
+
+=== Hands-on Activity: Basic Reactive AMQP Producer/Consumer Setup
+
+. Ensure you have the `quarkus-smallrye-reactive-messaging-amqp` extension. If not, add it:
++
+[source,bash]
+----
+quarkus create app my-quarkus-amqp-app --extension='smallrye-reactive-messaging-amqp'
+cd my-quarkus-amqp-app
+----
+
+. Create a Reactive AMQP producer:
++
+[source,java]
+----
+package org.acme;
+
+import javax.enterprise.context.ApplicationScoped;
+import org.eclipse.microprofile.reactive.messaging.Channel;
+import org.eclipse.microprofile.reactive.messaging.Emitter;
+
+@ApplicationScoped
+public class AMQPProducer {
+
+    @Inject
+    @Channel("my-outgoing-channel") // Corresponds to mp.messaging.outgoing.my-outgoing-channel
+    Emitter<String> messageEmitter;
+
+    public void sendReactiveMessage(String messageContent) {
+        messageEmitter.send(messageContent)
+                .whenComplete((success, failure) -> {
+                    if (failure != null) {
+                        System.err.println("Failed to send message: " + failure.getMessage());
+                    } else {
+                        System.out.println("Reactive message sent: " + messageContent);
+                    }
+                });
+    }
+}
+----
+
+. Create a Reactive AMQP consumer:
++
+[source,java]
+----
+package org.acme;
+
+import javax.enterprise.context.ApplicationScoped;
+import org.eclipse.microprofile.reactive.messaging.Incoming;
+
+@ApplicationScoped
+public class AMQPConsumer {
+
+    @Incoming("my-incoming-channel") // Corresponds to mp.messaging.incoming.my-incoming-channel
+    public void processMessage(String message) {
+        System.out.println("Reactive message received: " + message);
+    }
+}
+----
+
+. Create a REST endpoint to trigger the reactive message sending:
++
+[source,java]
+----
+package org.acme;
+
+import javax.inject.Inject;
+import javax.ws.rs.GET;
+import javax.ws.rs.Path;
+import javax.ws.rs.PathParam;
+import javax.ws.rs.Produces;
+import javax.ws.rs.core.MediaType;
+
+@Path("/reactive-messages")
+public class ReactiveMessageResource {
+
+    @Inject
+    AMQPProducer amqpProducer;
+
+    @GET
+    @Path("/send/{message}")
+    @Produces(MediaType.TEXT_PLAIN)
+    public String sendReactiveMessage(@PathParam("message") String message) {
+        amqpProducer.sendReactiveMessage(message);
+        return "Reactive message '" + message + "' sent to myQueue!";
+    }
+}
+----
+
+. Update `src/main/resources/application.properties` for AMQP configuration:
++
+[source,properties]
+----
+# Configure the AMQP broker (e.g., ActiveMQ Artemis running on 5672)
+mp.messaging.connector.amqp-external.url=amqp://localhost:5672
+mp.messaging.connector.amqp-external.devservices.enabled=false # Disable dev services if you have a running broker
+
+# Configure outgoing channel for producers
+mp.messaging.outgoing.my-outgoing-channel.connector=amqp-external
+mp.messaging.outgoing.my-outgoing-channel.address=myQueue
+
+# Configure incoming channel for consumers
+mp.messaging.incoming.my-incoming-channel.connector=amqp-external
+mp.messaging.incoming.my-incoming-channel.address=myQueue
+----
+
+. Similar to JMS, an ActiveMQ Artemis broker (or any AMQP 1.0 compatible broker) must be running and accessible on `localhost:5672` for this to work.
+
+By following these patterns, you can effectively integrate both traditional JMS and reactive AMQP clients into your Quarkus applications, choosing the best approach for your specific messaging needs.

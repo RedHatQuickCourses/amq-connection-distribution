@@ -1,0 +1,34 @@
+=  Building Resilient Messaging Applications with ActiveMQ Artemis and OpenShift
+:navtitle: Home
+
+== Introduction
+
+Course Title:  Building Resilient Messaging Applications with ActiveMQ Artemis and OpenShift
+
+Description:
+Course description FIXME
+
+Duration: FIXME hours
+
+== Topics covered in this course
+
+
+*  Deploying ActiveMQ Artemis on OpenShift
+
+*  Message distribution issues
+
+*  Client Side Solution
+
+*  Quarkus Example
+
+*  Spring Boot Example
+
+
+
+== Prerequisites
+
+This course assumes that you have the following prior experience:
+
+* Course or experience...
+* Course or experience...
+* Course or experience...

@@ -1,0 +1,227 @@
+#  Client-side connection management and pooling
+
+This content is provided in Antora AsciiDoc format, focusing on the specified topic.
+
+= Client-side Connection Management and Pooling
+
+In distributed messaging systems, efficient management of client connections to the message broker is paramount for application performance, stability, and resource utilization. This section delves into the critical aspects of client-side connection management and the benefits of employing connection pooling strategies, particularly in the context of ActiveMQ Artemis.
+
+== Understanding Client-Side Connections
+
+A client-side connection represents a communication channel established between a client application (producer or consumer) and the ActiveMQ Artemis broker. This connection facilitates the exchange of messages and control signals.
+
+Establishing a new connection is a resource-intensive operation, involving several steps:
+
+.  **Network Socket Establishment**: Opening a TCP/IP socket between the client and the broker.
+.  **Handshake and Protocol Negotiation**: Agreeing on the messaging protocol (e.g., AMQP, OpenWire, STOMP) and establishing session-level parameters.
+.  **Authentication and Authorization**: Verifying the client's identity and permissions to access broker resources.
+.  **Resource Allocation**: The broker allocates internal resources (memory, threads) to manage the new client.
+
+Repeatedly performing these steps for every message or every short-lived operation can introduce significant overhead, impacting throughput and latency.
+
+== The Necessity of Connection Pooling
+
+Connection pooling is a design pattern used to manage and optimize the use of network connections. Instead of opening a new connection for each request and closing it immediately afterward, a connection pool maintains a set of ready-to-use connections. When an application needs a connection, it requests one from the pool. After use, the connection is returned to the pool for subsequent reuse.
+
+=== How Connection Pooling Works
+
+At its core, a connection pool operates as follows:
+
+.  **Initialization**: When the application starts, the connection pool typically establishes a predefined minimum number of connections to the broker.
+.  **Borrowing**: When a client application needs to interact with the broker (e.g., to send a message or create a consumer), it "borrows" an existing, idle connection from the pool.
+.  **Usage**: The client performs its messaging operations using the borrowed connection.
+.  **Returning**: Once the client has finished its operations, it "returns" the connection to the pool. The connection is not closed but becomes available for other clients to borrow.
+.  **Growth and Shrinkage**: If all connections in the pool are in use, and new requests arrive, the pool might create additional connections up to a maximum limit. If connections remain idle for an extended period, the pool might close some to conserve resources, maintaining a minimum number.
+.  **Validation**: A well-implemented pool periodically validates the health of its connections to ensure they are still active and functional. Stale or broken connections are detected and removed, and new ones are established if necessary.
+
+=== Benefits of Connection Pooling
+
+Implementing client-side connection pooling yields several significant advantages:
+
+*   **Improved Performance**:
+    *   **Reduced Latency**: Eliminates the overhead of connection establishment for each operation, leading to faster message send and receive times.
+    *   **Increased Throughput**: Allows more messages to be processed per unit of time by reducing the time spent on connection setup.
+*   **Enhanced Resource Utilization**:
+    *   **Client-Side**: Reduces CPU and memory usage on the client by avoiding repetitive connection creation and destruction.
+    *   **Broker-Side**: Minimizes the burden on the ActiveMQ Artemis broker, as it manages fewer connection establishments and tear-downs, freeing up resources for message processing.
+*   **Increased Stability and Reliability**:
+    *   **Connection Resilience**: Many pooling implementations include features to detect and re-establish broken connections transparently, making the client application more resilient to network issues or temporary broker outages.
+    *   **Throttling**: The maximum pool size can prevent an application from overwhelming the broker with too many concurrent connections.
+*   **Simplified Application Logic**: Developers can focus on message production/consumption logic, abstracting away the complexities of connection lifecycle management.
+
+== Practical Implementation with JMS (Java)
+
+For Java applications using JMS with ActiveMQ Artemis, connection pooling is commonly achieved using a `PooledConnectionFactory`. This factory wraps a standard `ConnectionFactory` and provides connection pooling capabilities. Libraries like Spring Framework's `CachingConnectionFactory` or Apache Commons Pool integrated into a `JmsPoolConnectionFactory` are popular choices.
+
+Let's illustrate with a basic example using `org.apache.activemq.artemis.jms.client.ActiveMQJMSConnectionFactory` and a generic pooling mechanism (often provided by the framework or a separate pooling library).
+
+=== Hands-on Lab: Configuring a Pooled JMS Connection Factory
+
+In this lab, you will configure a `PooledConnectionFactory` for a JMS client application connecting to ActiveMQ Artemis.
+
+==== Prerequisites
+
+*   A running ActiveMQ Artemis broker (can be deployed on OpenShift as per previous labs, or a standalone instance).
+*   A Java development environment (JDK 11+).
+*   Maven or Gradle for dependency management.
+
+==== Step 1: Add Dependencies
+
+For a Spring Boot application, you would typically add `spring-boot-starter-activemq` or `spring-jms`. For a standalone application, you'd need the Artemis client and a pooling library.
+
+Example `pom.xml` snippet for Maven:
+
+[source,xml,role="tabbed-snippet"]
+.pom.xml
+----
+<dependencies>
+    <!-- ActiveMQ Artemis JMS Client -->
+    <dependency>
+        <groupId>org.apache.activemq</groupId>
+        <artifactId>artemis-jms-client</artifactId>
+        <version>2.30.0</version>
+    </dependency>
+    <!-- JmsPool for connection pooling -->
+    <dependency>
+        <groupId>org.apache.activemq</groupId>
+        <artifactId>artemis-jms-pool</artifactId>
+        <version>2.30.0</version>
+    </dependency>
+    <!-- Other dependencies like logback, etc. -->
+    <dependency>
+        <groupId>ch.qos.logback</groupId>
+        <artifactId>logback-classic</artifactId>
+        <version>1.4.11</version>
+    </dependency>
+</dependencies>
+----
+
+==== Step 2: Implement the Connection Pooling Configuration
+
+Create a Java class to configure and demonstrate the `PooledConnectionFactory`.
+
+[source,java,role="tabbed-snippet"]
+.JmsPooledConnectionExample.java
+----
+import org.apache.activemq.artemis.jms.client.ActiveMQJMSConnectionFactory;
+import org.apache.activemq.artemis.jms.pool.PooledConnectionFactory;
+
+import javax.jms.Connection;
+import javax.jms.Session;
+import javax.jms.MessageProducer;
+import javax.jms.TextMessage;
+import javax.jms.Queue;
+import javax.jms.JMSException;
+
+public class JmsPooledConnectionExample {
+
+    private static final String BROKER_URL = "tcp://localhost:61616";
+    private static final String QUEUE_NAME = "exampleQueue";
+
+    public static void main(String[] args) {
+        // 1. Create the underlying ActiveMQ Artemis ConnectionFactory
+        ActiveMQJMSConnectionFactory artemisConnectionFactory = new ActiveMQJMSConnectionFactory(BROKER_URL);
+
+        // 2. Wrap it with PooledConnectionFactory
+        PooledConnectionFactory pooledConnectionFactory = new PooledConnectionFactory();
+        pooledConnectionFactory.setConnectionFactory(artemisConnectionFactory);
+        pooledConnectionFactory.setMaxConnections(10); // Max connections in the pool
+        pooledConnectionFactory.setBlockIfSessionPoolIsFull(true); // Wait if pool is full
+        pooledConnectionFactory.setConnectionIdleTimeout(300000); // 5 minutes idle timeout
+
+        Connection connection = null;
+        Session session = null;
+        MessageProducer producer = null;
+
+        try {
+            // Get a connection from the pool (or create a new one if pool not full)
+            System.out.println("Getting JMS Connection from pool...");
+            connection = pooledConnectionFactory.createConnection();
+            connection.start(); // Start the connection to enable message delivery
+
+            // Create a session
+            // Note: Sessions and Producers/Consumers are typically short-lived or
+            // acquired from a session pool if one is configured within the connection pool.
+            // For PooledConnectionFactory, sessions are typically created per-thread or per-use.
+            System.out.println("Creating JMS Session...");
+            session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
+
+            // Create a queue
+            Queue queue = session.createQueue(QUEUE_NAME);
+
+            // Create a producer
+            System.out.println("Creating JMS Producer...");
+            producer = session.createProducer(queue);
+
+            // Send a message
+            TextMessage message = session.createTextMessage("Hello, ActiveMQ Artemis with pooled connection!");
+            producer.send(message);
+            System.out.println("Sent message: " + message.getText());
+
+        } catch (JMSException e) {
+            System.err.println("JMS Exception occurred: " + e.getMessage());
+            e.printStackTrace();
+        } finally {
+            // Clean up resources. Closing them returns them to the pool, doesn't actually close the TCP connection.
+            try {
+                if (producer != null) producer.close();
+                if (session != null) session.close();
+                // Important: Only close the pooled connection factory when the application shuts down,
+                // not after each message. Closing a connection obtained from a pooled factory
+                // returns it to the pool. Closing the factory itself shuts down the pool.
+                if (connection != null) {
+                    System.out.println("Closing JMS Connection (returning to pool)...");
+                    connection.close();
+                }
+            } catch (JMSException e) {
+                System.err.println("Error closing JMS resources: " + e.getMessage());
+            }
+
+            // Shut down the pooled connection factory when the application exits.
+            // This will close all underlying connections in the pool.
+            System.out.println("Shutting down PooledConnectionFactory...");
+            pooledConnectionFactory.stop();
+        }
+    }
+}
+----
+
+==== Step 3: Run the Application
+
+Compile and run the `JmsPooledConnectionExample` class. You should see output indicating the connection being borrowed, message sent, and then the connection being returned to the pool. Observe your ActiveMQ Artemis broker logs; you'll notice that the actual TCP connection might persist even after the `connection.close()` call in your application, demonstrating the pooling effect.
+
+==== Explanation
+
+*   `ActiveMQJMSConnectionFactory`: This is the standard Artemis-specific JMS connection factory.
+*   `PooledConnectionFactory`: This class (from `artemis-jms-pool`) wraps the `ActiveMQJMSConnectionFactory`.
+*   `setMaxConnections(10)`: Configures the maximum number of physical connections the pool will manage.
+*   `setBlockIfSessionPoolIsFull(true)`: If a client requests a connection and the pool is at `maxConnections`, the request will block until a connection becomes available.
+*   `connection.close()`: When called on a connection obtained from `PooledConnectionFactory`, it does *not* close the underlying physical TCP connection. Instead, it returns the connection to the pool, making it available for reuse. The actual physical connection remains open until the `pooledConnectionFactory.stop()` method is called (typically at application shutdown) or due to idle timeout.
+
+=== Key Configuration Parameters for Connection Pools
+
+When configuring a connection pool, consider these important parameters:
+
+*   **`maxConnections`**: The maximum number of physical connections the pool can hold. This limits the resources consumed on both client and broker.
+*   **`initialConnections` / `minConnections`**: The number of connections to create when the pool is initialized. Ensures connections are immediately available.
+*   **`connectionIdleTimeout`**: The duration (in milliseconds) a connection can remain idle in the pool before being closed and removed. Prevents stale connections and frees up resources.
+*   **`connectionCheckInterval`**: How frequently the pool checks for idle or broken connections.
+*   **`blockIfSessionPoolIsFull`**: A boolean indicating whether a request for a connection should block if the pool is at its maximum size, or if it should throw an exception.
+*   **`retryInterval`**: For some pools, this defines how long to wait before retrying to establish a connection to the broker if the initial attempt fails.
+
+== Client-side Connection Management Best Practices
+
+*   **Use Pooling**: Always use a connection pooling mechanism in production environments for any application that frequently interacts with the broker.
+*   **Configure Pool Size Appropriately**:
+    *   Start with reasonable defaults and monitor your application's performance.
+    *   Consider the number of concurrent message producers and consumers, and the capacity of your broker.
+    *   Too few connections can lead to bottlenecks; too many can overwhelm the broker or waste client resources.
+*   **Handle `JMSException`**: Implement robust error handling for `JMSException` to gracefully deal with connection failures, message send failures, or broker unavailability.
+*   **Close Resources Correctly**:
+    *   Always close `Connection`, `Session`, `MessageProducer`, and `MessageConsumer` objects in a `finally` block or using try-with-resources.
+    *   Remember that closing a pooled `Connection` returns it to the pool, while closing `Session`, `MessageProducer`, `MessageConsumer` releases their specific resources.
+    *   Only close the `PooledConnectionFactory` itself when the application is shutting down.
+*   **Monitor Pool Metrics**: Integrate monitoring for your connection pool to track active connections, idle connections, connection creation rates, and wait times for connections. This helps in fine-tuning your configuration.
+*   **Test under Load**: Validate your connection pooling configuration under expected and peak load conditions to identify bottlenecks and ensure stability.
+
+By diligently applying connection management and pooling strategies, developers can build more performant, reliable, and resource-efficient messaging applications with ActiveMQ Artemis.

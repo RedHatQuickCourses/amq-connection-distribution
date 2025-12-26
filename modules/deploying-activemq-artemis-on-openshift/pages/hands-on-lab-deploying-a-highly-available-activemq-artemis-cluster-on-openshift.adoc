@@ -1,0 +1,249 @@
+#  Hands-on Lab: Deploying a highly available ActiveMQ Artemis cluster on OpenShift
+
+Here is the hands-on lab content for deploying a highly available ActiveMQ Artemis cluster on OpenShift, presented in Antora AsciiDoc format.
+
+```asciidoc
+[[deploying-ha-artemis-cluster]]
+= Hands-on Lab: Deploying a Highly Available ActiveMQ Artemis Cluster on OpenShift
+
+This lab guides you through deploying a highly available ActiveMQ Artemis cluster on OpenShift using the ActiveMQ Artemis Operator. You will learn how to leverage OpenShift's capabilities, such as persistent storage and StatefulSets, to build a resilient messaging infrastructure.
+
+== Learning Objectives
+
+Upon completion of this lab, you will be able to:
+
+*   Understand the architecture and benefits of deploying ActiveMQ Artemis on OpenShift for high availability.
+*   Install and manage the ActiveMQ Artemis Operator on an OpenShift cluster.
+*   Create a custom resource (CR) to deploy a multi-node, persistent ActiveMQ Artemis cluster.
+*   Verify the cluster's health and demonstrate its high availability features.
+
+== Prerequisites
+
+To complete this lab, you will need:
+
+*   Access to an OpenShift cluster (version 4.x or later) with administrative privileges to install Operators, or sufficient permissions within a dedicated project.
+*   The `oc` command-line tool configured and authenticated to your OpenShift cluster.
+*   Basic familiarity with OpenShift concepts (projects, pods, services, routes, StatefulSets).
+
+== 1. Introduction to ActiveMQ Artemis on OpenShift
+
+Deploying ActiveMQ Artemis on OpenShift offers significant advantages for building resilient messaging applications. OpenShift, with its Kubernetes foundation, provides robust features for orchestration, scaling, and self-healing.
+
+*   *Operator Pattern*: The ActiveMQ Artemis Operator automates the deployment, management, and scaling of Artemis brokers. It understands the operational complexities of Artemis clusters and handles tasks like creating StatefulSets, managing persistent volumes, and configuring broker replication.
+*   *High Availability (HA)*: By deploying multiple Artemis broker instances as a cluster within OpenShift, you can achieve high availability. In a shared-nothing or shared-store configuration, if one broker fails, another can take over, ensuring continuous message processing. The Operator simplifies the setup of these configurations.
+*   *Persistent Storage*: OpenShift allows you to provision persistent storage (e.g., using CSI drivers for various storage backends). This is crucial for Artemis to ensure message durability, even if a broker pod restarts or moves to another node.
+*   *Scalability*: Artemis brokers can be scaled horizontally by increasing the number of replicas in the custom resource, allowing you to handle increased message throughput and client connections.
+
+== 2. Set Up Your OpenShift Project
+
+First, create a new OpenShift project where you will deploy the ActiveMQ Artemis Operator and cluster.
+
+.Log in to OpenShift and create a new project:
+[source,bash]
+----
+oc login --token=<your-token> --server=<your-openshift-api-url>
+oc new-project artemis-ha-lab
+----
+.Verify you are in the correct project:
+[source,bash]
+----
+oc project
+----
+You should see `artemis-ha-lab` as your current project.
+
+== 3. Install the ActiveMQ Artemis Operator
+
+The ActiveMQ Artemis Operator simplifies the deployment and management of Artemis instances on OpenShift. We will install it using the OpenShift command-line interface.
+
+.Install the ActiveMQ Artemis Operator:
+[source,bash]
+----
+# Create the OperatorGroup for the project (if not already present for operators in this namespace)
+# This step might be optional if an OperatorGroup already exists or if installing cluster-wide
+cat <<EOF | oc apply -f -
+apiVersion: operators.coreos.com/v1
+kind: OperatorGroup
+metadata:
+  name: artemis-ha-operator-group
+  namespace: artemis-ha-lab
+spec:
+  targetNamespaces:
+  - artemis-ha-lab
+EOF
+
+# Subscribe to the ActiveMQ Artemis Operator from the Red Hat Operators catalog
+cat <<EOF | oc apply -f -
+apiVersion: operators.coreos.com/v1alpha1
+kind: Subscription
+metadata:
+  name: amq-broker-rhel8
+  namespace: artemis-ha-lab
+spec:
+  channel: 7.10.x # Or the latest stable channel available
+  name: amq-broker-rhel8 # The package name for the Operator
+  source: redhat-operators
+  sourceNamespace: openshift-marketplace
+EOF
+----
+
+.Verify the Operator deployment:
+It might take a few minutes for the Operator to become available. You can monitor its status.
+
+[source,bash]
+----
+oc get pod -n artemis-ha-lab -w | grep amq-broker-operator
+----
+Wait until you see output similar to `amq-broker-operator-xyz-abc   1/1     Running`.
+
+.Check the Custom Resource Definitions (CRDs):
+Once the Operator is running, it registers its CRDs with Kubernetes.
+
+[source,bash]
+----
+oc get crd | grep activemqartemises
+----
+You should see `activemqartemises.broker.amq.io` listed. This CRD allows you to define Artemis broker instances as custom resources.
+
+== 4. Deploy a Highly Available ActiveMQ Artemis Cluster
+
+Now that the Operator is installed, you can deploy an Artemis cluster by creating an `ActiveMQArtemis` custom resource. We will configure a three-node cluster with persistent storage for high availability.
+
+.Identify an available StorageClass:
+For persistent storage, you need an available `StorageClass` in your OpenShift cluster. If you don't know which one to use, check the available options:
+
+[source,bash]
+----
+oc get storageclass
+----
+Common choices might be `ocs-storagecluster-cephfs`, `cephfs`, `gp2`, `standard`, etc. Choose one that is provisioned dynamically. For this lab, we'll assume `gp2` or similar default is available. If not, replace `storageClassName: gp2` in the YAML below with an appropriate one from your cluster.
+
+.Create the ActiveMQArtemis Custom Resource (CR):
+This YAML defines a three-node Artemis cluster. Key aspects for HA include `deploymentPlan.size: 3` and `persistenceEnabled: true`.
+
+[source,yaml]
+.artemis-ha-cluster.yaml
+----
+apiVersion: broker.amq.io/v1beta1
+kind: ActiveMQArtemis
+metadata:
+  name: artemis-ha-cluster
+spec:
+  deploymentPlan:
+    size: 3
+    image: registry.redhat.io/amq7/amq-broker-rhel8:7.10
+    journalType: nio
+    persistenceEnabled: true
+    persistenceStorage:
+      class: gp2 # <1>
+      size: 2Gi
+    messageMigration: true # <2>
+    javaOpts: "-Xms512M -Xmx1024M"
+    resources:
+      limits:
+        memory: 1Gi
+      requests:
+        memory: 512Mi
+  console:
+    expose: true # <3>
+  acceptors:
+    - name: amqp
+      protocols: AMQP
+      port: 5672
+      expose: true
+      exposedClients: AMQP
+      connectionRouters: 1
+    - name: openwire
+      protocols: CORE,AMQP,JMS,MQTT,OPENWIRE,STOMP
+      port: 61616
+      expose: true
+      exposedClients: OPENWIRE
+      connectionRouters: 1
+  connectors:
+    - name: broker-connector
+      port: 61616
+      host: "artemis-ha-cluster-amqp-0.artemis-ha-cluster-amqp.artemis-ha-lab.svc.cluster.local" # <4>
+      # This is an example, in a truly dynamic HA setup, the operator handles internal connection details.
+      # For client connections, the exposed service will handle routing.
+  externalCertSecret: {}
+  extraMounts: {}
+  federation: {}
+  managementRBAC: {}
+  networkConfiguration: {}
+  upgrades: {}
+  web: {}
+----
+<1> Replace `gp2` with an appropriate `StorageClass` available in your OpenShift cluster.
+<2> `messageMigration: true` ensures that messages are migrated between brokers during failover/failback, maintaining message durability and availability.
+<3> Exposing the console allows you to access the Artemis management console via an OpenShift Route.
+<4> This connector definition is more illustrative. The Operator typically manages the internal network configuration for HA brokers. Clients will connect to the OpenShift Service or Route.
+
+.Apply the CR to your OpenShift cluster:
+[source,bash]
+----
+oc apply -f artemis-ha-cluster.yaml
+----
+
+.Monitor the deployment:
+The Operator will now create the necessary OpenShift resources: a StatefulSet, multiple PersistentVolumeClaims (PVCs), Services, and Routes. This may take several minutes.
+
+[source,bash]
+----
+oc get all -l activemq-artemis-cluster-name=artemis-ha-cluster -w
+----
+Wait until you see three pods (e.g., `artemis-ha-cluster-amqp-0`, `artemis-ha-cluster-amqp-1`, `artemis-ha-cluster-amqp-2`) in a `Running` state, along with their associated PVCs, Services, and Routes.
+
+.Verify PersistentVolumeClaims (PVCs):
+[source,bash]
+----
+oc get pvc -l activemq-artemis-cluster-name=artemis-ha-cluster
+----
+You should see three PVCs, one for each broker instance, in a `Bound` state. These ensure that message data is persisted across restarts.
+
+.Access the Artemis Console:
+Get the URL for the Artemis console:
+
+[source,bash]
+----
+oc get route artemis-ha-cluster-console -o jsonpath='{.spec.host}'
+----
+Open the provided URL in your browser. You should see the ActiveMQ Artemis management console. Log in (default username: `admin`, password: `admin` unless configured otherwise) and explore the cluster. You should see all three brokers registered.
+
+== 5. Demonstrate High Availability
+
+Now, let's simulate a failure to observe the cluster's high availability in action.
+
+.Identify the broker pods:
+[source,bash]
+----
+oc get pods -l activemq-artemis-cluster-name=artemis-ha-cluster
+----
+Note the full names of your three broker pods.
+
+.Delete one of the broker pods:
+This simulates an unexpected pod termination or node failure.
+
+[source,bash]
+----
+oc delete pod artemis-ha-cluster-amqp-0 # Replace with one of your actual pod names
+----
+Observe the output. You will see the pod terminating.
+
+.Monitor the cluster:
+[source,bash]
+----
+oc get all -l activemq-artemis-cluster-name=artemis-ha-cluster -w
+----
+You will notice:
+*   The `artemis-ha-cluster-amqp-0` pod terminating.
+*   The OpenShift StatefulSet automatically creating a *new* pod to replace it, ensuring the desired replica count of 3 is maintained.
+*   The new pod `artemis-ha-cluster-amqp-0` starting up and rejoining the cluster. The PersistentVolumeClaim ensures that its journal data is still available, allowing it to recover its state and rejoin the cluster seamlessly.
+
+.Verify in the Artemis Console (Optional):
+If you still have the console open, refresh it. You might momentarily see a broker disappear and then reappear as the new pod starts up and rejoins the cluster. This demonstrates that even if a broker pod dies, the cluster maintains its desired state and functionality. For client applications, this would typically be handled via client-side failover logic connecting to the OpenShift Service which abstracts the individual broker instances.
+
+== Conclusion
+
+Congratulations! You have successfully deployed a highly available ActiveMQ Artemis cluster on OpenShift using the ActiveMQ Artemis Operator. You've witnessed how OpenShift's orchestration capabilities, combined with the Operator, provide a robust and resilient platform for mission-critical messaging applications.
+
+This setup forms the foundation for building message-driven microservices that can tolerate failures and scale dynamically, which are key requirements for resilient distributed systems.
+```

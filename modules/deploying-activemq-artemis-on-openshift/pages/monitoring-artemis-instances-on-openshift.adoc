@@ -1,0 +1,139 @@
+#  Monitoring Artemis instances on OpenShift
+
+= Monitoring ActiveMQ Artemis Instances on OpenShift
+
+Monitoring is a critical aspect of managing any production application, and ActiveMQ Artemis instances running on OpenShift are no exception. Effective monitoring allows you to track the health, performance, and resource utilization of your messaging brokers, enabling proactive issue detection, performance optimization, and capacity planning. OpenShift provides a robust, integrated monitoring stack based on Prometheus and Grafana, which can be leveraged to gain deep insights into your Artemis deployments.
+
+== Understanding ActiveMQ Artemis Monitoring Mechanisms
+
+ActiveMQ Artemis exposes a wealth of operational metrics that are essential for monitoring. These metrics can be accessed through various mechanisms:
+
+*   **JMX (Java Management Extensions)**: Artemis is a Java application and exposes most of its internal state and statistics via JMX MBeans. This provides a standardized way for Java-based monitoring tools to gather data.
+*   **Jolokia**: Jolokia is an HTTP-JSON bridge for JMX. It allows you to access JMX MBeans via standard HTTP requests, making it easier for non-Java applications or scripts to query Artemis metrics. The ActiveMQ Artemis Operator often leverages Jolokia for internal monitoring and metric exposition.
+*   **Prometheus JMX Exporter**: For seamless integration with Prometheus, a popular approach is to use a JMX Exporter. This is a small application that runs alongside the Artemis broker, scrapes JMX metrics, and exposes them in a Prometheus-compatible format on a dedicated HTTP endpoint.
+
+== OpenShift Monitoring Stack Integration
+
+OpenShift ships with a powerful, integrated monitoring solution powered by:
+
+*   **Prometheus**: A widely adopted open-source monitoring system that collects and stores metrics as time-series data.
+*   **Alertmanager**: Handles alerts sent by Prometheus, deduping, grouping, and routing them to the correct receiver.
+*   **Grafana**: An open-source analytics and visualization web application that allows you to create customizable dashboards to visualize Prometheus data.
+
+The ActiveMQ Artemis Operator is designed to integrate natively with the OpenShift monitoring stack. When monitoring is enabled for an `ActiveMQArtemis` custom resource, the Operator automatically:
+
+1.  **Deploys a JMX Exporter sidecar container** within each Artemis pod. This sidecar retrieves JMX metrics from the Artemis broker and exposes them on a dedicated HTTP port (e.g., `8778`) in a Prometheus-friendly format.
+2.  **Creates a `ServiceMonitor` resource**. This `ServiceMonitor` instructs Prometheus (running in the OpenShift monitoring namespace) to discover and scrape metrics from the JMX Exporter endpoints of the Artemis pods.
+
+This automated setup significantly simplifies the process of getting your Artemis brokers monitored by the OpenShift platform.
+
+== Key Metrics to Monitor for ActiveMQ Artemis
+
+Monitoring Artemis instances effectively involves tracking a combination of broker-level, destination-level, and JVM-level metrics. Here are some critical metrics to consider:
+
+*   **Broker Health and Resources**:
+    *   `artemis_broker_memory_usage_bytes`: Current memory usage of the broker.
+    *   `artemis_broker_cpu_usage_seconds_total`: CPU time consumed by the broker.
+    *   `artemis_broker_number_of_connections`: Total active client connections.
+    *   `artemis_broker_uptime_seconds`: How long the broker has been running.
+    *   `artemis_broker_storage_usage_bytes`: Disk usage for message journal, paging, and large messages.
+    *   `artemis_broker_message_load`: Overall message load on the broker.
+*   **Queue and Topic Metrics**:
+    *   `artemis_queue_messages_added_total`: Total messages added to a specific queue/topic.
+    *   `artemis_queue_messages_acknowledged_total`: Total messages acknowledged from a specific queue/topic.
+    *   `artemis_queue_messages_in_total`: Total messages currently in a specific queue/topic.
+    *   `artemis_queue_delivering_messages_total`: Number of messages currently being delivered.
+    *   `artemis_queue_consumers_total`: Number of active consumers on a specific queue/topic.
+    *   `artemis_queue_producers_total`: Number of active producers on a specific queue/topic.
+    *   `artemis_address_messages_expired_total`: Total messages expired from an address.
+*   **JVM Metrics (via JMX Exporter)**:
+    *   Garbage Collection statistics (`jvm_gc_memory_allocated_bytes_total`, `jvm_gc_collection_seconds_total`).
+    *   Memory pools (`jvm_memory_bytes_used`, `jvm_memory_bytes_committed`).
+    *   Thread counts (`jvm_threads_current`, `jvm_threads_deadlocked`).
+
+Monitoring these metrics helps identify bottlenecks, anticipate resource exhaustion, and ensure the reliability and performance of your messaging infrastructure.
+
+== Configuring Monitoring with the ActiveMQ Artemis Operator
+
+To enable monitoring for your ActiveMQ Artemis cluster deployed by the Operator, you need to set the `spec.deploymentPlan.enableMetrics` field to `true` in your `ActiveMQArtemis` custom resource.
+
+Let's look at an example of an `ActiveMQArtemis` CR snippet that enables monitoring:
+
+[source,yaml]
+----
+apiVersion: broker.amq.io/v1beta1
+kind: ActiveMQArtemis
+metadata:
+  name: my-artemis-cluster
+spec:
+  # ... other configuration for your Artemis cluster ...
+  deploymentPlan:
+    size: 3 # Example: a 3-node cluster
+    image: registry.redhat.io/amq7/amq-broker-rhel8:7.10
+    enableMetrics: true # <1>
+    # ... other deployment plan details ...
+  # ... rest of the ActiveMQArtemis CR ...
+----
+<1> Setting `enableMetrics: true` instructs the Operator to deploy the JMX Exporter sidecar and create the necessary `ServiceMonitor` resources.
+
+Once you apply this `ActiveMQArtemis` CR, the Operator will reconfigure your broker pods to include the JMX Exporter.
+
+== Hands-on Activity: Verifying Artemis Monitoring on OpenShift
+
+This activity guides you through verifying that ActiveMQ Artemis monitoring is active and how to access its metrics using OpenShift's integrated monitoring tools.
+
+=== Prerequisites
+
+*   An OpenShift cluster with cluster monitoring enabled.
+*   The ActiveMQ Artemis Operator installed.
+*   An `ActiveMQArtemis` cluster deployed with `spec.deploymentPlan.enableMetrics: true` in your project.
+
+=== Steps
+
+1.  **Verify the JMX Exporter Sidecar**:
+    First, ensure that the JMX Exporter sidecar container is running within your Artemis pods.
+    . Get the name of one of your Artemis pods:
+        [source,bash]
+        ----
+        oc get pods -l app.kubernetes.io/name=my-artemis-cluster # Replace my-artemis-cluster with your broker's name
+        ----
+        You should see pods like `my-artemis-cluster-ss-0`, `my-artemis-cluster-ss-1`, etc.
+    . Inspect the pod to confirm the `jmx-exporter` container is present:
+        [source,bash]
+        ----
+        oc describe pod <your-artemis-pod-name>
+        ----
+        In the output, under `Containers`, you should see entries for both `broker` and `jmx-exporter`.
+
+2.  **Verify the `ServiceMonitor` Resource**:
+    The Operator creates a `ServiceMonitor` in the same namespace as your Artemis instance. This resource tells Prometheus where to scrape metrics from.
+    . List the `ServiceMonitor` resources in your project:
+        [source,bash]
+        ----
+        oc get servicemonitor
+        ----
+        You should see a `ServiceMonitor` with a name similar to `activemq-artemis-<your-artemis-cluster-name>-sm`.
+    . Inspect the `ServiceMonitor` to see its configuration:
+        [source,bash]
+        ----
+        oc describe servicemonitor activemq-artemis-<your-artemis-cluster-name>-sm
+        ----
+        Pay attention to the `spec.endpoints` section, which defines the port and path Prometheus should use (typically `http-metrics` on port `8778`).
+
+3.  **Access Prometheus to Query Artemis Metrics**:
+    OpenShift's integrated Prometheus instance will now be scraping your Artemis metrics. You can query these directly.
+    . Log in to the OpenShift Web Console.
+    . Navigate to *Observe* > *Metrics*.
+    . In the *Expression* field, type a Prometheus query to find Artemis metrics. For example:
+        *   To see all available Artemis metrics: `artemis_`
+        *   To view messages in a specific queue: `artemis_queue_messages_in_total{queue_name="myQueue"}` (replace `myQueue` with an actual queue name on your broker).
+        *   To view current connections: `artemis_broker_number_of_connections`
+    . Click *Run Queries*. You should see the metric data plotted on a graph.
+
+4.  **Access Grafana for Visual Dashboards**:
+    Grafana provides powerful visualization capabilities. OpenShift often includes pre-built dashboards, or you can import/create custom ones.
+    . In the OpenShift Web Console, navigate to *Observe* > *Dashboards*.
+    . Look for pre-existing dashboards related to "ActiveMQ Artemis" or "JMX Exporter." If none are present, you would typically import a community-contributed Grafana dashboard for ActiveMQ Artemis, configuring it to use the OpenShift Prometheus data source.
+    . Explore the graphs and panels to visualize key Artemis metrics like message rates, queue sizes, memory usage, and connection counts over time.
+
+By following these steps, you can confirm that your ActiveMQ Artemis instances are being actively monitored by the OpenShift platform, providing you with the necessary visibility into their operational status.

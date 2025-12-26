@@ -1,0 +1,412 @@
+#  Hands-on Lab: Developing a Quarkus microservice with distributed messaging
+
+= Hands-on Lab: Developing a Quarkus Microservice with Distributed Messaging
+:navtitle: Lab: Quarkus Messaging
+
+This lab guides you through building a Quarkus microservice that interacts with an ActiveMQ Artemis cluster deployed on OpenShift. You will learn how to integrate Quarkus with Artemis using its reactive messaging capabilities (powered by SmallRye Reactive Messaging), implement message producers and consumers, and deploy the application to OpenShift. This hands-on experience will solidify your understanding of building resilient, event-driven microservices.
+
+== Objectives
+
+Upon completion of this lab, you will be able to:
+
+* Integrate the SmallRye Reactive Messaging AMQP connector with a Quarkus application.
+* Configure Quarkus for ActiveMQ Artemis connectivity, including secure connections over OpenShift Routes.
+* Implement message producers to send messages to Artemis queues or topics.
+* Implement message consumers to receive and process messages from Artemis with explicit acknowledgment.
+* Deploy a Quarkus messaging application to OpenShift using Quarkus's built-in OpenShift extension.
+* Verify end-to-end message flow between the Quarkus application and the Artemis broker on OpenShift.
+
+== Prerequisites
+
+Before starting this lab, ensure you have the following:
+
+*   **OpenShift Cluster Access**: An OpenShift cluster (4.x or newer) with `oc` CLI configured and logged in. You should have permissions to create projects and deploy applications.
+*   **ActiveMQ Artemis Cluster**: An ActiveMQ Artemis cluster deployed and running on OpenShift. This lab assumes you have already completed the "Hands-on Lab: Deploying a highly available ActiveMQ Artemis cluster on OpenShift" and have an accessible Artemis broker.
+*   **Java Development Kit (JDK)**: Java 11 or newer installed and configured.
+*   **Apache Maven**: Apache Maven 3.8+ installed.
+*   **Text Editor or IDE**: A text editor or Integrated Development Environment (IDE) like VS Code or IntelliJ IDEA.
+*   **Basic Understanding**: Familiarity with Quarkus, OpenShift fundamentals, and basic messaging concepts.
+
+== Lab Setup
+
+The first step is to gather the necessary connection details for your ActiveMQ Artemis broker deployed on OpenShift.
+
+1.  **Retrieve ActiveMQ Artemis Broker Connection Information**
+
+    You need the hostname and authentication details for your deployed ActiveMQ Artemis cluster. If you followed the previous lab, your broker's AMQP port should be exposed via an OpenShift `Route`.
+
+    a.  **Log in to the Artemis project**:
+        ```bash
+        oc project amq-artemis-project # Replace with the actual namespace where Artemis is deployed
+        ```
+
+    b.  **Get the AMQP Route**:
+        Look for a route that exposes the AMQP protocol. This is typically named similar to `artemis-broker-0-amqp` or `amq-broker-amqp`.
+
+        ```bash
+        oc get route -o custom-columns=NAME:.metadata.name,HOST/PORT:.spec.host,SERVICE:.spec.to.name,PORT:.spec.port.targetPort
+        ```
+        *Example Output:*
+        ```
+        NAME                         HOST/PORT                                                                SERVICE          PORT
+        artemis-broker-0-amqp        artemis-broker-0-amqp-amq-artemis-project.apps.cluster.example.com         artemis-broker-0   amqp
+        ```
+        Note down the `HOST/PORT` for the AMQP route. This will be your `ARTEMIS_BROKER_HOST`. Given it's an OpenShift Route, it will likely be accessible over standard HTTPS/WSS port 443, and `use-ssl` will be required.
+
+    c.  **Retrieve Artemis Credentials**:
+        The Artemis broker usually has a user created with a corresponding password. If you used the `amq-broker` template, these might be in a secret. The default often used in labs is `admin` for both username and password. Confirm these details from your Artemis deployment. For this lab, we will assume `admin`/`admin`.
+
+== Step 1: Create a New Quarkus Project
+
+We will generate a new Quarkus project and include the necessary extensions for reactive messaging with AMQP.
+
+1.  **Generate the Quarkus Project**
+
+    Use the Quarkus Maven plugin to create a new project. We will include `quarkus-resteasy-reactive` (for the REST endpoint) and `quarkus-smallrye-reactive-messaging-amqp` (for AMQP messaging).
+
+    ```bash
+    mvn io.quarkus.platform:quarkus-maven-plugin:3.8.3:create \
+        -DprojectGroupId=com.example \
+        -DprojectArtifactId=quarkus-artemis-messaging \
+        -Dextensions="resteasy-reactive,smallrye-reactive-messaging-amqp" \
+        -DnoTests
+    ```
+    (Note: You can adjust the `3.8.3` Quarkus version to a newer stable version if desired.)
+
+    Navigate into your newly created project directory:
+    ```bash
+    cd quarkus-artemis-messaging
+    ```
+
+== Step 2: Configure ActiveMQ Artemis Connectivity
+
+Now, configure your Quarkus application to establish a connection to the ActiveMQ Artemis broker using the details gathered in the setup phase.
+
+1.  **Edit `src/main/resources/application.properties`**
+
+    Open the `application.properties` file and add the following configuration. Replace `ARTEMIS_BROKER_HOST` with the actual hostname you retrieved earlier.
+
+    ```properties
+    # Quarkus HTTP Port for the application's REST endpoint
+    quarkus.http.port=8080
+
+    # Reactive Messaging AMQP Connector Configuration
+    # This configures the default AMQP broker connection parameters.
+    # The 'amqp' connector is an alias for 'smallrye-amqp' when using the default AMQP extension.
+    mp.messaging.connector.amqp.host=ARTEMIS_BROKER_HOST
+    mp.messaging.connector.amqp.port=443 # Default HTTPS port for OpenShift Routes. Use 5672 if connecting directly to a Service.
+    mp.messaging.connector.amqp.use-ssl=true # Set to true when connecting via an OpenShift Route (HTTPS/WSS).
+    mp.messaging.connector.amqp.username=admin # Replace with your Artemis username
+    mp.messaging.connector.amqp.password=admin # Replace with your Artemis password
+    mp.messaging.connector.amqp.sasl-mechanism=PLAIN # Recommended for simple username/password auth
+    mp.messaging.connector.amqp.client-id=quarkus-messaging-client # A unique client ID for the connection
+
+    # Optionally, for detailed logging from the AMQP connector:
+    # quarkus.log.category."io.smallrye.reactive.messaging.amqp".level=DEBUG
+    ```
+
+    *   **Important**: Ensure `ARTEMIS_BROKER_HOST`, `username`, and `password` are correctly set for your Artemis deployment. If `use-ssl` is set to `true`, the `port` should typically be `443` for routes. If you expose a direct AMQP service without TLS termination at the route, the port might be `5672` (or the specific AMQP service port) and `use-ssl=false`.
+
+== Step 3: Implement a Message Producer
+
+Let's create a simple REST endpoint that, when called, sends a message to a specific Artemis address (e.g., a queue).
+
+1.  **Create a Producer Service**
+
+    Create a new Java class `src/main/java/com/example/PriceProducer.java` with the following content:
+
+    ```java
+    package com.example;
+
+    import io.smallrye.reactive.messaging.annotations.Channel;
+    import io.smallrye.reactive.messaging.annotations.Emitter;
+    import jakarta.enterprise.context.ApplicationScoped;
+    import jakarta.ws.rs.GET;
+    import jakarta.ws.rs.Path;
+    import jakarta.ws.rs.Produces;
+    import jakarta.ws.rs.core.MediaType;
+    import java.util.Random;
+
+    /**
+     * A Quarkus resource that acts as a message producer.
+     * It exposes a REST endpoint to trigger message sending to an AMQP broker.
+     */
+    @ApplicationScoped
+    @Path("/prices")
+    public class PriceProducer {
+
+        // Injects an Emitter for the "prices-out" channel.
+        // This channel is configured in application.properties to send messages to Artemis.
+        @Channel("prices-out")
+        Emitter<Double> priceEmitter;
+
+        private final Random random = new Random();
+
+        /**
+         * REST endpoint to manually trigger message sending.
+         * Calls to this endpoint will generate a random price and send it to the 'prices-out' channel.
+         *
+         * @return A confirmation message.
+         */
+        @GET
+        @Path("/send")
+        @Produces(MediaType.TEXT_PLAIN)
+        public String sendPrice() {
+            double price = generatePrice();
+            priceEmitter.send(price); // Sends the message. SmallRye Reactive Messaging handles the AMQP interaction.
+            System.out.println("Producer sent price: " + price);
+            return "Price " + String.format("%.2f", price) + " sent!";
+        }
+
+        /**
+         * Generates a random price between 100.0 and 110.0.
+         *
+         * @return A randomly generated price.
+         */
+        private double generatePrice() {
+            return 100.0 + random.nextDouble() * 10.0;
+        }
+    }
+    ```
+
+2.  **Configure the Outgoing Channel in `application.properties`**
+
+    Add the following to `src/main/resources/application.properties` to map the `prices-out` channel to an AMQP address (e.g., a queue named `prices`).
+
+    ```properties
+    # Reactive Messaging Outgoing Channel Configuration
+    # This defines how messages sent to the "prices-out" channel are handled.
+    mp.messaging.outgoing.prices-out.connector=smallrye-amqp # Specifies the AMQP connector
+    mp.messaging.outgoing.prices-out.address=prices # The target AMQP address (queue or topic) on Artemis
+    mp.messaging.outgoing.prices-out.durable=true # Ensures messages sent are durable on the broker side
+    mp.messaging.outgoing.prices-out.type=queue # Explicitly declare as a queue (optional, but good practice)
+    ```
+
+== Step 4: Implement a Message Consumer
+
+Next, create a service that listens for messages on the specified Artemis address and processes them.
+
+1.  **Create a Consumer Service**
+
+    Create a new Java class `src/main/java/com/example/PriceConsumer.java`:
+
+    ```java
+    package com.example;
+
+    import io.smallrye.reactive.messaging.annotations.Incoming;
+    import jakarta.enterprise.context.ApplicationScoped;
+    import org.eclipse.microprofile.reactive.messaging.Acknowledgment;
+
+    /**
+     * A Quarkus application scoped bean that acts as a message consumer.
+     * It listens for messages on a specific AMQP channel and processes them.
+     */
+    @ApplicationScoped
+    public class PriceConsumer {
+
+        /**
+         * Consumes messages from the "prices-in" channel.
+         * The @Incoming annotation maps this method to the configured incoming channel.
+         * The @Acknowledgment.Strategy.POST_COMMIT ensures messages are acknowledged
+         * only after the consume method completes successfully.
+         *
+         * @param price The Double message payload received from the AMQP broker.
+         */
+        @Incoming("prices-in")
+        @Acknowledgment(Acknowledgment.Strategy.POST_COMMIT)
+        public void consume(Double price) {
+            System.out.println("Consumer received price: " + String.format("%.2f", price));
+            // In a real-world application, this is where you would implement
+            // business logic, such as:
+            // - Storing the price in a database
+            // - Updating a UI or dashboard
+            // - Triggering further actions based on the price
+        }
+    }
+    ```
+
+2.  **Configure the Incoming Channel in `application.properties`**
+
+    Add the following to `src/main/resources/application.properties` to map the `prices-in` channel to the same AMQP address `prices`.
+
+    ```properties
+    # Reactive Messaging Incoming Channel Configuration
+    # This defines how messages are consumed from the "prices-in" channel.
+    mp.messaging.incoming.prices-in.connector=smallrye-amqp # Specifies the AMQP connector
+    mp.messaging.incoming.prices-in.address=prices # The source AMQP address (queue or topic) on Artemis
+    mp.messaging.incoming.prices-in.durable=true # Connects to a durable subscription/queue
+    mp.messaging.incoming.prices-in.credit=10 # Configures prefetch: Consumer will request 10 messages at a time
+    mp.messaging.incoming.prices-in.auto-acknowledgement=false # Explicit acknowledgment (handled by @Acknowledgment.Strategy.POST_COMMIT)
+    mp.messaging.incoming.prices-in.broadcast=false # For queues, ensures messages are consumed exclusively by one consumer instance
+    mp.messaging.incoming.prices-in.type=queue # Explicitly declare as a queue
+    ```
+    *   `auto-acknowledgement=false` combined with `@Acknowledgment(Acknowledgment.Strategy.POST_COMMIT)` is crucial for "at-least-once" delivery semantics. It ensures the message is only acknowledged back to Artemis after the `consume` method has successfully completed its processing. If an error occurs, the message will not be acknowledged and can be redelivered.
+
+== Step 5: Run and Test Locally (Optional but Recommended)
+
+Before deploying to OpenShift, it's highly recommended to test the application locally to ensure basic messaging functionality.
+
+1.  **Run the Quarkus Application in Dev Mode**
+
+    From your project root directory, execute:
+    ```bash
+    mvn quarkus:dev
+    ```
+    Quarkus will start in development mode, watching for code changes and automatically recompiling. You should see output indicating it's running:
+    ```
+    __  ____  __  _____   ___  __ ____  ______
+    --/ __ \/ / / / _ | / _ \/ //_/ / / / __/
+    -/ /_/ / /_/ / __ |/ , _/ ,< / /_/ /\ \
+    --\___\_\____/_/ |_/_/|_/_/|_|\____/___/
+    ...
+    quarkus:dev is up and running!
+    ```
+    Your Quarkus application is now connected to the remote ActiveMQ Artemis broker.
+
+2.  **Test Message Production and Consumption**
+
+    Open a *new terminal* and use `curl` to trigger the producer endpoint on your local machine:
+    ```bash
+    curl http://localhost:8080/prices/send
+    ```
+    You should see a confirmation message like "Price 105.12 sent!" in the `curl` terminal.
+
+    Now, observe the terminal where `mvn quarkus:dev` is running. You should see two lines of output for each `curl` request:
+    ```
+    Producer sent price: 105.12345
+    Consumer received price: 105.12
+    ```
+    This indicates that your local Quarkus application successfully sent a message to the remote Artemis broker, and then the *same local application* (acting as a consumer) successfully received it from Artemis. This confirms the end-to-end local connectivity and messaging logic.
+
+    Press `q` in the `mvn quarkus:dev` terminal to stop the application.
+
+== Step 6: Deploy to OpenShift
+
+Quarkus provides excellent integration for deploying applications to OpenShift by automatically generating Kubernetes/OpenShift manifests and building container images.
+
+1.  **Add OpenShift Extension**
+
+    First, add the Quarkus OpenShift extension to your project. This enables Quarkus to generate the necessary deployment manifests.
+
+    ```bash
+    mvn quarkus:add-extension -Dextensions="openshift"
+    ```
+
+2.  **Create a New OpenShift Project for Your Application**
+
+    It's good practice to deploy your application into its own OpenShift project, separate from the Artemis broker.
+
+    ```bash
+    oc new-project my-quarkus-app-project # Choose a meaningful name for your application project
+    ```
+    Switch to this project:
+    ```bash
+    oc project my-quarkus-app-project
+    ```
+
+3.  **Build and Deploy to OpenShift**
+
+    Use the Quarkus Maven plugin to build your application, create a container image, and deploy it directly to the OpenShift project you just created.
+
+    ```bash
+    mvn clean package -Dquarkus.container-image.build=true -Dquarkus.kubernetes.deploy=true -Dquarkus.kubernetes.deployment-target=openshift
+    ```
+    This command performs several actions:
+    *   `clean package`: Builds the Quarkus application into an executable JAR.
+    *   `-Dquarkus.container-image.build=true`: Instructs Quarkus to build a container image for the application.
+    *   `-Dquarkus.kubernetes.deploy=true`: Tells Quarkus to deploy the generated resources to the current Kubernetes/OpenShift context.
+    *   `-Dquarkus.kubernetes.deployment-target=openshift`: Specifies that the deployment target is OpenShift, generating appropriate `DeploymentConfig` (or `Deployment`), `Service`, and `Route` resources.
+
+    Wait for the build and deployment process to complete. You will see detailed logs from Maven.
+
+4.  **Verify Deployment**
+
+    After the Maven command finishes, check the status of your deployment in OpenShift:
+
+    ```bash
+    oc get pods -l app.kubernetes.io/name=quarkus-artemis-messaging
+    oc get route quarkus-artemis-messaging
+    ```
+    Wait for the application pod to transition to the `Running` state. Then, retrieve the hostname of the generated OpenShift Route for your application:
+
+    ```bash
+    export QUARKUS_APP_ROUTE=$(oc get route quarkus-artemis-messaging -o jsonpath='{.spec.host}')
+    echo "Quarkus application available at: http://$QUARKUS_APP_ROUTE"
+    ```
+
+== Step 7: Test End-to-End Messaging on OpenShift
+
+Now that your Quarkus microservice is running on OpenShift, let's test the complete messaging flow.
+
+1.  **Send Messages via the Deployed Application**
+
+    Use the `curl` command with the OpenShift Route hostname you just exported to trigger message production:
+
+    ```bash
+    curl http://$QUARKUS_APP_ROUTE/prices/send
+    ```
+    Repeat this command several times to send multiple messages. Each `curl` request will trigger your Quarkus application to send a message to the Artemis broker.
+
+2.  **Monitor Application Logs**
+
+    Check the logs of your Quarkus application pod to observe both message production and consumption on OpenShift:
+
+    ```bash
+    oc logs -f $(oc get pod -l app.kubernetes.io/name=quarkus-artemis-messaging -o jsonpath='{.items[0].metadata.name}')
+    ```
+    You should see output similar to this, indicating that your deployed Quarkus microservice is successfully sending messages to the Artemis broker and then receiving them from the same broker:
+
+    ```
+    ...
+    Producer sent price: 103.78912
+    Consumer received price: 103.79
+    Producer sent price: 108.12345
+    Consumer received price: 108.12
+    ...
+    ```
+    This confirms that your Quarkus microservice is correctly integrated with ActiveMQ Artemis on OpenShift for distributed messaging.
+
+== Troubleshooting Tips
+
+*   **Connectivity Issues**:
+    *   **Verify `application.properties`**: Double-check `mp.messaging.connector.amqp.host`, `port`, `username`, `password`, and `use-ssl`. A common error is incorrect `port` (e.g., using 5672 instead of 443 for an HTTPS route) or `use-ssl` setting (e.g., `false` when `true` is needed for a secure route).
+    *   **OpenShift Networking**: Ensure your Quarkus application's namespace (`my-quarkus-app-project`) has network access to the Artemis broker's namespace (`amq-artemis-project`). This typically involves default OpenShift networking policies allowing inter-project communication, but custom network policies could restrict it.
+    *   **Artemis Broker Logs**: Check the logs of your ActiveMQ Artemis broker pods for any connection errors or refused attempts.
+    *   **Route Check**: Verify the Artemis AMQP route is actually up and serving traffic: `oc get route artemis-broker-0-amqp -o jsonpath='{.status.ingress[0].host}'`.
+
+*   **Message Not Sent/Received**:
+    *   **Channel and Address Mismatch**: Ensure the channel names (`prices-out`, `prices-in`) in your Java code (`@Channel`, `@Incoming`) match the `application.properties` configuration (`mp.messaging.outgoing.prices-out`, `mp.messaging.incoming.prices-in`). Also, confirm the `address` (`prices`) is consistent.
+    *   **Artemis Console**: Access the ActiveMQ Artemis Hawtio console (if deployed) to inspect queues/topics. Check if messages are arriving in the `prices` queue (from producer) and being consumed (decreasing message count).
+    *   **Consumer Acknowledgment**: If messages are stuck in the queue, verify `mp.messaging.incoming.prices-in.auto-acknowledgement=false` and `@Acknowledgment(Acknowledgment.Strategy.POST_COMMIT)` are correctly implemented.
+
+*   **Deployment Errors**:
+    *   **Maven Output**: Carefully review the `mvn clean package` output for any errors during image build or OpenShift resource creation.
+    *   **OpenShift Events**: Use `oc describe deployment/quarkus-artemis-messaging` and `oc describe pod/<pod-name>` to check for OpenShift events that might indicate why a pod isn't starting (e.g., image pull errors, insufficient resources, failed liveness/readiness probes).
+    *   **Image Stream**: Verify the image stream was created and the image was pushed: `oc get is quarkus-artemis-messaging`.
+
+== Clean Up (Optional)
+
+To remove the resources created in this lab from your OpenShift cluster:
+
+1.  **Delete the Quarkus application deployment:**
+    ```bash
+    oc project my-quarkus-app-project # Switch to your application project
+    oc delete all -l app.kubernetes.io/name=quarkus-artemis-messaging
+    ```
+2.  **Delete the Quarkus application project:**
+    ```bash
+    oc delete project my-quarkus-app-project
+    ```
+3.  **Delete the Artemis cluster** (if you are completely finished with it and wish to clean up, refer to the "Hands-on Lab: Deploying a highly available ActiveMQ Artemis cluster on OpenShift" for cleanup instructions).
+
+== Conclusion
+
+In this hands-on lab, you successfully developed a Quarkus microservice capable of robust, distributed messaging with an ActiveMQ Artemis cluster deployed on OpenShift. You gained practical experience in:
+
+*   Setting up a Quarkus project with Reactive Messaging extensions.
+*   Configuring secure AMQP connectivity to Artemis on OpenShift.
+*   Implementing both message producers and consumers using SmallRye Reactive Messaging annotations.
+*   Understanding and configuring message acknowledgment strategies for reliability.
+*   Seamlessly deploying your Quarkus application to OpenShift using its native integration capabilities.
+
+This foundational understanding of Quarkus and ActiveMQ Artemis integration is key to building highly scalable, resilient, and reactive microservice architectures.

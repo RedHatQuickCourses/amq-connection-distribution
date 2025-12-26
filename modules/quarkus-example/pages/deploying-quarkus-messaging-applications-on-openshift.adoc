@@ -1,0 +1,359 @@
+#  Deploying Quarkus messaging applications on OpenShift
+
+This content covers the deployment of Quarkus messaging applications on OpenShift, integrating with an ActiveMQ Artemis broker. It includes technical explanations and a hands-on lab activity.
+
+== Deploying Quarkus Messaging Applications on OpenShift
+
+Deploying Quarkus messaging applications on OpenShift combines the lightweight, high-performance nature of Quarkus with the robust orchestration capabilities of OpenShift, creating an ideal environment for cloud-native messaging solutions. This section will guide you through the process, focusing on best practices for integration with ActiveMQ Artemis.
+
+=== Understanding Quarkus on OpenShift
+
+Quarkus applications are particularly well-suited for OpenShift due to their low memory footprint and fast startup times, especially when built as native executables using GraalVM. OpenShift, being a Kubernetes distribution, provides an enterprise-grade platform for deploying, scaling, and managing containerized applications.
+
+When deploying a Quarkus messaging application that interacts with ActiveMQ Artemis, key considerations include:
+
+*   **Connectivity:** How the Quarkus application discovers and connects to the ActiveMQ Artemis cluster within the OpenShift network.
+*   **Configuration:** Managing connection details, credentials, and other application-specific settings securely and efficiently.
+*   **Build and Deployment Strategy:** Choosing the most effective way to build and deploy your Quarkus application containers.
+*   **Scaling and Resiliency:** Ensuring your messaging application can scale horizontally and remain available.
+
+=== Deployment Strategies for Quarkus on OpenShift
+
+OpenShift offers several methods to deploy applications. For Quarkus, common strategies include:
+
+*   **Source-to-Image (S2I):** This is a popular and convenient method. S2I takes your application source code and injects it into a builder image (e.g., a Quarkus S2I builder or an OpenJDK builder) to produce a ready-to-run image. OpenShift handles the build process and then deploys the resulting image.
+*   **Container Images (Dockerfile Strategy):** You provide a `Dockerfile` that OpenShift uses to build a custom container image from your source code. This offers more control over the build process and environment.
+*   **Pre-built Images:** You can push a pre-built Quarkus container image (e.g., from a CI/CD pipeline) to an OpenShift internal registry or an external registry, and then deploy it directly.
+
+For educational purposes and typical development workflows, **Source-to-Image (S2I)** is often the simplest way to get started with Quarkus on OpenShift.
+
+=== Configuring Quarkus for ActiveMQ Artemis Connectivity on OpenShift
+
+When running Quarkus applications on OpenShift, it's crucial to manage configuration dynamically. Instead of hardcoding values, you should leverage OpenShift's mechanisms for injecting configuration:
+
+*   **Environment Variables:** OpenShift can inject environment variables into your application containers. This is commonly used for connection strings, hostnames, and ports.
+*   **ConfigMaps:** For more complex configurations or properties files, ConfigMaps allow you to store non-sensitive data as key-value pairs and mount them into your pods or inject them as environment variables.
+*   **Secrets:** For sensitive data like passwords or API keys, Secrets provide a secure way to store and inject credentials into your application containers.
+
+For connecting to ActiveMQ Artemis, your Quarkus application will typically require:
+
+*   Artemis broker hostname and port.
+*   User credentials (if security is enabled).
+*   Any specific JMS/AMQP client settings.
+
+These can be externalized using environment variables in your `application.properties` like so:
+
+[source,properties]
+----
+# Example for JMS configuration
+quarkus.artemis.url=tcp://${ARTEMIS_HOST}:${ARTEMIS_PORT}?ha=true
+quarkus.artemis.username=${ARTEMIS_USERNAME}
+quarkus.artemis.password=${ARTEMIS_PASSWORD}
+
+# Example for AMQP configuration (if using reactive messaging with AMQP)
+quarkus.smallrye-reactive-messaging.brokers.my-artemis-broker.host=${ARTEMIS_HOST}
+quarkus.smallrye-reactive-messaging.brokers.my-artemis-broker.port=${ARTEMIS_PORT}
+quarkus.smallrye-reactive-messaging.brokers.my-artemis-broker.username=${ARTEMIS_USERNAME}
+quarkus.smallrye-reactive-messaging.brokers.my-artemis-broker.password=${ARTEMIS_PASSWORD}
+----
+
+When deploying to OpenShift, you would set these `ARTEMIS_HOST`, `ARTEMIS_PORT`, `ARTEMIS_USERNAME`, and `ARTEMIS_PASSWORD` environment variables during the `oc new-app` command or via a deployment configuration.
+
+=== Hands-on Lab: Deploying a Quarkus Microservice with Distributed Messaging on OpenShift
+
+This lab will guide you through deploying a simple Quarkus messaging application on OpenShift that connects to an existing ActiveMQ Artemis cluster. The application will demonstrate sending and receiving messages.
+
+==== Prerequisites
+
+Before starting this lab, ensure you have:
+
+*   An OpenShift cluster (CRC, Minishift, OpenShift Dedicated, OCP).
+*   The `oc` command-line tool configured and logged in to your OpenShift cluster.
+*   Maven or Gradle installed locally.
+*   An ActiveMQ Artemis cluster successfully deployed on OpenShift (refer to the "Deploying a highly available ActiveMQ Artemis cluster on OpenShift" lab if needed). Make sure you know its service name and port. For this lab, we'll assume the Artemis service is named `artemis-cluster-external` and accessible on port `61616` within the OpenShift project.
+
+==== Lab Objectives
+
+*   Create a simple Quarkus messaging application.
+*   Configure the Quarkus application to connect to ActiveMQ Artemis.
+*   Deploy the Quarkus application to OpenShift using S2I.
+*   Verify message production and consumption within the OpenShift environment.
+
+==== Step 1: Create a Quarkus Messaging Project
+
+First, let's create a new Quarkus project with the necessary dependencies for JMS.
+
+1.  **Generate the Quarkus project:**
+    Use the Quarkus CLI or Maven to generate a new project.
+
+    [source,bash]
+    ----
+    mvn io.quarkus.platform:quarkus-maven-plugin:3.8.3:create \
+        -DprojectGroupId=org.quarkus.artemis \
+        -DprojectArtifactId=quarkus-artemis-consumer-producer \
+        -Dextensions="resteasy-reactive,quarkus-qpid-jms" \
+        -DnoExamples=true
+    ----
+
+    This creates a project named `quarkus-artemis-consumer-producer` with `quarkus-resteasy-reactive` (for a simple REST endpoint) and `quarkus-qpid-jms` (for JMS connectivity).
+
+2.  **Navigate into the project directory:**
+
+    [source,bash]
+    ----
+    cd quarkus-artemis-consumer-producer
+    ----
+
+3.  **Update `src/main/resources/application.properties`:**
+    Configure the Artemis connection properties using environment variables.
+
+    [source,properties]
+    ----
+    # HTTP server port for our REST endpoint
+    quarkus.http.port=8080
+
+    # ActiveMQ Artemis JMS client configuration
+    quarkus.artemis.url=tcp://${ARTEMIS_SERVICE_HOST}:${ARTEMIS_SERVICE_PORT}?ha=true
+    quarkus.artemis.username=${ARTEMIS_USERNAME}
+    quarkus.artemis.password=${ARTEMIS_PASSWORD}
+    quarkus.artemis.global-enabled=true
+
+    # Enable health checks for Quarkus
+    quarkus.smallrye-health.enabled=true
+    quarkus.devservices.enabled=false # Disable Dev Services for production deployment
+    ----
+
+4.  **Create a Producer Service (`src/main/java/org/quarkus/artemis/ProducerService.java`):**
+    This service will expose a REST endpoint to send messages to an Artemis queue.
+
+    [source,java]
+    ----
+    package org.quarkus.artemis;
+
+    import io.quarkus.logging.Log;
+    import jakarta.enterprise.context.ApplicationScoped;
+    import jakarta.inject.Inject;
+    import jakarta.jms.ConnectionFactory;
+    import jakarta.jms.JMSContext;
+    import jakarta.jms.Session;
+    import jakarta.ws.rs.GET;
+    import jakarta.ws.rs.Path;
+    import jakarta.ws.rs.Produces;
+    import jakarta.ws.rs.QueryParam;
+    import jakarta.ws.rs.core.MediaType;
+    import jakarta.ws.rs.core.Response;
+
+    @ApplicationScoped
+    @Path("/messages")
+    public class ProducerService {
+
+        @Inject
+        ConnectionFactory connectionFactory;
+
+        private static final String QUEUE_NAME = "myQueue";
+
+        @GET
+        @Path("/send")
+        @Produces(MediaType.TEXT_PLAIN)
+        public Response sendMessage(@QueryParam("text") String messageText) {
+            if (messageText == null || messageText.trim().isEmpty()) {
+                messageText = "Hello from Quarkus at " + System.currentTimeMillis();
+            }
+
+            try (JMSContext context = connectionFactory.createContext(Session.AUTO_ACKNOWLEDGE)) {
+                context.createProducer().send(context.createQueue(QUEUE_NAME), messageText);
+                Log.infof("Sent message: %s to queue %s", messageText, QUEUE_NAME);
+                return Response.ok("Message sent: " + messageText).build();
+            } catch (Exception e) {
+                Log.errorf(e, "Error sending message: %s", e.getMessage());
+                return Response.serverError().entity("Failed to send message: " + e.getMessage()).build();
+            }
+        }
+
+        @GET
+        @Path("/hello")
+        @Produces(MediaType.TEXT_PLAIN)
+        public String hello() {
+            return "Hello from Quarkus Producer!";
+        }
+    }
+    ----
+
+5.  **Create a Consumer Service (`src/main/java/org/quarkus/artemis/ConsumerService.java`):**
+    This service will listen for messages on the specified Artemis queue.
+
+    [source,java]
+    ----
+    package org.quarkus.artemis;
+
+    import io.quarkus.logging.Log;
+    import io.quarkus.artemis.jms.annotations.JmsListener;
+    import jakarta.enterprise.context.ApplicationScoped;
+    import jakarta.jms.Message;
+    import jakarta.jms.TextMessage;
+
+    @ApplicationScoped
+    public class ConsumerService {
+
+        private static final String QUEUE_NAME = "myQueue";
+
+        @JmsListener(destination = QUEUE_NAME)
+        public void processMessage(Message message) {
+            try {
+                if (message instanceof TextMessage textMessage) {
+                    Log.infof("Received message: %s from queue %s", textMessage.getText(), QUEUE_NAME);
+                    // You can add more processing logic here
+                } else {
+                    Log.warnf("Received non-text message: %s", message.getClass().getName());
+                }
+            } catch (Exception e) {
+                Log.errorf(e, "Error processing message: %s", e.getMessage());
+            }
+        }
+    }
+    ----
+
+==== Step 2: Prepare OpenShift Project
+
+1.  **Log in to OpenShift:**
+
+    [source,bash]
+    ----
+    oc login --token=<YOUR_TOKEN> --server=<YOUR_OPENSHIFT_API_URL>
+    ----
+
+2.  **Create a new OpenShift project (if you don't have one):**
+
+    [source,bash]
+    ----
+    oc new-project quarkus-messaging-demo
+    ----
+
+3.  **Verify Artemis Service:**
+    Ensure your Artemis cluster is running in the *same* or an *accessible* OpenShift project. Get the external service name and port.
+
+    [source,bash]
+    ----
+    oc get svc -n <your-artemis-project>
+    # Look for a service like 'artemis-cluster-external' or similar.
+    # Note down its name and port (usually 61616).
+    ----
+
+    For this lab, we'll assume the external service is named `artemis-cluster-external` and accessible on port `61616` within the `quarkus-messaging-demo` project.
+
+    NOTE: If Artemis is in a different project, you'll need to specify its fully qualified domain name (FQDN) like `artemis-cluster-external.artemis-project.svc.cluster.local`. For simplicity, we assume it's in the same project or accessible directly via its service name.
+
+==== Step 3: Deploy the Quarkus Application to OpenShift using S2I
+
+Now, we'll use OpenShift's S2I capabilities to build and deploy our Quarkus application.
+
+1.  **Deploy using `oc new-app`:**
+    This command will:
+    *   Create a `BuildConfig` using the `quarkus/quarkus-s2i` builder image.
+    *   Trigger a build from your local source code.
+    *   Create a `Deployment` and `Service` for your application.
+    *   Set the necessary environment variables for Artemis connectivity.
+
+    Replace `artemis-cluster-external` and `61616` with your actual Artemis service name and port if they differ. Replace `ARTEMIS_USER` and `ARTEMIS_PASSWORD` with the credentials for your Artemis broker.
+
+    [source,bash]
+    ----
+    oc new-app quarkus/quarkus-s2i~. \
+        --name=quarkus-artemis-app \
+        --env="ARTEMIS_SERVICE_HOST=artemis-cluster-external" \
+        --env="ARTEMIS_SERVICE_PORT=61616" \
+        --env="ARTEMIS_USERNAME=admin" \
+        --env="ARTEMIS_PASSWORD=admin" \
+        --allow-missing-images # Required if the builder image needs to be pulled for the first time
+    ----
+
+    .Explanation of `oc new-app` parameters:
+    *   `quarkus/quarkus-s2i~.`: Specifies the S2I builder image (`quarkus/quarkus-s2i`) and indicates that the source code (`.`) is in the current directory. The `~` separates the builder image from the source location.
+    *   `--name=quarkus-artemis-app`: Sets the name for your application resources.
+    *   `--env="..."`: Sets environment variables within the deployed application pods. These match the variables we used in `application.properties`.
+    *   `--allow-missing-images`: Allows OpenShift to pull the builder image if it's not already cached.
+
+2.  **Monitor the build and deployment:**
+
+    [source,bash]
+    ----
+    oc get pods -w
+    ----
+    You should see a `build` pod completing, followed by your `quarkus-artemis-app` pod starting up.
+
+3.  **Check build logs (if issues occur):**
+
+    [source,bash]
+    ----
+    oc logs -f bc/quarkus-artemis-app
+    ----
+
+4.  **Check application logs:**
+
+    [source,bash]
+    ----
+    oc logs -f deployment/quarkus-artemis-app
+    ----
+    You should see messages from your `ConsumerService` attempting to connect to Artemis and potentially receiving messages if any were already in the queue.
+
+==== Step 4: Expose the Application and Test
+
+To interact with the producer service's REST endpoint, we need to expose the application via an OpenShift Route.
+
+1.  **Expose the application service:**
+
+    [source,bash]
+    ----
+    oc expose svc quarkus-artemis-app --port=8080
+    ----
+
+2.  **Get the application URL:**
+
+    [source,bash]
+    ----
+    oc get route quarkus-artemis-app -o jsonpath='{.spec.host}'
+    ----
+    This will output the hostname for your application, e.g., `quarkus-artemis-app-quarkus-messaging-demo.apps.cluster.example.com`. Construct the full URL, including `http://` or `https://`.
+
+3.  **Test the producer endpoint:**
+    Open your web browser or use `curl` to send a message.
+
+    [source,bash]
+    ----
+    # Replace <APP_ROUTE_URL> with the actual URL from the previous step
+    curl -X GET "http://<APP_ROUTE_URL>/messages/send?text=Hello_from_OpenShift!"
+    ----
+
+    You should receive a `Message sent: Hello from OpenShift!` response.
+
+4.  **Verify message consumption:**
+    Check the logs of your `quarkus-artemis-app` pod. You should see log messages indicating that the consumer received the message.
+
+    [source,bash]
+    ----
+    oc logs -f deployment/quarkus-artemis-app
+    ----
+
+    Look for output similar to: `INFO [org.qua.art.ConsumerService] (executor-thread-0) Received message: Hello_from_OpenShift! from queue myQueue`
+
+    You can also verify the `/messages/hello` endpoint:
+
+    [source,bash]
+    ----
+    curl http://<APP_ROUTE_URL>/messages/hello
+    ----
+    This should return `Hello from Quarkus Producer!`.
+
+==== Step 5: Clean Up (Optional)
+
+To remove the resources created in this lab:
+
+[source,bash]
+----
+oc delete all -l app=quarkus-artemis-app
+oc delete route quarkus-artemis-app
+# If you created a new project for this lab, you can delete it:
+oc delete project quarkus-messaging-demo
+----
+
+This lab demonstrated the end-to-end process of developing a Quarkus messaging application and deploying it to OpenShift, ensuring it connects and interacts with an ActiveMQ Artemis cluster. This pattern is fundamental for building resilient and scalable distributed messaging solutions on cloud-native platforms.

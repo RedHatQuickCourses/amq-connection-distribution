@@ -1,0 +1,306 @@
+#  Handling message durability and reliability
+
+= Handling Message Durability and Reliability
+
+In distributed messaging systems, ensuring that messages are not lost and are processed correctly is paramount. This section delves into the critical concepts of message durability and reliability, explaining how ActiveMQ Artemis and its clients can be configured to achieve these guarantees.
+
+== Understanding Message Durability
+
+Message durability refers to the ability of a message to survive a broker restart. A durable message is persisted to storage by the messaging broker, meaning that even if the broker crashes or is shut down, the message will be available when the broker comes back online.
+
+When a message is sent to an ActiveMQ Artemis broker, its durability depends on two primary factors:
+
+1.  **The message's persistence setting:** Messages can be marked as persistent or non-persistent by the producer. Persistent messages are candidates for durability.
+2.  **The address/queue's persistence setting:** For a persistent message to be truly durable, the queue or address it is sent to must also be configured to be persistent.
+
+=== How ActiveMQ Artemis Ensures Durability
+
+ActiveMQ Artemis achieves message durability primarily through its *journal*. The journal is a high-performance write-ahead log that stores messages and other broker state changes to disk.
+
+. **Persistent Messages:** When a producer sends a persistent message, Artemis writes the message data to its journal *before* acknowledging receipt to the producer. This ensures that the message is safely stored on disk.
+. **Persistent Addresses/Queues:** When an address or queue is configured as persistent, any persistent messages destined for it will be written to the journal. Non-persistent addresses/queues, even if receiving persistent messages, will not guarantee their durability beyond a broker restart (though the broker might hold them in memory until then).
+
+=== Configuring Persistence in ActiveMQ Artemis
+
+To enable message durability, you must ensure your ActiveMQ Artemis broker and its configurations are set up for persistence.
+
+.Example: `broker.xml` Persistence Configuration
+[source,xml]
+----
+<configuration>
+   <core name="activemq">
+      <!-- ... other core configurations ... -->
+
+      <!-- Configure journal settings -->
+      <journal-type>NIO</journal-type>
+      <journal-directory>./data/journal</journal-directory>
+      <bindings-directory>./data/bindings</bindings-directory>
+      <large-messages-directory>./data/large-messages</large-messages-directory>
+
+      <!-- Enable persistence for addresses by default, or explicitly per address -->
+      <addresses>
+         <address name="my.durable.queue">
+            <anycast>
+               <queue name="my.durable.queue" durable="true"/> <1>
+            </anycast>
+         </address>
+         <address name="my.another.durable.address">
+            <multicast>
+               <queue name="my.another.durable.address" durable="true"/> <2>
+            </multicast>
+         </address>
+         <!-- Example of a non-durable queue -->
+         <address name="my.non.durable.queue">
+            <anycast>
+               <queue name="my.non.durable.queue" durable="false"/>
+            </anycast>
+         </address>
+      </addresses>
+   </core>
+</configuration>
+----
+<1> `durable="true"` ensures the queue will persist messages.
+<2> For multicast, the subscription queue would typically be durable.
+
+For clients, producers explicitly mark messages as persistent. For example, in JMS:
+
+.Example: Sending a persistent JMS message
+[source,java]
+----
+// Assume 'session' is a JMS Session and 'producer' is a MessageProducer
+TextMessage message = session.createTextMessage("This is a durable message!");
+producer.setDeliveryMode(DeliveryMode.PERSISTENT); // Mark message as persistent
+producer.send(message);
+----
+
+Performance considerations: Enabling durability involves disk I/O, which can impact message throughput and latency compared to non-persistent messaging. It's a trade-off between performance and guaranteed delivery.
+
+== Understanding Message Reliability
+
+Message reliability extends beyond durability, encompassing the guarantee that a message is delivered to its intended recipient *at least once*, and often *exactly once*, without loss or duplication, through the entire lifecycle from producer to consumer. Reliability addresses various potential failure points, including network issues, broker crashes, and consumer application failures.
+
+Key aspects of achieving message reliability include:
+
+1.  **Producer-Side Reliability:** Ensuring messages sent by the producer reach the broker.
+2.  **Broker-Side Reliability:** Ensuring messages are safely stored and managed by the broker.
+3.  **Consumer-Side Reliability:** Ensuring messages are successfully processed by the consumer.
+
+=== 1. Producer-Side Reliability
+
+Producers need mechanisms to confirm that the broker has received and persisted a message.
+
+*   **Synchronous Sends:** The simplest way to ensure producer reliability is to use synchronous sends. The producer blocks until it receives an acknowledgment from the broker that the message has been processed (e.g., persisted). This offers strong guarantees but reduces throughput.
+*   **Asynchronous Sends with Callbacks:** For higher throughput, producers can send messages asynchronously and use callbacks to handle acknowledgments or errors from the broker.
+*   **Transactions:** Producers can send multiple messages within a transaction. The messages are only committed to the broker's persistent store (and made visible to consumers) when the transaction is committed. If the transaction rolls back, none of the messages are committed.
+
+.Example: JMS Producer Transaction
+[source,java]
+----
+// Assume 'connection' is a JMS Connection
+Session session = connection.createSession(true, Session.SESSION_TRANSACTED); // Create a transactional session
+MessageProducer producer = session.createProducer(myDurableQueue);
+
+try {
+    TextMessage message1 = session.createTextMessage("Transaction message 1");
+    producer.send(message1);
+
+    TextMessage message2 = session.createTextMessage("Transaction message 2");
+    producer.send(message2);
+
+    session.commit(); // Commit the transaction
+    System.out.println("Messages committed successfully.");
+} catch (JMSException e) {
+    session.rollback(); // Rollback on error
+    System.err.println("Transaction rolled back: " + e.getMessage());
+} finally {
+    if (session != null) {
+        session.close();
+    }
+}
+----
+
+=== 2. Broker-Side Reliability
+
+Beyond message durability (persistence), brokers ensure reliability through:
+
+*   **High Availability (HA):** Using shared storage or replication, ActiveMQ Artemis clusters can failover seamlessly, ensuring that messages are always accessible even if a broker node fails. This is crucial for avoiding service interruptions and message loss during node failures. (Covered in detail in "Addressing fault tolerance and high availability for messages").
+*   **Message Expiry and Dead Letter Queues (DLQ):** Messages can have an expiry time. If a message expires before it's consumed, it can be automatically moved to a Dead Letter Queue (DLQ) rather than being silently discarded. This ensures that potentially problematic messages are not lost but quarantined for investigation.
+
+=== 3. Consumer-Side Reliability
+
+The consumer plays a critical role in message reliability, primarily through its acknowledgment mechanism.
+
+*   **Message Acknowledgment Patterns:** This is how a consumer informs the broker that it has successfully received and processed a message. Until a message is acknowledged, the broker typically considers it *unacked* and will redeliver it under certain circumstances (e.g., consumer disconnects before ack).
+
+    *   `AUTO_ACKNOWLEDGE`: The session automatically acknowledges a message when it receives it (or finishes processing it in some configurations). This is the simplest but offers the weakest reliability guarantees, as messages might be lost if the consumer fails after receiving but before processing.
+    *   `CLIENT_ACKNOWLEDGE`: The consumer application explicitly calls `message.acknowledge()` on the message object after it has successfully processed the message. This provides strong reliability as the message is only marked as consumed once the application logic is complete. If the application fails before calling `acknowledge()`, the message will be redelivered.
+    *   `DUPS_OK_ACKNOWLEDGE`: Acknowledges messages lazily, batching acknowledgments. This can improve performance but may result in duplicate messages being delivered if the consumer or broker fails before a batch of acknowledgments is sent. Not recommended when "exactly once" processing is required.
+    *   `SESSION_TRANSACTED`: Messages are consumed within a transaction. The `session.commit()` operation acknowledges all messages received within the transaction, and `session.rollback()` causes them to be redelivered. This offers the strongest "exactly once" processing guarantees when combined with producer transactions.
+
+.Example: JMS Consumer with `CLIENT_ACKNOWLEDGE`
+[source,java]
+----
+// Assume 'connection' is a JMS Connection
+Session session = connection.createSession(false, Session.CLIENT_ACKNOWLEDGE); // Create a non-transactional, client-ack session
+MessageConsumer consumer = session.createConsumer(myDurableQueue);
+
+consumer.setMessageListener(message -> {
+    try {
+        if (message instanceof TextMessage) {
+            TextMessage textMessage = (TextMessage) message;
+            System.out.println("Received: " + textMessage.getText());
+            // Simulate processing
+            // if (Math.random() > 0.8) { // Simulate an occasional processing failure
+            //     throw new RuntimeException("Simulated processing error!");
+            // }
+
+            message.acknowledge(); // Explicitly acknowledge the message after successful processing
+            System.out.println("Message acknowledged.");
+        }
+    } catch (Exception e) {
+        System.err.println("Error processing message: " + e.getMessage());
+        // Do NOT acknowledge the message. It will be redelivered by the broker.
+        // Or, move to DLQ if redelivery count exceeds threshold.
+    }
+});
+connection.start();
+----
+
+*   **Redelivery Policies:** ActiveMQ Artemis allows configuring redelivery policies for queues. This includes:
+    *   The maximum number of times a message will be redelivered.
+    *   A delay before redelivery.
+    *   Behavior after maximum redeliveries (e.g., move to DLQ).
+    These policies help prevent "poison pill" messages from perpetually blocking a queue.
+*   **Dead Letter Queues (DLQ):** As mentioned earlier, messages that fail to be processed after multiple redelivery attempts can be moved to a DLQ for manual inspection and resolution. This prevents them from continuously consuming resources or blocking other messages.
+
+==== Hands-on Lab: Configuring ActiveMQ Artemis for Durable and Reliable Messaging
+
+In this lab, you will configure an ActiveMQ Artemis broker and a simple client to demonstrate message durability and client-side reliability.
+
+.Prerequisites
+*   An ActiveMQ Artemis broker (standalone or deployed via Operator on OpenShift). For simplicity, a local standalone instance is sufficient.
+*   A Java Development Kit (JDK).
+*   Maven or Gradle for building the client.
+
+.Steps
+
+.  **Configure ActiveMQ Artemis for Persistence:**
+    a.  Locate your `broker.xml` configuration file (usually in `ARTEMIS_HOME/etc/broker.xml`).
+    b.  Ensure the `<journal-directory>` and related journal settings are present and point to valid directories.
+    c.  Add a durable queue definition under `<addresses>` for an address named `my.durable.queue`:
+        [source,xml]
+        ----
+        <address name="my.durable.queue">
+           <anycast>
+              <queue name="my.durable.queue" durable="true"/>
+           </anycast>
+        </address>
+        ----
+    d.  Start the ActiveMQ Artemis broker.
+
+.  **Develop a Java Client with Producer and Consumer:**
+    a.  Create a new Maven or Gradle project.
+    b.  Add the ActiveMQ Artemis JMS client dependency (e.g., for Maven):
+        [source,xml]
+        ----
+        <dependency>
+            <groupId>org.apache.activemq</groupId>
+            <artifactId>artemis-jms-client</artifactId>
+            <version>2.31.0</version> <!-- Use your broker's version or compatible -->
+        </dependency>
+        ----
+    c.  Implement a `DurableMessageProducerConsumer` class:
+
+.Example: DurableMessageProducerConsumer.java
+[source,java]
+----
+import org.apache.activemq.artemis.jms.client.ActiveMQConnectionFactory;
+
+import javax.jms.*;
+
+public class DurableMessageProducerConsumer {
+
+    private static final String BROKER_URL = "tcp://localhost:61616";
+    private static final String QUEUE_NAME = "my.durable.queue";
+
+    public static void main(String[] args) throws Exception {
+        Connection connection = null;
+        try {
+            ConnectionFactory connectionFactory = new ActiveMQConnectionFactory(BROKER_URL);
+            connection = connectionFactory.createConnection();
+            connection.start(); // Start the connection to allow message flow
+
+            // === Producer ===
+            Session producerSession = connection.createSession(false, Session.AUTO_ACKNOWLEDGE); // Non-transacted, auto-ack for producer
+            Queue queue = producerSession.createQueue(QUEUE_NAME);
+            MessageProducer producer = producerSession.createProducer(queue);
+            producer.setDeliveryMode(DeliveryMode.PERSISTENT); // Important for durability
+
+            TextMessage message1 = producerSession.createTextMessage("Hello Durable Message 1");
+            producer.send(message1);
+            System.out.println("Sent: " + message1.getText());
+
+            TextMessage message2 = producerSession.createTextMessage("Hello Durable Message 2");
+            producer.send(message2);
+            System.out.println("Sent: " + message2.getText());
+
+            producerSession.close(); // Close producer session
+
+            System.out.println("\nProducer finished sending messages. Now stopping broker to test durability...");
+            // Simulate broker restart: You would manually stop the broker here.
+            // For this lab, we'll continue, but imagine the broker restarts now.
+
+            Thread.sleep(5000); // Give time to observe broker state if stopping manually
+
+            // === Consumer ===
+            System.out.println("Starting consumer to retrieve messages (possibly after broker restart)...");
+            Session consumerSession = connection.createSession(false, Session.CLIENT_ACKNOWLEDGE); // Non-transacted, client-ack
+            MessageConsumer consumer = consumerSession.createConsumer(queue);
+
+            consumer.setMessageListener(msg -> {
+                try {
+                    if (msg instanceof TextMessage) {
+                        TextMessage textMessage = (TextMessage) msg;
+                        System.out.println("Consumer received: " + textMessage.getText());
+                        // Simulate some processing time
+                        Thread.sleep(100);
+                        // Acknowledge the message ONLY after successful processing
+                        textMessage.acknowledge();
+                        System.out.println("Consumer acknowledged: " + textMessage.getText());
+                    }
+                } catch (JMSException e) {
+                    System.err.println("JMS Exception in listener: " + e.getMessage());
+                    // Do not acknowledge, message will be redelivered
+                } catch (InterruptedException e) {
+                    System.err.println("Interrupted Exception in listener: " + e.getMessage());
+                    Thread.currentThread().interrupt();
+                } catch (Exception e) {
+                    System.err.println("Generic Exception in listener: " + e.getMessage());
+                    // Do not acknowledge, message will be redelivered
+                }
+            });
+
+            // Keep the consumer alive for some time
+            Thread.sleep(10000);
+
+            consumerSession.close();
+
+        } finally {
+            if (connection != null) {
+                connection.close();
+            }
+        }
+    }
+}
+----
+
+.  **Execute the Lab:**
+    a.  Start your ActiveMQ Artemis broker.
+    b.  Run the `DurableMessageProducerConsumer` Java client.
+    c.  Observe the producer sending messages.
+    d.  *Crucial Durability Test:* While the client is running (and messages have been sent), *stop your ActiveMQ Artemis broker process*. You will see the consumer stop receiving messages.
+    e.  Now, *restart your ActiveMQ Artemis broker*.
+    f.  The client's consumer (which is still running or you can restart it) should now connect to the broker and *receive the messages that were sent before the broker restart*. This demonstrates durability.
+    g.  Observe the consumer explicitly acknowledging each message. To test client-side reliability, you could comment out `textMessage.acknowledge();` and restart the consumer; you would see the messages being redelivered repeatedly.
+
+This lab provides a practical demonstration of how persistent messages sent to durable queues survive broker restarts, and how client acknowledgments ensure messages are only removed from the queue after successful processing.

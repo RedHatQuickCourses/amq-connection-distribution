@@ -1,0 +1,214 @@
+#  Configuring listener containers and concurrency
+
+Here's the content for "Configuring listener containers and concurrency" in Antora AsciiDoc format, focusing on Spring Boot and ActiveMQ Artemis.
+
+```asciidoc
+= Configuring Listener Containers and Concurrency
+
+This section delves into how to configure message listener containers and manage concurrency for message consumption in Spring Boot applications integrating with ActiveMQ Artemis. Effective configuration of these components is crucial for building scalable, high-performance, and resilient messaging applications.
+
+== Understanding Message Listener Containers
+
+In Spring Boot, a message listener container is responsible for receiving messages from a message broker (like ActiveMQ Artemis) and dispatching them to message listener components within your application. Spring provides robust abstractions for this, primarily through:
+
+*   `DefaultJmsListenerContainerFactory` for JMS (Java Message Service).
+*   `SimpleRabbitListenerContainerFactory` or `DefaultMessageListenerContainer` (for AMQP, depending on the client library used, e.g., Spring AMQP's RabbitMQ integration uses the former).
+
+For ActiveMQ Artemis, we predominantly focus on the `DefaultJmsListenerContainerFactory` when using JMS clients, or custom AMQP container factories if using AMQP 1.0.
+
+A message listener container manages the lifecycle of listeners, including:
+
+*   Establishing and maintaining connections to the message broker.
+*   Creating and managing sessions and consumers.
+*   Handling transactions and acknowledgements.
+*   Recovering from connection failures.
+
+== The Need for Concurrency
+
+By default, a message listener might process messages sequentially within a single thread. While simple, this approach can become a bottleneck when message volumes increase or when message processing is CPU-bound or involves I/O operations (e.g., database calls, external service invocations).
+
+Concurrency allows multiple messages to be processed simultaneously, significantly improving throughput and responsiveness. When configured, a listener container can create and manage multiple message consumer threads, each processing messages concurrently.
+
+== Configuring JMS Listener Containers for Concurrency
+
+Spring Boot auto-configures a `DefaultJmsListenerContainerFactory` bean if you have `spring-jms` on your classpath. You can customize this factory to enable and configure concurrency.
+
+=== Core Concurrency Properties
+
+The `DefaultJmsListenerContainerFactory` offers several properties to control concurrency:
+
+*   `setConcurrency(String concurrency)`: This is the primary property. It accepts a string that can be a single number (e.g., "5") indicating a fixed number of concurrent consumers, or a range (e.g., "3-10") indicating a minimum and maximum number of concurrent consumers.
+    *   If a single number `N` is provided, the container will always maintain `N` consumers.
+    *   If a range `M-N` is provided, the container starts with `M` consumers and can scale up to `N` consumers based on message load (though `DefaultJmsListenerContainerFactory` does not dynamically scale; `DefaultMessageListenerContainer` does). For `DefaultJmsListenerContainerFactory`, `concurrency` generally refers to the *maximum* number of concurrent consumers, and if only a single value is given, it's a fixed pool size.
+*   `setSessionTransacted(boolean sessionTransacted)`: Determines if JMS sessions are transacted. If `true`, messages are only acknowledged upon successful transaction commit. This is crucial for *Exactly-Once* processing guarantees in conjunction with external transactions.
+*   `setSessionAcknowledgeMode(int sessionAcknowledgeMode)`: Defines how messages are acknowledged. Common modes include:
+    *   `Session.AUTO_ACKNOWLEDGE`: Messages are acknowledged automatically by the JMS provider when they are received.
+    *   `Session.CLIENT_ACKNOWLEDGE`: The client application is responsible for acknowledging messages explicitly.
+    *   `Session.DUPS_OK_ACKNOWLEDGE`: Acknowledges messages lazily, which can lead to duplicate messages but might improve performance.
+    *   `Session.SESSION_TRANSACTED`: Acknowledgment is tied to the transaction commit.
+
+=== Hands-on Activity: Configuring Concurrency with Java Configuration
+
+Let's configure a custom `JmsListenerContainerFactory` to handle messages from ActiveMQ Artemis with concurrency.
+
+.Prerequisites:
+*   A Spring Boot project with `spring-boot-starter-activemq` or `spring-boot-starter-artemis` dependency.
+*   An ActiveMQ Artemis instance running and accessible.
+
+.Steps:
+
+.  **Define a Custom `JmsListenerContainerFactory` Bean:**
+    Create a configuration class where you define your custom `JmsListenerContainerFactory`. This allows you to override the default settings provided by Spring Boot.
+
+    [source,java]
+    ----
+    package com.example.artemis.config;
+
+    import jakarta.jms.ConnectionFactory;
+    import org.springframework.boot.autoconfigure.jms.Default  JmsListenerContainerFactoryConfigurer;
+    import org.springframework.context.annotation.Bean;
+    import org.springframework.context.annotation.Configuration;
+    import org.springframework.jms.config.DefaultJmsListenerContainerFactory;
+    import org.springframework.jms.config.JmsListenerContainerFactory;
+    import org.springframework.jms.support.converter.MappingJackson2MessageConverter;
+    import org.springframework.jms.support.converter.MessageConverter;
+    import org.springframework.jms.support.converter.MessageType;
+
+    @Configuration
+    public class JmsConfig {
+
+        // Custom JmsListenerContainerFactory for concurrent message processing
+        @Bean
+        public JmsListenerContainerFactory<?> myJmsListenerContainerFactory(
+                ConnectionFactory connectionFactory,
+                DefaultJmsListenerContainerFactoryConfigurer configurer) {
+
+            DefaultJmsListenerContainerFactory factory = new DefaultJmsListenerContainerFactory();
+            configurer.configure(factory, connectionFactory);
+
+            // Configure concurrency: 5 consumers
+            factory.setConcurrency("5"); // Fixed pool of 5 concurrent consumers
+
+            // Optional: Configure a message converter for JSON payloads
+            factory.setMessageConverter(jacksonJmsMessageConverter());
+
+            // Optional: Enable session transacted for transactional message processing
+            factory.setSessionTransacted(true);
+
+            // Optional: Set acknowledge mode (relevant if not session transacted)
+            // factory.setSessionAcknowledgeMode(jakarta.jms.Session.CLIENT_ACKNOWLEDGE);
+
+            System.out.println("Custom JmsListenerContainerFactory configured with concurrency: 5 and session transacted: true");
+            return factory;
+        }
+
+        // Optional: Configure a MessageConverter for JSON payload handling
+        @Bean
+        public MessageConverter jacksonJmsMessageConverter() {
+            MappingJackson2MessageConverter converter = new MappingJackson2MessageConverter();
+            converter.setTargetType(MessageType.TEXT);
+            converter.setTypeIdPropertyName("_type"); // Custom type ID for deserialization
+            return converter;
+        }
+    }
+    ----
+
+.  **Use the Custom Factory in your `@JmsListener`:**
+    Specify the `containerFactory` attribute in your `@JmsListener` annotation to use the custom factory.
+
+    [source,java]
+    ----
+    package com.example.artemis.listener;
+
+    import org.springframework.jms.annotation.JmsListener;
+    import org.springframework.stereotype.Component;
+
+    @Component
+    public class MyMessageListener {
+
+        @JmsListener(destination = "my.queue", containerFactory = "myJmsListenerContainerFactory")
+        public void receiveMessage(String message) {
+            System.out.println("Received message in thread " + Thread.currentThread().getName() + ": " + message);
+            // Simulate some work
+            try {
+                Thread.sleep(1000); // 1 second processing time
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+        }
+    }
+    ----
+
+.  **Verify Concurrency:**
+    When you send multiple messages to `my.queue`, you will observe that messages are processed by different threads, indicating that your concurrency configuration is active. Each message processing will print the `Thread.currentThread().getName()`, showing distinct threads (e.g., `myJmsListenerContainerFactory-1`, `myJmsListenerContainerFactory-2`, etc., up to 5).
+
+=== Configuring Concurrency with `application.properties`
+
+For simpler configurations, Spring Boot allows you to configure some JMS listener container properties directly in `application.properties` (or `application.yml`). These properties apply to the auto-configured `DefaultJmsListenerContainerFactory`.
+
+[source,properties]
+----
+# application.properties
+spring.jms.listener.auto-startup=true
+spring.jms.listener.acknowledge-mode=auto
+spring.jms.listener.concurrency=3
+spring.jms.listener.max-concurrency=10
+spring.jms.listener.session-transacted=true
+----
+
+*   `spring.jms.listener.concurrency`: Sets the minimum number of concurrent consumers. If `max-concurrency` is also set, this acts as the base.
+*   `spring.jms.listener.max-concurrency`: Sets the maximum number of concurrent consumers. If both `concurrency` and `max-concurrency` are set, the container will scale between these values. *Note*: `DefaultJmsListenerContainerFactory` does not dynamically scale by default; it typically interprets `concurrency` as a fixed pool size or `maxConcurrency` as the upper bound for a simple `ExecutorService` pool. For dynamic scaling, `DefaultMessageListenerContainer` is generally used, which has more sophisticated resource management. For the standard `DefaultJmsListenerContainerFactory`, `concurrency` often dictates the fixed pool size.
+
+For a fixed pool of 5 consumers, you would typically use:
+`spring.jms.listener.concurrency=5` (and omit `max-concurrency` if you don't need a range).
+
+=== Transaction Management and Concurrency
+
+When `setSessionTransacted(true)` is enabled, each message received by a consumer within the listener container will be part of a local JMS transaction. This means:
+
+*   The message is consumed within a transaction.
+*   Any database operations or other resource modifications performed within the listener method should ideally be part of the same transaction (e.g., using `@Transactional` on the listener method if Spring's JTA or a transaction manager is configured).
+*   If the listener method completes successfully, the JMS session transaction is committed, and the message is acknowledged.
+*   If an exception occurs, the JMS session transaction is rolled back, and the message is redelivered (subject to ActiveMQ Artemis's redelivery policy).
+
+This transactional behavior is critical for ensuring message reliability and preventing data inconsistencies.
+
+== Concurrency for AMQP Listener Containers (Brief Overview)
+
+While the primary focus for ActiveMQ Artemis's default integration with Spring Boot is JMS, it also supports AMQP 1.0. If you were to use Spring AMQP (e.g., with RabbitMQ, or a Spring AMQP client connecting to Artemis via AMQP 1.0), the approach is similar but uses different classes:
+
+*   `SimpleRabbitListenerContainerFactory` is commonly used.
+*   Properties like `setConcurrentConsumers()` and `setMaxConcurrentConsumers()` are available to manage thread pools.
+
+[source,java]
+----
+// Example for AMQP (conceptual, using RabbitMQ classes for illustration)
+// This would be relevant if using Spring AMQP with Artemis's AMQP 1.0 support
+@Configuration
+public class AmqpConfig {
+
+    // @Bean
+    // public SimpleRabbitListenerContainerFactory rabbitListenerContainerFactory(ConnectionFactory connectionFactory) {
+    //     SimpleRabbitListenerContainerFactory factory = new SimpleRabbitListenerContainerFactory();
+    //     factory.setConnectionFactory(connectionFactory);
+    //     factory.setConcurrentConsumers(5); // Minimum consumers
+    //     factory.setMaxConcurrentConsumers(10); // Maximum consumers for scaling
+    //     factory.setDefaultRequeueRejected(false); // Do not requeue messages on listener failure
+    //     return factory;
+    // }
+}
+----
+
+The principles of concurrency, transactionality, and acknowledgment modes remain consistent across different messaging protocols, though the specific class names and property setters vary.
+
+== Best Practices and Troubleshooting
+
+*   **Determine Optimal Concurrency:** Start with a conservative concurrency value (e.g., 2-5) and monitor your application's CPU, memory, and message processing rates. Increase it gradually based on performance metrics and system resources. Too many concurrent consumers can lead to resource exhaustion (database connections, CPU context switching, memory).
+*   **Message Processing Time:** If message processing is fast (milliseconds), a higher concurrency might be beneficial. If processing is slow (seconds), you might need fewer, but more robust, consumers, or consider asynchronous processing within the listener.
+*   **Idempotency:** When using concurrency, be prepared for potential message redelivery and out-of-order processing. Design your message consumers to be *idempotent* – meaning processing the same message multiple times has the same effect as processing it once.
+*   **Dead Letter Queues (DLQs):** Always configure DLQs on your ActiveMQ Artemis broker. If messages fail repeatedly after multiple redelivery attempts, they should be moved to a DLQ to prevent blocking the queue and allow for manual inspection.
+*   **Error Handling:** Implement robust error handling within your listener methods. Catch exceptions, log details, and decide whether to rethrow (triggering redelivery) or handle the message as a failure without redelivery (e.g., by sending to a DLQ explicitly if `sessionTransacted` is false and you're using client acknowledge mode).
+*   **Resource Contention:** Be aware of shared resources (e.g., database connections, external APIs) that your concurrent listeners might contend for. Ensure these resources are themselves thread-safe or properly pooled and managed.
+
+By carefully configuring listener containers and concurrency, you can build Spring Boot messaging applications that are highly performant, scalable, and resilient when interacting with ActiveMQ Artemis.
+```

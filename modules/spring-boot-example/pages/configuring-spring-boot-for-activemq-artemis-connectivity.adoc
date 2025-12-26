@@ -1,0 +1,473 @@
+#  Configuring Spring Boot for ActiveMQ Artemis connectivity
+
+Here's the detailed educational content for configuring Spring Boot for ActiveMQ Artemis connectivity, presented in Antora AsciiDoc format:
+
+include::partial$attributes.adoc[]
+
+= Configuring Spring Boot for ActiveMQ Artemis Connectivity
+
+This section delves into the essential steps and best practices for integrating Spring Boot applications with ActiveMQ Artemis brokers. Leveraging Spring Boot's auto-configuration capabilities simplifies the setup, allowing developers to quickly establish robust and reliable messaging connections.
+
+== Understanding Spring Boot's Messaging Auto-configuration
+
+Spring Boot provides comprehensive auto-configuration for various messaging technologies, including JMS (Java Message Service) which ActiveMQ Artemis supports. When the necessary dependencies are present, Spring Boot automatically configures a `ConnectionFactory` and a `JmsTemplate`, ready for use. This significantly reduces boilerplate code and speeds up development.
+
+=== Key Components for Connectivity
+
+Before diving into configuration, it's important to understand the core components involved:
+
+*   **JMS API:** The standard Java API for sending and receiving messages. ActiveMQ Artemis implements this API.
+*   **JMS ConnectionFactory:** An administrative object used to create connections to a JMS provider. Spring Boot auto-configures one for Artemis.
+*   **JmsTemplate:** A helper class provided by Spring Framework to simplify JMS operations, such as sending and receiving messages.
+*   **Message Listener Container:** Manages the lifecycle of JMS message listeners, allowing asynchronous message consumption.
+
+== Dependencies for ActiveMQ Artemis Connectivity
+
+To enable Spring Boot to connect to ActiveMQ Artemis, you need to include the appropriate client dependencies in your `pom.xml` (for Maven) or `build.gradle` (for Gradle).
+
+.Maven Dependencies (`pom.xml`)
+[source,xml]
+----
+<dependencies>
+    <!-- Spring Boot Starter for JMS -->
+    <dependency>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-activemq</artifactId>
+    </dependency>
+
+    <!-- ActiveMQ Artemis JMS Client - provides the actual client libraries -->
+    <dependency>
+        <groupId>org.apache.activemq</groupId>
+        <artifactId>artemis-jms-client-all</artifactId>
+        <version>${activemq.artemis.version}</version> <1>
+    </dependency>
+</dependencies>
+----
+<1> Replace `${activemq.artemis.version}` with the version compatible with your broker, e.g., `2.31.2`.
+
+.Gradle Dependencies (`build.gradle`)
+[source,groovy]
+----
+dependencies {
+    // Spring Boot Starter for JMS
+    implementation 'org.springframework.boot:spring-boot-starter-activemq'
+
+    // ActiveMQ Artemis JMS Client
+    implementation 'org.apache.activemq:artemis-jms-client-all:${activemqArtemisVersion}' <1>
+}
+----
+<1> Define `activemqArtemisVersion` in your `build.gradle` or `gradle.properties`.
+
+*   `spring-boot-starter-activemq`: This starter brings in `spring-jms` and also transitively includes `artemis-jms-client` (though sometimes the `artemis-jms-client-all` is explicitly added for broader feature support or to override versions). It's designed to simplify auto-configuration for Artemis.
+*   `artemis-jms-client-all`: This explicitly provides the ActiveMQ Artemis JMS client library, which is necessary for the Spring Boot application to communicate with the Artemis broker. It includes all necessary transport connectors and JMS client implementations.
+
+== Basic Configuration via `application.properties` or `application.yml`
+
+Spring Boot's auto-configuration for JMS can be customized using properties in `application.properties` or `application.yml`. These properties are prefixed with `spring.activemq`.
+
+=== Connecting to an External ActiveMQ Artemis Broker
+
+To connect to an external Artemis broker, you typically configure the broker URL, username, and password.
+
+.Example `application.properties`
+[source,properties]
+----
+# Enable JMS support
+spring.jms.enabled=true
+
+# Configure ActiveMQ Artemis broker connection
+spring.activemq.broker-url=tcp://localhost:61616 <1>
+spring.activemq.user=admin <2>
+spring.activemq.password=password <3>
+spring.activemq.mode=native <4>
+
+# Optionally, configure connection pooling (highly recommended for production)
+spring.activemq.pool.enabled=true
+spring.activemq.pool.max-connections=10
+spring.activemq.pool.block-if-full=true
+----
+<1> The URL of your ActiveMQ Artemis broker. This can also be a discovery URL, for example, `(tcp://host1:61616,tcp://host2:61616)?ha=true&retryInterval=1000&retryIntervalMultiplier=1.5&maxRetryInterval=60000&reconnectAttempts=-1`.
+<2> The username for connecting to the broker.
+<3> The password for the specified user.
+<4> Specifies the type of broker. `native` is for ActiveMQ Artemis. `embedded` is for an in-memory broker (discussed later).
+
+.Example `application.yml`
+[source,yaml]
+----
+spring:
+  jms:
+    enabled: true
+  activemq:
+    broker-url: tcp://localhost:61616
+    user: admin
+    password: password
+    mode: native
+    pool:
+      enabled: true
+      max-connections: 10
+      block-if-full: true
+----
+
+*   `spring.activemq.broker-url`: This is the most critical property, specifying how to reach the Artemis broker. It supports various transport protocols (e.g., `tcp`, `amqp`, `vm`) and can be configured for single brokers or highly available clusters.
+*   `spring.activemq.user` and `spring.activemq.password`: Credentials for authentication with the Artemis broker.
+*   `spring.activemq.mode`:
+    *   `native`: Connects to an external ActiveMQ Artemis broker. This is the default and most common setting for production deployments.
+    *   `embedded`: Configures an in-memory ActiveMQ Artemis broker directly within the Spring Boot application. Useful for development and testing, but not recommended for production message persistence.
+
+=== Using Connection Pooling
+
+For production environments, connection pooling is crucial for efficient resource management and performance. Spring Boot's ActiveMQ starter automatically configures `CachingConnectionFactory` or `PooledConnectionFactory` if `spring.activemq.pool.enabled` is set to `true`.
+
+The `CachingConnectionFactory` caches `Session` and `MessageProducer`/`MessageConsumer` instances, while `PooledConnectionFactory` (from the Artemis client) pools `Connection` instances. The Spring Boot starter defaults to `CachingConnectionFactory` unless explicitly configured otherwise.
+
+Properties for connection pooling:
+
+*   `spring.activemq.pool.enabled`: Set to `true` to enable connection pooling.
+*   `spring.activemq.pool.max-connections`: The maximum number of pooled JMS connections.
+*   `spring.activemq.pool.idle-timeout`: The amount of time in milliseconds that a connection can remain idle in the pool before being closed.
+*   `spring.activemq.pool.block-if-full`: Whether to block new connection requests if the pool is full.
+*   `spring.activemq.pool.time-between-expiration-check`: Time in milliseconds between checks for expired connections.
+
+== Advanced Configuration with Java @Configuration
+
+While `application.properties` covers many common scenarios, you might need more granular control or custom logic for your `ConnectionFactory` or `JmsTemplate`. This can be achieved using `@Configuration` classes and defining Spring beans.
+
+=== Custom `ConnectionFactory`
+
+You can define your own `ConnectionFactory` bean to override Spring Boot's auto-configuration or to apply specific Artemis client-side settings.
+
+.Example: Custom `ActiveMQConnectionFactory` Bean
+[source,java]
+----
+package com.example.messaging;
+
+import org.apache.activemq.artemis.jms.client.ActiveMQConnectionFactory;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.jms.annotation.EnableJms;
+
+@Configuration
+@EnableJms <1>
+public class JmsConfig {
+
+    // Define custom connection factory parameters
+    private static final String BROKER_URL = "tcp://localhost:61616";
+    private static final String USERNAME = "admin";
+    private static final String PASSWORD = "password";
+
+    @Bean
+    public ActiveMQConnectionFactory artemisConnectionFactory() {
+        ActiveMQConnectionFactory connectionFactory = new ActiveMQConnectionFactory(
+            BROKER_URL, USERNAME, PASSWORD
+        );
+        // Additional configuration for the connection factory
+        // For example, setting client ID, connection retry policies, etc.
+        // connectionFactory.setClientID("my-spring-app");
+        // connectionFactory.setReconnectAttempts(-1); // Infinite reconnects
+
+        return connectionFactory;
+    }
+}
+----
+<1> `@EnableJms` is necessary to enable JMS listener annotation processing (e.g., `@JmsListener`).
+
+If you define an `ActiveMQConnectionFactory` bean, Spring Boot will use it instead of creating its own default one, and it will wrap it in a `CachingConnectionFactory` by default if `spring.activemq.pool.enabled=true`.
+
+=== Custom `JmsTemplate`
+
+Similarly, you can define a custom `JmsTemplate` bean if you need to override its default settings (e.g., message converter, explicit delivery mode, priority, or time-to-live).
+
+.Example: Custom `JmsTemplate` Bean
+[source,java]
+----
+package com.example.messaging;
+
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.jms.core.JmsTemplate;
+import org.springframework.jms.support.converter.MappingJackson2MessageConverter;
+import org.springframework.jms.support.converter.MessageConverter;
+import org.springframework.jms.support.converter.MessageType;
+
+import jakarta.jms.ConnectionFactory; // Use jakarta.jms for Spring Boot 3+
+
+@Configuration
+public class JmsConfig {
+
+    // Assuming artemisConnectionFactory() bean is defined or auto-configured
+    @Bean
+    public JmsTemplate customJmsTemplate(ConnectionFactory connectionFactory) {
+        JmsTemplate jmsTemplate = new JmsTemplate(connectionFactory);
+        jmsTemplate.setPubSubDomain(false); // Default to point-to-point messaging (queues)
+        jmsTemplate.setDeliveryPersistent(true); // Ensure messages are durable
+        jmsTemplate.setTimeToLive(3600000L); // 1 hour TTL
+        jmsTemplate.setMessageConverter(jacksonJmsMessageConverter()); // Use a custom message converter
+        return jmsTemplate;
+    }
+
+    // Define a custom MessageConverter, e.g., for JSON payload handling
+    @Bean
+    public MessageConverter jacksonJmsMessageConverter() {
+        MappingJackson2MessageConverter converter = new MappingJackson2MessageConverter();
+        converter.setTargetType(MessageType.TEXT);
+        converter.setTypeIdPropertyName("_type");
+        return converter;
+    }
+}
+----
+
+*   `setPubSubDomain(false)`: Configures the template for point-to-point messaging (queues). Set to `true` for publish-subscribe (topics).
+*   `setDeliveryPersistent(true)`: Ensures messages are written to disk by the broker, providing durability.
+*   `setTimeToLive()`: Sets the maximum time a message is allowed to live in milliseconds.
+*   `setMessageConverter()`: Allows specifying a custom message converter for serializing/deserializing message payloads, useful for complex objects or JSON.
+
+=== Configuring `DefaultJmsListenerContainerFactory`
+
+When using `@JmsListener` annotations for message consumption, Spring Boot auto-configures a `DefaultJmsListenerContainerFactory`. You can customize this factory to control listener concurrency, transaction management, error handling, and more.
+
+.Example: Custom `DefaultJmsListenerContainerFactory`
+[source,java]
+----
+package com.example.messaging;
+
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.jms.config.DefaultJmsListenerContainerFactory;
+import org.springframework.jms.config.JmsListenerContainerFactory;
+import jakarta.jms.ConnectionFactory; // Use jakarta.jms for Spring Boot 3+
+
+@Configuration
+public class JmsConfig {
+
+    // Assuming artemisConnectionFactory() bean is defined or auto-configured
+    @Bean
+    public JmsListenerContainerFactory<?> customJmsListenerContainerFactory(ConnectionFactory connectionFactory) {
+        DefaultJmsListenerContainerFactory factory = new DefaultJmsListenerContainerFactory();
+        factory.setConnectionFactory(connectionFactory);
+        factory.setConcurrency("3-5"); // Minimum 3, maximum 5 concurrent consumers
+        factory.setSessionTransacted(true); // Enable JMS transactions for listeners
+        factory.setSessionAcknowledgeMode(jakarta.jms.Session.CLIENT_ACKNOWLEDGE); // Client explicitly acknowledges
+        // factory.setErrorHandler(myCustomErrorHandler()); // Define a custom error handler for listener errors
+        // factory.setReceiveTimeout(5000L); // Timeout for receiving messages (in a polling scenario)
+        return factory;
+    }
+}
+----
+
+*   `setConcurrency("3-5")`: Configures the number of concurrent message consumers. This helps in scaling message processing within a single application instance.
+*   `setSessionTransacted(true)`: Enables local JMS transactions. If a listener method fails, the transaction is rolled back, and the message is redelivered.
+*   `setSessionAcknowledgeMode()`: Defines how messages are acknowledged. `CLIENT_ACKNOWLEDGE` gives the application explicit control over acknowledgment. Other modes include `AUTO_ACKNOWLEDGE` (default, broker acknowledges automatically), `DUPS_OK_ACKNOWLEDGE` (lazy acknowledgment, allows duplicates).
+
+== Hands-on Lab: Basic Spring Boot Application with ActiveMQ Artemis Connectivity
+
+In this lab, you will create a simple Spring Boot application that connects to an ActiveMQ Artemis broker (which you would typically run locally or on OpenShift). The application will demonstrate basic configuration and verify connectivity.
+
+=== Prerequisites
+
+*   Java Development Kit (JDK) 17 or newer installed.
+*   Maven 3.6+ or Gradle 7.x+ installed.
+*   An ActiveMQ Artemis broker running and accessible (e.g., `tcp://localhost:61616`).
+    *   You can run a local Artemis instance using Docker:
+        `docker run -it --rm --name artemis -p 8161:8161 -p 61616:61616 -e ARTEMIS_USERNAME=admin -e ARTEMIS_PASSWORD=password apache/activemq-artemis:latest-alpine`
+
+=== Activity Steps
+
+==== Step 1: Create a New Spring Boot Project
+
+Use Spring Initializr to generate a new Maven project.
+
+1.  Navigate to link:https://start.spring.io/[Spring Initializr].
+2.  Configure the project as follows:
+    *   **Project:** Maven Project
+    *   **Language:** Java
+    *   **Spring Boot:** 3.x (latest stable)
+    *   **Group:** `com.example`
+    *   **Artifact:** `artemis-connector`
+    *   **Name:** `artemis-connector`
+    *   **Package Name:** `com.example.artemisconnector`
+    *   **Java:** 17
+3.  Add the following dependencies:
+    *   `Spring Web` (optional, for a simple REST endpoint to trigger messages)
+    *   `Spring for Apache ActiveMQ` (This will add `spring-boot-starter-activemq`)
+4.  Click "Generate" and download the project.
+5.  Unzip the project into a directory of your choice.
+
+==== Step 2: Update `pom.xml` with Artemis Client Dependency
+
+Open the `pom.xml` file and add the `artemis-jms-client-all` dependency explicitly. This ensures you have the full Artemis client features.
+
+.src/pom.xml
+[source,xml]
+----
+<?xml version="1.0" encoding="UTF-8"?>
+<project ...>
+    ...
+    <properties>
+        <java.version>17</java.version>
+        <activemq.artemis.version>2.31.2</activemq.artemis.version> <1>
+    </properties>
+    ...
+    <dependencies>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-activemq</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.activemq</groupId>
+            <artifactId>artemis-jms-client-all</artifactId>
+            <version>${activemq.artemis.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-web</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+    ...
+</project>
+----
+<1> Ensure the Artemis client version is compatible with your broker.
+
+==== Step 3: Configure `application.properties`
+
+Open `src/main/resources/application.properties` and add the configuration for connecting to your ActiveMQ Artemis broker.
+
+.src/main/resources/application.properties
+[source,properties]
+----
+# Enable JMS support
+spring.jms.enabled=true
+
+# Configure ActiveMQ Artemis broker connection
+spring.activemq.broker-url=tcp://localhost:61616
+spring.activemq.user=admin
+spring.activemq.password=password
+spring.activemq.mode=native
+
+# Enable connection pooling
+spring.activemq.pool.enabled=true
+spring.activemq.pool.max-connections=5
+----
+*   Adjust `broker-url`, `user`, and `password` if your Artemis instance has different settings.
+
+==== Step 4: Create a JMS Producer Service
+
+Create a simple service to send messages to an Artemis queue.
+
+.src/main/java/com/example/artemisconnector/JmsProducer.java
+[source,java]
+----
+package com.example.artemisconnector;
+
+import org.springframework.jms.core.JmsTemplate;
+import org.springframework.stereotype.Service;
+
+@Service
+public class JmsProducer {
+
+    private final JmsTemplate jmsTemplate;
+
+    public JmsProducer(JmsTemplate jmsTemplate) {
+        this.jmsTemplate = jmsTemplate;
+    }
+
+    public void sendMessage(String queueName, String message) {
+        System.out.println("Sending message: '" + message + "' to queue: " + queueName);
+        jmsTemplate.convertAndSend(queueName, message);
+    }
+}
+----
+
+==== Step 5: Create a JMS Consumer Component
+
+Create a component with a `@JmsListener` to receive messages from an Artemis queue.
+
+.src/main/java/com/example/artemisconnector/JmsConsumer.java
+[source,java]
+----
+package com.example.artemisconnector;
+
+import org.springframework.jms.annotation.JmsListener;
+import org.springframework.stereotype.Component;
+
+@Component
+public class JmsConsumer {
+
+    private static final String EXAMPLE_QUEUE = "example-queue";
+
+    @JmsListener(destination = EXAMPLE_QUEUE)
+    public void receiveMessage(String message) {
+        System.out.println("Received message from " + EXAMPLE_QUEUE + ": '" + message + "'");
+        // In a real application, process the message here
+    }
+}
+----
+
+==== Step 6: Create a REST Controller to Trigger Messages (Optional)
+
+Add a simple REST controller to easily send messages via a web endpoint.
+
+.src/main/java/com/example/artemisconnector/MessageController.java
+[source,java]
+----
+package com.example.artemisconnector;
+
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+
+@RestController
+public class MessageController {
+
+    private final JmsProducer jmsProducer;
+    private static final String EXAMPLE_QUEUE = "example-queue";
+
+    public MessageController(JmsProducer jmsProducer) {
+        this.jmsProducer = jmsProducer;
+    }
+
+    @GetMapping("/send")
+    public String sendMessage(@RequestParam String message) {
+        jmsProducer.sendMessage(EXAMPLE_QUEUE, message);
+        return "Message sent to " + EXAMPLE_QUEUE + ": " + message;
+    }
+}
+----
+
+==== Step 7: Run the Application and Test Connectivity
+
+1.  Ensure your ActiveMQ Artemis broker is running and accessible.
+2.  Open a terminal in your project's root directory.
+3.  Build and run the Spring Boot application:
+    `./mvnw spring-boot:run` (or `gradle bootRun`)
+4.  Observe the application logs. You should see messages indicating successful connection to Artemis.
+5.  If you implemented the `MessageController`, open your web browser or use `curl` to send a message:
+    `http://localhost:8080/send?message=HelloArtemis`
+6.  Check your application's console output. You should see both "Sending message..." and "Received message..." logs, confirming that the producer sent the message and the consumer received it via the ActiveMQ Artemis broker.
+
+This lab demonstrates the fundamental configuration for connecting Spring Boot applications to ActiveMQ Artemis, showcasing both message production and consumption.
+
+== Troubleshooting Common Connectivity Issues
+
+*   **`JMSException: Could not connect to broker URL`**:
+    *   Verify the `spring.activemq.broker-url` is correct and the broker is running.
+    *   Check network connectivity between your Spring Boot application and the Artemis broker (firewall rules, hostnames, ports).
+    *   Ensure the Artemis broker is listening on the specified port.
+*   **`JMSException: Invalid user name or password`**:
+    *   Double-check `spring.activemq.user` and `spring.activemq.password` against your Artemis broker's security settings.
+*   **Missing Dependencies**:
+    *   Ensure `spring-boot-starter-activemq` and `artemis-jms-client-all` (or similar Artemis client library) are correctly included in your `pom.xml` or `build.gradle`.
+*   **Version Mismatches**:
+    *   Incompatibility between Spring Boot, Spring Framework, and ActiveMQ Artemis client versions can cause issues. Always refer to the Spring Boot documentation for recommended dependency versions or explicitly define compatible versions.
+*   **Message Not Received by Consumer**:
+    *   Verify the queue/topic name in `@JmsListener` matches where the producer is sending messages.
+    *   Check if `JmsListenerContainerFactory` is properly configured (e.g., concurrency, acknowledge mode).
+    *   Ensure the consumer application is running and healthy.
+*   **`jakarta.jms` vs. `javax.jms`**:
+    *   For Spring Boot 3.x and newer, Java EE APIs have been migrated to Jakarta EE. Ensure your imports are `jakarta.jms.*` instead of `javax.jms.*`. The Spring Boot starter for ActiveMQ typically handles this automatically, but custom configurations might require attention.
+
+By following these configuration guidelines and troubleshooting steps, you can effectively integrate your Spring Boot applications with ActiveMQ Artemis for robust and high-performance messaging solutions.

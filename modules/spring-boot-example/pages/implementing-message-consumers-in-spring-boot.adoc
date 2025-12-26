@@ -1,0 +1,346 @@
+#  Implementing message consumers in Spring Boot
+
+= Implementing Message Consumers in Spring Boot
+
+Implementing message consumers in Spring Boot involves setting up components that listen for and process messages from a messaging broker like ActiveMQ Artemis. Spring Boot, combined with Spring JMS or Spring AMQP, significantly simplifies the process of creating robust and scalable message-driven applications. This section will focus on using Spring JMS for ActiveMQ Artemis, leveraging Spring's powerful annotation-driven approach to define message listeners.
+
+== Understanding Message Consumers
+
+A message consumer is an application component designed to retrieve and process messages from a specific destination (queue or topic) on a messaging broker. In a distributed messaging system, consumers are crucial for decoupling services, enabling asynchronous processing, and building reactive applications. Spring Boot provides abstractions that hide much of the underlying JMS (Java Message Service) or AMQP (Advanced Message Queuing Protocol) complexities, allowing developers to focus on the business logic of message processing.
+
+== Configuring Spring Boot for ActiveMQ Artemis Connectivity
+
+Before implementing consumers, your Spring Boot application needs to be configured to connect to ActiveMQ Artemis. This typically involves defining the connection factory in `application.properties` or `application.yml`. Spring Boot auto-configures a `JmsTemplate` and a `DefaultJmsListenerContainerFactory` if it finds a JMS provider on the classpath (like the ActiveMQ Artemis client dependency).
+
+Here's an example of `application.properties` for connecting to ActiveMQ Artemis:
+
+[source,properties]
+----
+# ActiveMQ Artemis connection properties
+spring.artemis.mode=native
+spring.artemis.broker-url=tcp://localhost:61616
+spring.artemis.user=artemis
+spring.artemis.password=artemis
+spring.artemis.embedded.enabled=false # Set to true if using embedded Artemis
+----
+
+If you're connecting to an Artemis instance on OpenShift, the `broker-url` would point to the service endpoint of your Artemis cluster.
+
+== Implementing Message Consumers using `@JmsListener`
+
+Spring's `@JmsListener` annotation is the cornerstone for creating message-driven POJOs (Plain Old Java Objects) in Spring Boot. This annotation allows you to designate any method in a Spring-managed bean as a JMS message listener. When a message arrives at the specified destination, the annotated method is automatically invoked with the message content.
+
+=== Basic Message Consumption
+
+To create a basic message consumer, define a method within a `@Component` or `@Service` class and annotate it with `@JmsListener`. The `destination` attribute specifies the queue or topic to listen to.
+
+[source,java]
+----
+package com.example.artemisconsumer;
+
+import org.springframework.jms.annotation.JmsListener;
+import org.springframework.stereotype.Component;
+import javax.jms.JMSException;
+import javax.jms.Message;
+import javax.jms.TextMessage;
+
+@Component
+public class MyMessageConsumer {
+
+    // Listener for messages on the 'my-queue' destination
+    @JmsListener(destination = "my-queue")
+    public void receiveMessage(String message) {
+        System.out.println("Received message: " + message);
+        // Process the message content
+    }
+
+    // You can also receive the raw JMS Message object for more control
+    @JmsListener(destination = "another-queue")
+    public void receiveRawMessage(Message message) {
+        try {
+            if (message instanceof TextMessage) {
+                TextMessage textMessage = (TextMessage) message;
+                System.out.println("Received raw text message from another-queue: " + textMessage.getText());
+                // Further processing with message headers or properties
+            } else {
+                System.out.println("Received non-text message type: " + message.getClass().getName());
+            }
+        } catch (JMSException e) {
+            System.err.println("Error processing raw message: " + e.getMessage());
+        }
+    }
+}
+----
+
+In the example above:
+*   The `receiveMessage` method listens to the `my-queue` destination. Spring's message converter automatically converts the JMS message payload into a `String` (assuming it's a `TextMessage`).
+*   The `receiveRawMessage` method demonstrates how to receive the full `javax.jms.Message` object, giving you access to headers, properties, and the raw message body for more advanced scenarios.
+
+=== Accessing Message Headers and Properties
+
+Often, messages carry important metadata in their headers or custom properties. Spring's `@JmsListener` can easily inject these into your method parameters using `@Header` and `@Payload` annotations.
+
+[source,java]
+----
+package com.example.artemisconsumer;
+
+import org.springframework.jms.annotation.JmsListener;
+import org.springframework.messaging.handler.annotation.Header;
+import org.springframework.messaging.handler.annotation.Payload;
+import org.springframework.stereotype.Component;
+
+@Component
+public class AdvancedMessageConsumer {
+
+    @JmsListener(destination = "order-queue")
+    public void processOrderMessage(
+            @Payload String orderDetails,
+            @Header("orderId") String orderId,
+            @Header("correlationId") String correlationId,
+            @Header(name = "customProperty", required = false) String customProperty) { // Optional header
+
+        System.out.println("--- Processing Order ---");
+        System.out.println("Order ID: " + orderId);
+        System.out.println("Correlation ID: " + correlationId);
+        System.out.println("Order Details: " + orderDetails);
+        if (customProperty != null) {
+            System.out.println("Custom Property: " + customProperty);
+        }
+        System.out.println("------------------------");
+
+        // Business logic to process the order
+    }
+}
+----
+
+In this example:
+*   `@Payload String orderDetails` extracts the body of the message as a `String`.
+*   `@Header("orderId") String orderId` extracts the value of the `orderId` JMS header. Spring will automatically map common JMS headers (like `JMSCorrelationID`, `JMSType`, etc.) or custom user-defined properties to method parameters.
+*   `@Header(name = "customProperty", required = false) String customProperty` demonstrates how to handle optional headers, preventing an error if the header is not present.
+
+=== Handling POJO Messages (Message Conversion)
+
+Spring Boot, by default, uses a `SimpleMessageConverter` that handles basic types like `String`, `byte[]`, and `Serializable` objects. For complex Java objects (POJOs), you often need to configure a more sophisticated message converter, such as `MappingJackson2MessageConverter` for JSON serialization/deserialization.
+
+First, ensure you have the Jackson dependency if you're not already using it:
+
+[source,xml]
+----
+<dependency>
+    <groupId>com.fasterxml.jackson.core</groupId>
+    <artifactId>jackson-databind</artifactId>
+</dependency>
+----
+
+Then, you can define a `MessageConverter` bean.
+
+[source,java]
+----
+package com.example.artemisconsumer;
+
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.context.annotation.Bean;
+import org.springframework.jms.annotation.EnableJms;
+import org.springframework.jms.support.converter.MappingJackson2MessageConverter;
+import org.springframework.jms.support.converter.MessageConverter;
+import org.springframework.jms.support.converter.MessageType;
+
+@SpringBootApplication
+@EnableJms // Enable JMS listener processing
+public class ArtemisConsumerApplication {
+
+    public static void main(String[] args) {
+        SpringApplication.run(ArtemisConsumerApplication.class, args);
+    }
+
+    // Configure a MessageConverter for JSON serialization/deserialization
+    @Bean
+    public MessageConverter jacksonJmsMessageConverter() {
+        MappingJackson2MessageConverter converter = new MappingJackson2MessageConverter();
+        converter.setTargetType(MessageType.TEXT); // Store converted objects as text
+        converter.setTypeIdPropertyName("_type"); // Add a type ID header for deserialization
+        return converter;
+    }
+}
+----
+
+With the `MappingJackson2MessageConverter` configured, your consumer methods can now directly receive POJO objects:
+
+[source,java]
+----
+package com.example.artemisconsumer;
+
+import org.springframework.jms.annotation.JmsListener;
+import org.springframework.stereotype.Component;
+
+// Assume you have a simple POJO for Order
+class Order {
+    private String orderId;
+    private String item;
+    private int quantity;
+
+    // Getters and Setters
+    public String getOrderId() { return orderId; }
+    public void setOrderId(String orderId) { this.orderId = orderId; }
+    public String getItem() { return item; }
+    public void setItem(String item) { this.item = item; }
+    public int getQuantity() { return quantity; }
+    public void setQuantity(int quantity) { this.quantity = quantity; }
+
+    @Override
+    public String toString() {
+        return "Order{" +
+               "orderId='" + orderId + '\'' +
+               ", item='" + item + '\'' +
+               ", quantity=" + quantity +
+               '}';
+    }
+}
+
+@Component
+public class OrderConsumer {
+
+    @JmsListener(destination = "pojo-orders-queue")
+    public void receiveOrder(Order order) {
+        System.out.println("Received POJO Order: " + order);
+        // Process the Order object
+    }
+}
+----
+
+When a producer sends an `Order` object to `pojo-orders-queue` using `JmsTemplate` (which would also be configured to use `jacksonJmsMessageConverter`), this consumer will automatically deserialize the JSON text message back into an `Order` object.
+
+== Hands-on Activity: Developing a Simple Spring Boot Message Consumer
+
+In this activity, you will create a Spring Boot application that consumes messages from an ActiveMQ Artemis queue.
+
+=== Prerequisites
+
+*   Java Development Kit (JDK) 11 or higher installed.
+*   Maven installed.
+*   An ActiveMQ Artemis broker running and accessible (e.g., locally or on OpenShift). For local development, you can run a standalone Artemis instance.
+
+=== Steps
+
+.  **Create a new Spring Boot Project**:
+    Use Spring Initializr (https://start.spring.io/) to generate a new Maven project.
+    *   **Project**: Maven Project
+    *   **Language**: Java
+    *   **Spring Boot**: (latest stable version, e.g., 3.x.x)
+    *   **Group**: `com.example`
+    *   **Artifact**: `artemis-consumer`
+    *   **Name**: `artemis-consumer`
+    *   **Description**: `Demo project for ActiveMQ Artemis Message Consumer`
+    *   **Package Name**: `com.example.artemisconsumer`
+    *   **Dependencies**: `Spring Web`, `Spring for Apache ActiveMQ 5` (this brings in the necessary JMS and Artemis client dependencies).
+    
+    Download the generated ZIP and extract it.
+
+.  **Configure `application.properties`**:
+    Open `src/main/resources/application.properties` and add the ActiveMQ Artemis connection details. Adjust the `broker-url` if your Artemis instance is not on `localhost:61616`.
+
+    [source,properties]
+    ----
+    # ActiveMQ Artemis connection properties
+    spring.artemis.mode=native
+    spring.artemis.broker-url=tcp://localhost:61616
+    spring.artemis.user=artemis
+    spring.artemis.password=artemis
+    
+    # Message Acknowledgement Pattern (CLIENT_ACKNOWLEDGE requires manual ack)
+    # spring.jms.listener.acknowledge-mode=client
+    
+    # For POJO message conversion (if needed later)
+    # spring.jms.pub-sub-domain=false # true for topics, false for queues
+    ----
+
+.  **Create a Message Consumer Class**:
+    Create a new Java class `MyMessageReceiver` in `src/main/java/com/example/artemisconsumer/`.
+
+    [source,java]
+    ----
+    package com.example.artemisconsumer;
+
+    import org.springframework.jms.annotation.JmsListener;
+    import org.springframework.stereotype.Component;
+    import javax.jms.Message;
+    import javax.jms.TextMessage;
+    import javax.jms.JMSException;
+
+    @Component
+    public class MyMessageReceiver {
+
+        private static final String QUEUE_NAME = "test-queue";
+
+        @JmsListener(destination = QUEUE_NAME)
+        public void receiveTextMessage(String messageContent) {
+            System.out.println("Received text message: '" + messageContent + "' from queue: " + QUEUE_NAME);
+            // Simulate some processing time
+            try {
+                Thread.sleep(100);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+        }
+
+        @JmsListener(destination = "raw-message-queue")
+        public void receiveRawJmsMessage(Message message) {
+            try {
+                if (message instanceof TextMessage) {
+                    TextMessage textMessage = (TextMessage) message;
+                    System.out.println("Received raw JMS text message: '" + textMessage.getText() + "' with ID: " + textMessage.getJMSMessageID());
+                } else {
+                    System.out.println("Received non-text raw JMS message type: " + message.getClass().getName());
+                }
+                // Important: If acknowledge-mode is CLIENT_ACKNOWLEDGE, you must call message.acknowledge() here.
+                // Otherwise, Spring handles it based on its default or configured acknowledge mode.
+                // message.acknowledge();
+            } catch (JMSException e) {
+                System.err.println("Error processing raw JMS message: " + e.getMessage());
+            }
+        }
+    }
+    ----
+
+.  **Enable JMS Listener Processing**:
+    Ensure your main application class is annotated with `@EnableJms`. This annotation is often automatically included or handled by `@SpringBootApplication` in newer Spring Boot versions, but explicitly adding it ensures JMS listener processing is enabled.
+
+    [source,java]
+    ----
+    package com.example.artemisconsumer;
+
+    import org.springframework.boot.SpringApplication;
+    import org.springframework.boot.autoconfigure.SpringBootApplication;
+    import org.springframework.jms.annotation.EnableJms;
+
+    @SpringBootApplication
+    @EnableJms // Explicitly enable JMS listener processing
+    public class ArtemisConsumerApplication {
+
+        public static void main(String[] args) {
+            SpringApplication.run(ArtemisConsumerApplication.class, args);
+        }
+    }
+    ----
+
+.  **Run the Application**:
+    Open a terminal in your project's root directory and run the application:
+
+    ```bash
+    mvn spring-boot:run
+    ```
+
+    You should see Spring Boot starting up and initializing the JMS listener containers. It will log that the `DefaultJmsListenerContainerFactory` has been created and that it's listening to `test-queue` and `raw-message-queue`.
+
+.  **Send Test Messages**:
+    Now, you need to send messages to `test-queue` and `raw-message-queue`. You can use a separate Spring Boot producer application (covered in "Implementing message producers in Spring Boot") or the ActiveMQ Artemis web console/management tools to send messages to these queues.
+
+    If using the ActiveMQ Artemis console:
+    *   Navigate to the Queues section.
+    *   Find or create `test-queue` and `raw-message-queue`.
+    *   Click "Send Message" for `test-queue` and enter some text (e.g., "Hello from Artemis!", "Another test message").
+    *   Click "Send Message" for `raw-message-queue` and enter some text.
+    *   Observe your running consumer application's console output. You should see "Received text message: ..." logs for `test-queue` and "Received raw JMS text message: ..." for `raw-message-queue`.
+
+This hands-on activity demonstrates the basic setup and functionality of a Spring Boot message consumer using `@JmsListener`. This forms the foundation for building more complex message-driven microservices.

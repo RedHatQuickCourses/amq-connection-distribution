@@ -1,0 +1,111 @@
+#  Custom Resource Definitions (CRDs) for Artemis
+
+ifndef::ROOT_ATTRIBUTES[]
+:imagesdir: ../assets/images
+:page-toclevels: 2
+:experimental:
+endif::[]
+
+= Custom Resource Definitions (CRDs) for Artemis
+
+In the dynamic environment of OpenShift, managing complex applications like ActiveMQ Artemis often requires extending the native Kubernetes API. This is where Custom Resource Definitions (CRDs) come into play. CRDs allow you to define your own resource types, making them first-class citizens within the OpenShift/Kubernetes ecosystem, managed just like built-in resources such as Pods, Deployments, or Services.
+
+== Understanding Custom Resource Definitions (CRDs)
+
+A Custom Resource Definition (CRD) is a powerful Kubernetes feature that allows cluster administrators to define custom resources. These custom resources extend the Kubernetes API, enabling you to store and retrieve structured data that represents an instance of your custom object.
+
+*   **Extension of Kubernetes API:** CRDs enable you to introduce new kinds of objects into Kubernetes, beyond the built-in types.
+*   **Declarative Management:** Once a CRD is defined, you can create instances of the custom resource using standard Kubernetes YAML manifest files. These manifest files declaratively describe the desired state of your application.
+*   **Operator Integration:** CRDs are the backbone for Kubernetes Operators. An Operator watches for changes to instances of its custom resources and then takes specific actions to bring the actual state of the application into alignment with the desired state declared in the custom resource.
+
+For ActiveMQ Artemis on OpenShift, the ActiveMQ Artemis Operator leverages a specific CRD, typically named `ActiveMQArtemis`, to provide a declarative way to deploy and manage Artemis brokers.
+
+== The `ActiveMQArtemis` Custom Resource Definition
+
+The ActiveMQ Artemis Operator introduces the `ActiveMQArtemis` CRD into your OpenShift cluster. This CRD defines the schema for how you can declare an ActiveMQ Artemis broker (or a cluster of brokers) and its configuration within a YAML manifest.
+
+Instead of manually creating Deployment, Service, ConfigMap, and StatefulSet resources for Artemis, you simply create an `ActiveMQArtemis` custom resource. The Operator then reads this custom resource and orchestrates all the necessary underlying Kubernetes resources to deploy and manage your Artemis instance according to the specification you provide.
+
+=== Key Components of an `ActiveMQArtemis` Custom Resource
+
+When you define an `ActiveMQArtemis` custom resource, you are primarily specifying the desired state of your Artemis deployment through its `spec` section. Here are some critical components you'll typically configure:
+
+*   `apiVersion` and `kind`: Identifies the resource as an `ActiveMQArtemis` custom resource.
+    *   `apiVersion: broker.amq.io/v1beta1` (or similar, depending on Operator version)
+    *   `kind: ActiveMQArtemis`
+*   `metadata`: Standard Kubernetes metadata like `name` and `namespace`.
+*   `spec`: This is the core, defining the desired configuration of your Artemis broker(s).
+    *   `deploymentPlan`: Configures the number of brokers (`size`), the container image to use, messaging ports, cluster user/password, and other deployment-specific settings.
+    *   `acceptors`: Defines how clients connect to the broker (e.g., AMQP, OpenWire, STOMP, MQTT protocols, SSL/TLS settings).
+    *   `connectors`: Defines how brokers connect to each other for clustering or how they connect to external systems.
+    *   `addressSettings`: Configures policies for queues and addresses, such as message expiry, max delivery attempts, and dead-letter queueing.
+    *   `securitySettings`: Manages security roles and permissions.
+    *   `persistence`: Crucial for message durability. Configures whether the broker uses persistent storage and how it's provisioned. This links directly to "Configuring persistent storage for Artemis".
+    *   `storage`: Specifies the storage class and size for persistent volumes.
+    *   `console`: Enables and configures the Artemis management console.
+    *   `metrics`: Enables and configures Prometheus-compatible metrics for monitoring. This relates to "Monitoring Artemis instances on OpenShift".
+    *   `env`: Allows injecting custom environment variables into the broker pods.
+
+The flexibility of the `ActiveMQArtemis` CRD allows for a wide range of configurations, from a single standalone broker to a complex, highly available clustered setup, directly addressing "Scaling Artemis brokers on OpenShift".
+
+== Hands-on Activity: Exploring a Basic `ActiveMQArtemis` CRD
+
+Let's examine a minimal `ActiveMQArtemis` custom resource definition to understand its structure. This example will deploy a single-node Artemis broker.
+
+.Create a new file named `artemis-single-broker.yaml`:
+[source,yaml]
+----
+apiVersion: broker.amq.io/v1beta1
+kind: ActiveMQArtemis
+metadata:
+  name: my-artemis-broker
+  namespace: my-messaging-project # Replace with your OpenShift project name
+spec:
+  deploymentPlan:
+    size: 1 # A single broker instance
+    image: registry.redhat.io/amq7/amq-broker-rhel8:7.12 # Or a suitable Artemis image
+    messageMigration: true
+  acceptors:
+    - name: amqp
+      port: 5672
+      protocols: amqp
+      sslEnabled: false
+    - name: openwire
+      port: 61616
+      protocols: openwire
+      sslEnabled: false
+  persistence:
+    enabled: true # Enable persistent storage
+    size: 2Gi # Request 2GB of storage
+    storageClassName: gp2 # Or another suitable storage class available in your cluster
+  console:
+    expose: true # Expose the management console
+    sslEnabled: false
+  addressSettings:
+    - name: '#.#'
+      maxDeliveryAttempts: 3
+      deadLetterAddress: DLQ
+      expiryAddress: ExpiryQueue
+  securitySettings:
+    - name: '#.#'
+      roles:
+        - name: amq
+          send: true
+          consume: true
+          createDurableQueue: true
+          createNonDurableQueue: true
+          browse: true
+          manage: true
+----
+
+=== Explanation of the Example CRD
+
+*   **`apiVersion`, `kind`, `metadata`**: Standard identifiers for our custom resource. The `name: my-artemis-broker` will be used as the base name for the generated Kubernetes resources.
+*   **`deploymentPlan.size: 1`**: Specifies that we want a single instance of the Artemis broker. Changing this to `2` or more would deploy a clustered setup (assuming `messageMigration` is enabled for high availability).
+*   **`deploymentPlan.image`**: Defines the container image for the Artemis broker. Always use a supported and stable image.
+*   **`acceptors`**: Configures client access. Here, we enable AMQP on port 5672 and OpenWire on port 61616 without SSL for simplicity. In production, SSL should always be enabled.
+*   **`persistence.enabled: true` and `persistence.size: 2Gi`**: This tells the Operator to provision a PersistentVolumeClaim (PVC) of 2GB and mount it to the broker pod(s) for durable message storage. `storageClassName` specifies which storage provisioner to use.
+*   **`console.expose: true`**: Makes the Artemis management console accessible via an OpenShift Route or Service.
+*   **`addressSettings` and `securitySettings`**: Provide basic configurations for message policies and user roles, demonstrating how fine-grained control is achieved directly within the CRD.
+
+This example showcases how CRDs abstract away the complexities of Kubernetes primitives, allowing you to focus on the desired state of your messaging application. The ActiveMQ Artemis Operator then translates this high-level declaration into the necessary low-level Kubernetes objects, ensuring your broker is deployed and managed efficiently on OpenShift.

@@ -1,0 +1,551 @@
+#  Implementing message producers in Quarkus
+
+= Implementing Message Producers in Quarkus
+
+This section delves into the implementation of message producers within Quarkus applications, focusing on how to send messages to an ActiveMQ Artemis broker. We will explore both traditional Jakarta Messaging (JMS) approaches and the more modern, reactive SmallRye Reactive Messaging API provided by Quarkus.
+
+== Overview of Message Producers
+
+A message producer is an application component responsible for creating and sending messages to a messaging destination (queue or topic) on a message broker. In the context of ActiveMQ Artemis and Quarkus, producers enable your microservices to publish events, commands, or data asynchronously, facilitating decoupled communication between different parts of a distributed system.
+
+Quarkus offers robust support for integrating with ActiveMQ Artemis, allowing developers to implement producers efficiently and reliably.
+
+== Prerequisites and Dependencies
+
+To implement message producers in a Quarkus application, you need to include the appropriate dependencies in your `pom.xml`.
+
+For traditional Jakarta Messaging (JMS) producers, use the `quarkus-artemis-jms` extension:
+
+[source,xml]
+----
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-artemis-jms</artifactId>
+</dependency>
+----
+
+For reactive messaging producers using SmallRye Reactive Messaging with JMS connector:
+
+[source,xml]
+----
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-smallrye-reactive-messaging-jms</artifactId>
+</dependency>
+----
+
+For reactive messaging producers using SmallRye Reactive Messaging with AMQP connector (if you prefer AMQP over JMS protocol):
+
+[source,xml]
+----
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-smallrye-reactive-messaging-amqp</artifactId>
+</dependency>
+----
+
+== Configuring ActiveMQ Artemis Connectivity
+
+Before implementing a producer, your Quarkus application needs to be configured to connect to the ActiveMQ Artemis broker. This typically involves setting connection parameters in `src/main/resources/application.properties`.
+
+Here's a basic configuration for connecting to an ActiveMQ Artemis broker:
+
+[source,properties]
+----
+# ActiveMQ Artemis connection settings
+quarkus.artemis.url=tcp://localhost:61616
+quarkus.artemis.username=artemis
+quarkus.artemis.password=artemis
+# Optional: Enable connection pooling
+quarkus.artemis.pooled=true
+----
+
+If using SmallRye Reactive Messaging, you would configure channels:
+
+[source,properties]
+----
+# SmallRye Reactive Messaging configuration for JMS
+mp.messaging.outgoing.my-outgoing-channel.connector=smallrye-jms
+mp.messaging.outgoing.my-outgoing-channel.destination-type=queue
+mp.messaging.outgoing.my-outgoing-channel.destination=my-queue
+
+# SmallRye Reactive Messaging configuration for AMQP
+# mp.messaging.outgoing.my-amqp-channel.connector=smallrye-amqp
+# mp.messaging.outgoing.my-amqp-channel.host=localhost
+# mp.messaging.outgoing.my-amqp-channel.port=5672
+# mp.messaging.outgoing.my-amqp-channel.username=artemis
+# mp.messaging.outgoing.my-amqp-channel.password=artemis
+# mp.messaging.outgoing.my-amqp-channel.address=my-amqp-queue
+----
+Note that the `quarkus.artemis.url` configuration is still relevant for `smallrye-jms` connector to establish the underlying JMS connection.
+
+== Implementing a Jakarta Messaging (JMS) Producer
+
+Quarkus provides seamless integration with Jakarta Messaging. You can inject `jakarta.jms.JMSContext` and use it to create and send messages.
+
+=== Sending Text Messages
+
+The most common type of message is a text message.
+
+[source,java]
+----
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
+import jakarta.jms.ConnectionFactory;
+import jakarta.jms.JMSContext;
+import jakarta.jms.Queue;
+import jakarta.annotation.PostConstruct;
+
+@ApplicationScoped
+public class JmsMessageProducer {
+
+    @Inject
+    ConnectionFactory connectionFactory; // Injected by Quarkus
+
+    private Queue myQueue; // The destination queue
+
+    @PostConstruct
+    void init() {
+        // You can look up queues/topics or create them programmatically
+        try (JMSContext context = connectionFactory.createContext()) {
+            myQueue = context.createQueue("my-jms-queue");
+        }
+    }
+
+    public void sendMessage(String messageContent) {
+        try (JMSContext context = connectionFactory.createContext()) {
+            context.createProducer()
+                   .send(myQueue, messageContent);
+            System.out.println("JMS Producer sent message: " + messageContent + " to queue: my-jms-queue");
+        } catch (Exception e) {
+            System.err.println("Error sending JMS message: " + e.getMessage());
+        }
+    }
+}
+----
+
+=== Sending Object Messages
+
+JMS also supports sending Java objects, which must implement `java.io.Serializable`.
+
+[source,java]
+----
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
+import jakarta.jms.ConnectionFactory;
+import jakarta.jms.JMSContext;
+import jakarta.jms.ObjectMessage;
+import jakarta.jms.Queue;
+import jakarta.annotation.PostConstruct;
+
+import java.io.Serializable;
+
+// A simple serializable payload
+class MyPayload implements Serializable {
+    private String name;
+    private int value;
+
+    public MyPayload(String name, int value) {
+        this.name = name;
+        this.value = value;
+    }
+
+    public String getName() { return name; }
+    public int getValue() { return value; }
+
+    @Override
+    public String toString() {
+        return "MyPayload{" +
+               "name='" + name + '\'' +
+               ", value=" + value +
+               '}';
+    }
+}
+
+@ApplicationScoped
+public class JmsObjectProducer {
+
+    @Inject
+    ConnectionFactory connectionFactory;
+
+    private Queue myObjectQueue;
+
+    @PostConstruct
+    void init() {
+        try (JMSContext context = connectionFactory.createContext()) {
+            myObjectQueue = context.createQueue("my-object-queue");
+        }
+    }
+
+    public void sendObjectMessage(MyPayload payload) {
+        try (JMSContext context = connectionFactory.createContext()) {
+            ObjectMessage message = context.createObjectMessage(payload);
+            context.createProducer()
+                   .send(myObjectQueue, message);
+            System.out.println("JMS Producer sent object message: " + payload + " to queue: my-object-queue");
+        } catch (Exception e) {
+            System.err.println("Error sending JMS object message: " + e.getMessage());
+        }
+    }
+}
+----
+
+=== Adding Message Properties and Headers
+
+You can customize messages by setting properties (key-value pairs) and headers (standard JMS properties).
+
+[source,java]
+----
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
+import jakarta.jms.ConnectionFactory;
+import jakarta.jms.JMSContext;
+import jakarta.jms.Queue;
+import jakarta.jms.TextMessage;
+import jakarta.annotation.PostConstruct;
+
+@ApplicationScoped
+public class JmsAdvancedProducer {
+
+    @Inject
+    ConnectionFactory connectionFactory;
+
+    private Queue myAdvancedQueue;
+
+    @PostConstruct
+    void init() {
+        try (JMSContext context = connectionFactory.createContext()) {
+            myAdvancedQueue = context.createQueue("my-advanced-queue");
+        }
+    }
+
+    public void sendAdvancedMessage(String messageContent, String userId) {
+        try (JMSContext context = connectionFactory.createContext()) {
+            TextMessage message = context.createTextMessage(messageContent);
+            
+            // Set a custom property
+            message.setStringProperty("UserId", userId);
+            message.setLongProperty("Timestamp", System.currentTimeMillis());
+
+            // Set standard JMS headers (e.g., correlation ID for request-reply patterns)
+            message.setJMSCorrelationID("correlation-" + System.nanoTime());
+            message.setJMSType("OrderEvent");
+
+            context.createProducer()
+                   .setDeliveryMode(jakarta.jms.DeliveryMode.PERSISTENT) // Ensure message durability
+                   .setPriority(5)
+                   .setTimeToLive(300000) // 5 minutes TTL
+                   .send(myAdvancedQueue, message);
+            System.out.println("JMS Producer sent advanced message: '" + messageContent + "' with UserId: " + userId + " to queue: my-advanced-queue");
+        } catch (Exception e) {
+            System.err.println("Error sending advanced JMS message: " + e.getMessage());
+        }
+    }
+}
+----
+
+== Implementing a Reactive Messaging Producer (SmallRye Reactive Messaging)
+
+Quarkus's SmallRye Reactive Messaging provides a powerful and idiomatic way to handle message production reactively. It abstracts away the underlying messaging protocol (JMS, AMQP, Kafka, etc.) and allows you to use familiar Java constructs.
+
+=== Using `@Outgoing` and `Emitter`
+
+The `@Outgoing` annotation marks a method or field as a source of messages for a specific channel. You can inject an `Emitter<T>` to send messages.
+
+[source,java]
+----
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
+import org.eclipse.microprofile.reactive.messaging.Channel;
+import org.eclipse.microprofile.reactive.messaging.Emitter;
+import io.smallrye.mutiny.Uni;
+
+@ApplicationScoped
+public class ReactiveMessageProducer {
+
+    // Inject an Emitter for the 'my-outgoing-channel' defined in application.properties
+    @Inject
+    @Channel("my-outgoing-channel")
+    Emitter<String> textEmitter;
+
+    // You can also emit objects if the connector supports serialization
+    @Inject
+    @Channel("my-outgoing-object-channel") // Make sure this channel is also configured
+    Emitter<MyPayload> objectEmitter;
+
+    public void sendReactiveTextMessage(String messageContent) {
+        // Send the message asynchronously
+        Uni<Void> ack = textEmitter.send(messageContent);
+        ack.subscribe().with(
+            v -> System.out.println("Reactive Producer sent text message: " + messageContent),
+            err -> System.err.println("Failed to send reactive text message: " + err.getMessage())
+        );
+    }
+
+    public void sendReactiveObjectMessage(MyPayload payload) {
+        // Send the object message asynchronously
+        Uni<Void> ack = objectEmitter.send(payload);
+        ack.subscribe().with(
+            v -> System.out.println("Reactive Producer sent object message: " + payload),
+            err -> System.err.println("Failed to send reactive object message: " + err.getMessage())
+        );
+    }
+}
+----
+
+For the `ReactiveMessageProducer` to work, ensure your `application.properties` defines the channels:
+
+[source,properties]
+----
+# For textEmitter
+mp.messaging.outgoing.my-outgoing-channel.connector=smallrye-jms
+mp.messaging.outgoing.my-outgoing-channel.destination-type=queue
+mp.messaging.outgoing.my-outgoing-channel.destination=my-reactive-text-queue
+
+# For objectEmitter
+mp.messaging.outgoing.my-outgoing-object-channel.connector=smallrye-jms
+mp.messaging.outgoing.my-outgoing-object-channel.destination-type=queue
+mp.messaging.outgoing.my-outgoing-object-channel.destination=my-reactive-object-queue
+----
+
+=== Using `@Outgoing` with methods (Stream-based production)
+
+Instead of `Emitter`, you can also use methods annotated with `@Outgoing` to produce messages continuously or upon specific events. This is particularly useful for generating data streams.
+
+[source,java]
+----
+import jakarta.enterprise.context.ApplicationScoped;
+import io.smallrye.mutiny.Multi;
+import org.eclipse.microprofile.reactive.messaging.Outgoing;
+
+import java.time.Duration;
+import java.util.Random;
+
+@ApplicationScoped
+public class StreamProducer {
+
+    private Random random = new Random();
+
+    // This method will send a random integer every second to 'my-data-stream' channel
+    @Outgoing("my-data-stream")
+    public Multi<Integer> generate() {
+        return Multi.createFrom().ticks().every(Duration.ofSeconds(1))
+                .onItem().transform(tick -> {
+                    int value = random.nextInt(100);
+                    System.out.println("Generating data stream item: " + value);
+                    return value;
+                });
+    }
+}
+----
+
+And the `application.properties` for this stream:
+
+[source,properties]
+----
+mp.messaging.outgoing.my-data-stream.connector=smallrye-jms
+mp.messaging.outgoing.my-data-stream.destination-type=queue
+mp.messaging.outgoing.my-data-stream.destination=my-data-stream-queue
+----
+
+== Hands-on Lab: Deploying a Quarkus Producer and Verifying Message Flow
+
+In this lab, you will set up a basic Quarkus application that acts as a message producer, sending messages to an ActiveMQ Artemis queue. You'll then use the Artemis console to verify that messages are being sent correctly.
+
+=== Objectives
+
+*   Create a Quarkus project with ActiveMQ Artemis JMS dependencies.
+*   Implement a simple Jakarta Messaging producer.
+*   Configure the Quarkus application to connect to an ActiveMQ Artemis broker.
+*   Run the Quarkus application and verify messages in the Artemis console.
+
+=== Prerequisites
+
+*   Java 17+
+*   Maven 3.8+
+*   Quarkus CLI (optional, but recommended) or Maven installed.
+*   A running ActiveMQ Artemis broker (e.g., using Docker or a local installation).
+
+==== Start an ActiveMQ Artemis Broker (if not already running)
+
+You can quickly start an Artemis broker using Docker:
+
+[source,bash]
+----
+docker run -it --rm \
+    -p 8161:8161 \
+    -p 61616:61616 \
+    -e ARTEMIS_USERNAME=artemis \
+    -e ARTEMIS_PASSWORD=artemis \
+    -e ARTEMIS_MIN_MEMORY=512M \
+    -e ARTEMIS_MAX_MEMORY=1G \
+    apache/activemq-artemis:latest
+----
+
+This command exposes the management console on `http://localhost:8161` (login: `artemis/artemis`) and the JMS/AMQP port on `61616`.
+
+=== Step 1: Create a New Quarkus Project
+
+Use the Quarkus CLI or Maven to create a new project.
+
+[source,bash]
+----
+quarkus create app quarkus-artemis-producer \
+    --extension=quarkus-artemis-jms \
+    --extension=quarkus-resteasy-reactive \
+    --extension=quarkus-smallrye-reactive-messaging-jms
+----
+
+If you don't have Quarkus CLI:
+
+[source,bash]
+----
+mvn io.quarkus.platform:quarkus-maven-plugin:$(quarkus --version | grep -o '^[0-9]\+\.[0-9]\+\.[0-9]\+' | head -1):create \
+    -DprojectGroupId=org.example \
+    -DprojectArtifactId=quarkus-artemis-producer \
+    -Dextensions="artemis-jms,resteasy-reactive,smallrye-reactive-messaging-jms" \
+    -DnoCode
+----
+
+=== Step 2: Configure `application.properties`
+
+Open `src/main/resources/application.properties` and add the ActiveMQ Artemis connection details and a reactive messaging channel:
+
+[source,properties]
+----
+# ActiveMQ Artemis connection
+quarkus.artemis.url=tcp://localhost:61616
+quarkus.artemis.username=artemis
+quarkus.artemis.password=artemis
+quarkus.artemis.pooled=true
+
+# Reactive Messaging Channel Configuration
+mp.messaging.outgoing.my-reactive-channel.connector=smallrye-jms
+mp.messaging.outgoing.my-reactive-channel.destination-type=queue
+mp.messaging.outgoing.my-reactive-channel.destination=my-quarkus-queue
+
+# Expose producer via a REST endpoint
+quarkus.http.port=8080
+----
+
+=== Step 3: Implement the JMS and Reactive Producers
+
+Create a new Java class `src/main/java/org/example/QuarkusProducerResource.java` and add the following code:
+
+[source,java]
+----
+package org.example;
+
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
+import jakarta.jms.ConnectionFactory;
+import jakarta.jms.JMSContext;
+import jakarta.jms.Queue;
+import jakarta.annotation.PostConstruct;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.QueryParam;
+import jakarta.ws.rs.core.MediaType;
+
+import org.eclipse.microprofile.reactive.messaging.Channel;
+import org.eclipse.microprofile.reactive.messaging.Emitter;
+import io.smallrye.mutiny.Uni;
+
+@Path("/messages")
+@ApplicationScoped
+public class QuarkusProducerResource {
+
+    // --- JMS Producer ---
+    @Inject
+    ConnectionFactory connectionFactory;
+
+    private Queue jmsQueue;
+
+    @PostConstruct
+    void initJms() {
+        try (JMSContext context = connectionFactory.createContext()) {
+            jmsQueue = context.createQueue("my-quarkus-queue");
+        }
+    }
+
+    @GET
+    @Path("/send-jms")
+    @Produces(MediaType.TEXT_PLAIN)
+    public String sendJmsMessage(@QueryParam("text") String messageContent) {
+        if (messageContent == null || messageContent.isEmpty()) {
+            messageContent = "Hello from Quarkus JMS! " + System.currentTimeMillis();
+        }
+        try (JMSContext context = connectionFactory.createContext()) {
+            context.createProducer()
+                   .send(jmsQueue, messageContent);
+            return "JMS Message sent: " + messageContent;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return "Failed to send JMS message: " + e.getMessage();
+        }
+    }
+
+    // --- Reactive Messaging Producer ---
+    @Inject
+    @Channel("my-reactive-channel")
+    Emitter<String> reactiveEmitter;
+
+    @GET
+    @Path("/send-reactive")
+    @Produces(MediaType.TEXT_PLAIN)
+    public Uni<String> sendReactiveMessage(@QueryParam("text") String messageContent) {
+        if (messageContent == null || messageContent.isEmpty()) {
+            messageContent = "Hello from Quarkus Reactive Messaging! " + System.currentTimeMillis();
+        }
+        String finalMessageContent = messageContent;
+        return Uni.createFrom().completionStage(reactiveEmitter.send(finalMessageContent).toCompletionStage())
+                   .onItem().transform(v -> "Reactive Message sent: " + finalMessageContent)
+                   .onFailure().transform(err -> {
+                       System.err.println("Failed to send reactive message: " + err.getMessage());
+                       return new RuntimeException("Failed to send reactive message", err);
+                   });
+    }
+}
+----
+
+=== Step 4: Run the Quarkus Application
+
+Navigate to the project root directory in your terminal and run the Quarkus application in development mode:
+
+[source,bash]
+----
+./mvnw quarkus:dev
+----
+
+The application will start, and you should see logs indicating it's ready.
+
+=== Step 5: Send Messages via REST Endpoints
+
+Open your web browser or use `curl` to send messages:
+
+*   **Send a JMS message:**
+    [source,bash]
+    ----
+    curl http://localhost:8080/messages/send-jms?text="My first JMS message"
+    ----
+
+*   **Send a Reactive message:**
+    [source,bash]
+    ----
+    curl http://localhost:8080/messages/send-reactive?text="My first Reactive message"
+    ----
+
+You should see confirmation messages in your browser/terminal and in the Quarkus application console.
+
+=== Step 6: Verify Messages in ActiveMQ Artemis Console
+
+1.  Open your web browser and navigate to the ActiveMQ Artemis console at `http://localhost:8161`.
+2.  Log in with username `artemis` and password `artemis`.
+3.  In the left navigation, click on *Queues*.
+4.  You should see a queue named `my-quarkus-queue`.
+5.  Click on `my-quarkus-queue` to view its details.
+6.  You should see the "Messages Added" count increase with each message you send from your Quarkus application.
+7.  To inspect the messages, select the `my-quarkus-queue` and click on the "Browse Messages" button. You will be able to view the content of the messages sent by your Quarkus producers.
+
+This lab demonstrates how to successfully implement and verify message production from a Quarkus application to an ActiveMQ Artemis broker using both traditional JMS and modern Reactive Messaging APIs.

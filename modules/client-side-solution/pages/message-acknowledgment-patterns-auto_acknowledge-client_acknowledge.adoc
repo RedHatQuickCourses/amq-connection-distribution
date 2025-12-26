@@ -1,0 +1,226 @@
+#  Message acknowledgment patterns (AUTO_ACKNOWLEDGE, CLIENT_ACKNOWLEDGE)
+
+= Message Acknowledgment Patterns
+
+When building resilient messaging applications, ensuring that messages are reliably processed is paramount. A core concept that underpins this reliability is *message acknowledgment*. Message acknowledgment is the mechanism by which a consumer informs the message broker (like ActiveMQ Artemis) that it has successfully received and processed a message. This process is crucial for preventing message loss and managing message redelivery in case of consumer failures.
+
+ActiveMQ Artemis, through its support for various messaging protocols (like JMS, AMQP), provides different acknowledgment patterns, each offering a distinct trade-off between simplicity, performance, and reliability. This section will focus on two fundamental JMS acknowledgment modes: `AUTO_ACKNOWLEDGE` and `CLIENT_ACKNOWLEDGE`.
+
+== Understanding Message Acknowledgment
+
+At its core, message acknowledgment ensures that messages are not lost if a consumer fails before processing them. When a message is delivered to a consumer, it remains "unacknowledged" by the broker until the consumer explicitly or implicitly confirms its receipt and successful processing. If a consumer fails before acknowledging a message, the broker can redeliver that message to another available consumer, or to the same consumer upon restart, ensuring that no message is lost.
+
+The choice of acknowledgment mode directly impacts:
+
+*   **Reliability**: How confident you can be that a message is processed exactly once or at least once.
+*   **Performance**: The overhead associated with acknowledgment operations.
+*   **Complexity**: The development effort required to implement reliable message processing.
+
+=== AUTO_ACKNOWLEDGE
+
+The `AUTO_ACKNOWLEDGE` mode is the simplest acknowledgment pattern, often chosen for its ease of use and reduced boilerplate code. In this mode, the JMS session automatically acknowledges messages upon successful delivery *to the consumer*.
+
+==== Technical Explanation
+
+With `AUTO_ACKNOWLEDGE`, the acknowledgment happens automatically by the JMS session immediately after a message is received (either by `MessageConsumer.receive()` or by the `MessageListener` completing its `onMessage()` method execution without throwing an unhandled exception). The exact timing can vary slightly depending on the JMS provider and the underlying protocol, but the intent is for the broker to consider the message "consumed" as soon as it has been successfully dispatched to the client and before the client's business logic has necessarily completed.
+
+*   **How it works**: When a consumer receives a message, the JMS session implicitly sends an acknowledgment to the broker. The broker then removes the message from its queue or marks it as consumed, preventing its redelivery.
+*   **Pros**:
+    *   **Simplicity**: Requires minimal code from the developer.
+    *   **Performance**: Generally offers higher throughput as there's no explicit acknowledgment overhead from the application.
+*   **Cons**:
+    *   **Potential for Message Loss**: If the consumer application receives a message but crashes *before* fully processing it (e.g., saving to a database, calling an external service), the message is already acknowledged and will not be redelivered. This can lead to lost messages if the processing is not atomic.
+    *   **At-most-once delivery**: Due to the potential for loss, `AUTO_ACKNOWLEDGE` provides an "at-most-once" delivery guarantee, meaning a message is delivered zero or one time.
+*   **When to use**: Suitable for scenarios where some message loss is acceptable, or where the message content itself is idempotent, allowing for safe reprocessing from other sources if needed. Examples include logging data, monitoring metrics, or non-critical notifications.
+
+==== Code Example (JMS with AUTO_ACKNOWLEDGE)
+
+The following Java code snippet demonstrates how to configure a JMS session with `AUTO_ACKNOWLEDGE` mode.
+
+[source,java]
+----
+import javax.jms.*;
+import javax.naming.InitialContext;
+
+public class AutoAcknowledgeConsumer {
+
+    public static void main(String[] args) throws Exception {
+        Connection connection = null;
+        InitialContext initialContext = null;
+
+        try {
+            // 1. Create an InitialContext to look up JMS resources
+            initialContext = new InitialContext();
+
+            // 2. Look up the ConnectionFactory and Queue
+            ConnectionFactory connectionFactory = (ConnectionFactory) initialContext.lookup("java:jboss/exported/jms/RemoteConnectionFactory");
+            Queue queue = (Queue) initialContext.lookup("queue/myQueue"); // Replace with your queue name
+
+            // 3. Create a connection
+            connection = connectionFactory.createConnection();
+            connection.start();
+
+            // 4. Create a session with AUTO_ACKNOWLEDGE mode
+            // Session.AUTO_ACKNOWLEDGE specifies that the session automatically acknowledges messages.
+            Session session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
+
+            // 5. Create a MessageConsumer
+            MessageConsumer consumer = session.createConsumer(queue);
+
+            // 6. Set a MessageListener to process incoming messages
+            consumer.setMessageListener(new MessageListener() {
+                public void onMessage(Message message) {
+                    try {
+                        if (message instanceof TextMessage) {
+                            TextMessage textMessage = (TextMessage) message;
+                            System.out.println("Received message: " + textMessage.getText());
+                            // Simulate some processing time
+                            Thread.sleep(100);
+                        }
+                        // IMPORTANT: With AUTO_ACKNOWLEDGE, the message is acknowledged
+                        // automatically after onMessage() completes successfully.
+                        // If an exception is thrown here, the message might be redelivered
+                        // depending on broker configuration (e.g., max redelivery attempts)
+                        // or become a "poison pill" if redelivery is not handled properly.
+                    } catch (JMSException e) {
+                        System.err.println("JMS Exception in listener: " + e.getMessage());
+                        // Consider how to handle exceptions. In AUTO_ACKNOWLEDGE,
+                        // throwing an unchecked exception will usually cause the message
+                        // to be redelivered up to max delivery attempts, then dead-lettered.
+                    } catch (InterruptedException e) {
+                        Thread.currentThread().interrupt();
+                        System.err.println("Interrupted during message processing: " + e.getMessage());
+                    }
+                }
+            });
+
+            System.out.println("Consumer started. Waiting for messages (AUTO_ACKNOWLEDGE)...");
+            // Keep the main thread alive to allow the listener to receive messages
+            Thread.sleep(Long.MAX_VALUE);
+
+        } finally {
+            if (connection != null) {
+                connection.close();
+            }
+            if (initialContext != null) {
+                initialContext.close();
+            }
+        }
+    }
+}
+----
+
+=== CLIENT_ACKNOWLEDGE
+
+The `CLIENT_ACKNOWLEDGE` mode provides explicit control over message acknowledgment, giving the developer the responsibility to signal successful processing to the broker. This mode is preferred for applications requiring higher reliability and "at-least-once" delivery guarantees.
+
+==== Technical Explanation
+
+In `CLIENT_ACKNOWLEDGE` mode, the JMS session does *not* automatically acknowledge messages. Instead, the consumer application must explicitly call the `acknowledge()` method on the `Message` object once it has successfully processed the message. All messages received by the session since the last call to `acknowledge()` are acknowledged when `acknowledge()` is invoked.
+
+*   **How it works**:
+    1.  The broker delivers a message to the consumer. The message remains "unacknowledged" on the broker.
+    2.  The consumer application processes the message. This often involves critical business logic, database transactions, or calls to external services.
+    3.  Once the application has *successfully* processed the message, it calls `message.acknowledge()`.
+    4.  The `acknowledge()` call signals the broker that the message (and any prior unacknowledged messages on that session) can be safely removed or marked as consumed.
+    5.  If the consumer crashes *before* calling `message.acknowledge()`, the message will *not* be acknowledged. Upon reconnection or redelivery to another consumer, the message will be delivered again.
+*   **Pros**:
+    *   **High Reliability**: Guarantees "at-least-once" delivery because messages are redelivered until explicitly acknowledged. This significantly reduces the risk of message loss due to consumer failure during processing.
+    *   **Fine-grained Control**: Developers have precise control over *when* a message is considered successfully processed. This is crucial for transactional workflows.
+    *   **Batch Acknowledgment**: A single `acknowledge()` call on any message in a session will acknowledge *all* messages received by that session since the last acknowledgment. This can be efficient for processing batches of messages.
+*   **Cons**:
+    *   **Increased Complexity**: Requires the developer to explicitly manage acknowledgments, which adds to the application's complexity.
+    *   **Potential for Duplicate Processing**: If the consumer processes a message but crashes *before* calling `acknowledge()`, the message will be redelivered. The application must be designed to handle duplicate messages gracefully (i.e., ensure idempotency of message processing logic).
+    *   **Performance Overhead**: Each `acknowledge()` call might incur a network round trip or other overhead, potentially affecting throughput compared to `AUTO_ACKNOWLEDGE` if not batched effectively.
+*   **When to use**: Essential for applications where message loss is unacceptable and "at-least-once" delivery is required. This includes financial transactions, order processing, inventory updates, or any system where data integrity is critical.
+
+==== Code Example (JMS with CLIENT_ACKNOWLEDGE)
+
+The following Java code snippet demonstrates how to configure a JMS session with `CLIENT_ACKNOWLEDGE` mode and explicitly acknowledge messages.
+
+[source,java]
+----
+import javax.jms.*;
+import javax.naming.InitialContext;
+
+public class ClientAcknowledgeConsumer {
+
+    public static void main(String[] args) throws Exception {
+        Connection connection = null;
+        InitialContext initialContext = null;
+
+        try {
+            initialContext = new InitialContext();
+            ConnectionFactory connectionFactory = (ConnectionFactory) initialContext.lookup("java:jboss/exported/jms/RemoteConnectionFactory");
+            Queue queue = (Queue) initialContext.lookup("queue/myQueue"); // Replace with your queue name
+
+            connection = connectionFactory.createConnection();
+            connection.start();
+
+            // 4. Create a session with CLIENT_ACKNOWLEDGE mode
+            // Session.CLIENT_ACKNOWLEDGE requires the client to explicitly acknowledge messages.
+            Session session = connection.createSession(false, Session.CLIENT_ACKNOWLEDGE);
+
+            MessageConsumer consumer = session.createConsumer(queue);
+
+            consumer.setMessageListener(new MessageListener() {
+                public void onMessage(Message message) {
+                    try {
+                        if (message instanceof TextMessage) {
+                            TextMessage textMessage = (TextMessage) message;
+                            String msgText = textMessage.getText();
+                            System.out.println("Received message: " + msgText);
+
+                            // Simulate some processing time and potential failure
+                            if (msgText.contains("fail")) {
+                                System.err.println("Simulating processing failure for message: " + msgText);
+                                throw new RuntimeException("Simulated processing error!");
+                            }
+                            Thread.sleep(200); // Simulate successful processing
+
+                            // 7. IMPORTANT: Explicitly acknowledge the message after successful processing
+                            message.acknowledge();
+                            System.out.println("Message acknowledged: " + msgText);
+
+                        }
+                    } catch (JMSException e) {
+                        System.err.println("JMS Exception in listener: " + e.getMessage());
+                        // In CLIENT_ACKNOWLEDGE, if an exception occurs *before* acknowledge(),
+                        // the message will NOT be acknowledged and will be redelivered.
+                        // The session's unacknowledged messages remain unacknowledged.
+                    } catch (RuntimeException e) {
+                        System.err.println("Processing error for message. Will NOT acknowledge. Message: " + e.getMessage());
+                        // If we don't acknowledge, the message will be redelivered.
+                        // For persistent failures (poison pills), consider moving to a Dead Letter Queue (DLQ).
+                    } catch (InterruptedException e) {
+                        Thread.currentThread().interrupt();
+                        System.err.println("Interrupted during message processing: " + e.getMessage());
+                    }
+                }
+            });
+
+            System.out.println("Consumer started. Waiting for messages (CLIENT_ACKNOWLEDGE)...");
+            Thread.sleep(Long.MAX_VALUE);
+
+        } finally {
+            if (connection != null) {
+                connection.close();
+            }
+            if (initialContext != null) {
+                initialContext.close();
+            }
+        }
+    }
+}
+----
+
+==== Practical Considerations for CLIENT_ACKNOWLEDGE
+
+*   **Idempotency**: When using `CLIENT_ACKNOWLEDGE`, your message processing logic *must* be idempotent. This means that processing the same message multiple times should produce the same result as processing it once, without causing unintended side effects (e.g., duplicate database entries, double debits).
+*   **Error Handling**: If a message cannot be processed successfully, the application should *not* acknowledge it. This will cause the message to be redelivered. For messages that consistently fail (often called "poison pills"), implement a mechanism to move them to a Dead Letter Queue (DLQ) after a configured number of redelivery attempts to prevent them from endlessly blocking the queue.
+*   **Batching**: To improve performance, applications can process multiple messages before issuing a single `acknowledge()` call. Remember that `acknowledge()` on any message in a session acknowledges *all* previously received but unacknowledged messages for that session. Care must be taken: if any message in the batch fails, and you acknowledge the batch, the failed message will be lost. It is often safer to acknowledge messages individually or in small, carefully managed batches.
+*   **Session Scope**: All `MessageConsumer` objects created from the same `Session` share the same acknowledgment scope. Acknowledging a message received by one consumer will acknowledge all unacknowledged messages received by *any* consumer created from that *same* session.
+
+== Conclusion
+
+The choice between `AUTO_ACKNOWLEDGE` and `CLIENT_ACKNOWLEDGE` is a critical design decision that impacts the reliability and complexity of your messaging application. `AUTO_ACKNOWLEDGE` offers simplicity and potentially higher throughput at the risk of message loss in failure scenarios. `CLIENT_ACKNOWLEDGE` provides robust "at-least-once" delivery guarantees and fine-grained control, but demands careful implementation of idempotency and error handling to prevent duplicate processing. Understanding these patterns is fundamental to building resilient messaging systems with ActiveMQ Artemis.

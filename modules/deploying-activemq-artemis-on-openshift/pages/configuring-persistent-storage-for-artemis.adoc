@@ -1,0 +1,201 @@
+#  Configuring persistent storage for Artemis
+
+= Configuring Persistent Storage for ActiveMQ Artemis on OpenShift
+
+Ensuring message durability and broker state persistence is critical for any production-grade messaging system. On OpenShift, ActiveMQ Artemis leverages Kubernetes' persistent storage mechanisms to achieve this reliability. This section delves into the technical aspects of configuring persistent storage for your ActiveMQ Artemis brokers, including hands-on steps.
+
+== Detailed Technical Explanation
+
+ActiveMQ Artemis is designed to handle high-throughput messaging, and a core component of its reliability is its ability to persist messages and state. When running Artemis in a containerized environment like OpenShift, ephemeral storage is the default. This means any data written to the container's filesystem is lost when the container restarts, crashes, or is rescheduled. For a messaging broker, this would lead to message loss and an inconsistent state, which is unacceptable for most applications.
+
+To overcome this, ActiveMQ Artemis on OpenShift utilizes Kubernetes' `PersistentVolume` (PV) and `PersistentVolumeClaim` (PVC) resources.
+
+*   **PersistentVolume (PV)**: A piece of storage in the cluster that has been provisioned by an administrator or dynamically provisioned using a `StorageClass`. It abstracts the underlying storage infrastructure (e.g., NFS, iSCSI, AWS EBS, OpenShift Container Storage/Ceph RBD).
+*   **PersistentVolumeClaim (PVC)**: A request for storage by a user or application. A PVC consumes PV resources. Kubernetes binds a PVC to an appropriate PV based on criteria like capacity, access modes, and `StorageClass`.
+*   **StorageClass**: Defines how storage is provisioned. It allows administrators to describe "classes" of storage (e.g., fast SSD storage, slower HDD storage, replicated storage). When a PVC requests a `StorageClass`, the appropriate provisioner is invoked to create the PV.
+
+ActiveMQ Artemis stores several crucial pieces of data that require persistence:
+
+1.  **Journal Files**: These are the core of Artemis's persistence mechanism, ensuring message durability. All incoming messages, transactions, and state changes are written to the journal before being acknowledged.
+2.  **Large Messages**: Messages exceeding a certain size threshold (configurable) are stored directly on the filesystem rather than in memory.
+3.  **Bindings and Last Value Queue Data**: Metadata about queues, topics, subscriptions, and last-value queue states.
+
+When you deploy ActiveMQ Artemis using the OpenShift Operator, you configure persistent storage directly within the `ActiveMQArtemis` Custom Resource (CR). The Operator then takes care of creating the necessary `PersistentVolumeClaim`s and mounting them to the Artemis broker pods. This ensures that the journal files and other persistent data are stored on durable storage, surviving pod restarts, node failures, and even broker scaling operations.
+
+Using persistent storage ensures:
+
+*   **Message Durability**: Messages are not lost even if the broker crashes or restarts.
+*   **Broker State Preservation**: Queue definitions, topic subscriptions, and other configurations are maintained.
+*   **Fault Tolerance**: In a clustered setup, if a broker fails, its persistent data can be recovered by another broker taking over.
+*   **Scalability**: Persistent volumes can be managed independently of the pods, facilitating scaling and rolling updates.
+
+The choice of `StorageClass` is important, as it dictates the performance and resilience characteristics of your storage. For production environments, it's recommended to use a `StorageClass` backed by a highly available and performant storage solution, such as OpenShift Container Storage (Ceph RBD), AWS EBS, or similar cloud-provider specific block storage.
+
+== Hands-on Lab: Configuring Persistent Storage for an ActiveMQ Artemis Cluster
+
+In this lab, you will deploy a highly available ActiveMQ Artemis cluster on OpenShift with persistent storage enabled. We'll leverage the ActiveMQ Artemis Operator to simplify the process.
+
+=== Prerequisites
+
+*   An OpenShift cluster (version 4.x or newer).
+*   `oc` CLI tool configured to access your OpenShift cluster.
+*   The ActiveMQ Artemis Operator installed in your OpenShift cluster. If not installed, please refer to the "Using the ActiveMQ Artemis Operator" section.
+
+=== Lab Steps
+
+==== Step 1: Examine Available StorageClasses
+
+Before defining our Artemis broker, let's see which `StorageClass`es are available in your OpenShift cluster. This will help you choose an appropriate one for your persistent volumes.
+
+[source,bash]
+----
+oc get sc
+----
+
+You should see output similar to this (actual `StorageClass` names may vary based on your cluster configuration):
+
+```
+NAME                PROVISIONER             RECLAIMPOLICY   VOLUMEBINDINGMODE      ALLOWVOLUMEEXPANSION   AGE
+gp2 (default)       kubernetes.io/aws-ebs   Delete          Immediate              true                   18d
+ocs-storagecluster-cephfs   cephfs.csi.ceph.com     Delete          Immediate              true                   18d
+ocs-storagecluster-ceph-rbd   rbd.csi.ceph.com        Delete          Immediate              true                   18d
+```
+
+For this lab, we'll assume a `StorageClass` named `ocs-storagecluster-ceph-rbd` or `gp2` (if on AWS) is available, which provides block storage suitable for Artemis's journal. If your cluster has a different default or preferred `StorageClass`, substitute it accordingly.
+
+==== Step 2: Create a Project for Your Artemis Cluster
+
+It's good practice to create a dedicated project (namespace) for your application.
+
+[source,bash]
+----
+oc new-project artemis-persistent-cluster
+----
+
+==== Step 3: Deploy an ActiveMQ Artemis Cluster with Persistent Storage
+
+Now, we will create an `ActiveMQArtemis` custom resource that configures a three-node cluster with persistent storage enabled.
+
+Create a file named `artemis-persistent-cluster.yaml` with the following content:
+
+[source,yaml]
+----
+apiVersion: broker.amq.io/v1beta1
+kind: ActiveMQArtemis
+metadata:
+  name: my-persistent-broker
+spec:
+  deploymentPlan:
+    size: 3 # Deploy a 3-node cluster
+    image: registry.redhat.io/amq7/amq-broker-rhel8:7.12
+    persistenceEnabled: true # Enable persistent storage
+    journalType: nio # Use NIO journal for typical performance
+    volumeStatus:
+      storageClassName: ocs-storagecluster-ceph-rbd # Specify your StorageClass here
+      size: 1Gi # Allocate 1GiB for each broker's journal
+    # Define an accept connector for clients
+    messageMigration:
+      enabled: true # Enable message migration on broker shutdown/failure
+    connectors:
+      - name: my-acceptor
+        port: 61616
+        protocols: CORE,AMQP,JMS,MQTT,STOMP,HORNETQ
+        # You can add further connector configurations as needed, e.g., discovery group
+
+  # Configure Console
+  console:
+    expose: true
+    sslEnabled: false # For lab purposes, disable SSL. Enable in production.
+
+  # Configure Security (for lab, using default user for simplicity)
+  brokerProperties:
+    - security.login.config=activemq-jaas.config
+    - 'security.roles.myuser=amq'
+    - 'security.users.myuser=mypassword'
+
+  # Expose the broker via a Route for client access
+  externalVolumes: [] # No external volumes for this example
+  addressSettings: [] # Default address settings
+
+  # Expose a service for clients
+  acceptors: [] # Connectors section handles acceptors
+  # The operator automatically creates a headless service for intra-cluster communication
+  # and a service for client access if expose is true in connectors.
+
+----
+
+*   **`persistenceEnabled: true`**: This crucial setting tells the Operator to provision persistent storage for the broker.
+*   **`journalType: nio`**: Specifies the journal type. `nio` is a common choice. `aio` provides higher performance but requires specific kernel modules.
+*   **`volumeStatus.storageClassName`**: This is where you specify the `StorageClass` you identified in Step 1. *Ensure you replace `ocs-storagecluster-ceph-rbd` with an appropriate `StorageClass` available in your cluster.*
+*   **`volumeStatus.size`**: Defines the size of the `PersistentVolumeClaim` that will be created for each broker instance.
+
+Apply this manifest to your OpenShift cluster:
+
+[source,bash]
+----
+oc apply -f artemis-persistent-cluster.yaml
+----
+
+==== Step 4: Verify the Deployment and Persistent Volumes
+
+Monitor the creation of the ActiveMQ Artemis pods and the associated `PersistentVolumeClaim`s.
+
+Check the `PersistentVolumeClaim`s:
+
+[source,bash]
+----
+oc get pvc
+----
+
+You should see three PVCs, one for each broker instance, similar to this:
+
+```
+NAME                                STATUS   VOLUME                                     CAPACITY   ACCESS MODES   STORAGECLASS               AGE
+my-persistent-broker-amq-0         Bound    pvc-12345678-abcd-11ef-ghij-klmnopqrst     1Gi        RWO            ocs-storagecluster-ceph-rbd   2m
+my-persistent-broker-amq-1         Bound    pvc-abcdefgh-ijkl-mnop-qrst-uvwxyzabcdef   1Gi        RWO            ocs-storagecluster-ceph-rbd   2m
+my-persistent-broker-amq-2         Bound    pvc-fedcba98-7654-3210-abcd-efgh01234567   1Gi        RWO            ocs-storagecluster-ceph-rbd   2m
+```
+
+Check the broker pods:
+
+[source,bash]
+----
+oc get pods -w
+----
+
+Wait until all three pods (`my-persistent-broker-amq-0`, `my-persistent-broker-amq-1`, `my-persistent-broker-amq-2`) are running.
+
+Check the details of one of the pods to confirm the volume is mounted correctly:
+
+[source,bash]
+----
+oc describe pod my-persistent-broker-amq-0
+----
+
+In the output, look for the `Volumes` and `Volume Mounts` sections. You should see entries referring to the persistent volume mounted at `/opt/amq/data`.
+
+```
+...
+Volumes:
+  amq-data:
+    Type: PersistentVolumeClaim (a reference to a PersistentVolumeClaim in the same namespace)
+    ClaimName: my-persistent-broker-amq-0
+    ReadOnly: false
+...
+Volume Mounts:
+  /opt/amq/data from amq-data (rw)
+...
+```
+
+This confirms that your ActiveMQ Artemis brokers are using persistent storage for their data, ensuring durability and reliability.
+
+==== Step 5: Test Persistence (Optional)
+
+To further verify persistence, you can:
+
+1.  Send some messages to a queue on your Artemis broker.
+2.  Force delete one of the broker pods (e.g., `oc delete pod my-persistent-broker-amq-0`).
+3.  Observe that a new pod comes up, bound to the same `PersistentVolumeClaim`.
+4.  Reconnect your consumer and verify that the messages are still present and can be consumed, demonstrating that the data persisted across the pod recreation.
+
+This lab demonstrates how straightforward it is to configure persistent storage for ActiveMQ Artemis on OpenShift using the Operator and Kubernetes' native storage mechanisms. This setup forms the foundation for building highly resilient messaging applications.

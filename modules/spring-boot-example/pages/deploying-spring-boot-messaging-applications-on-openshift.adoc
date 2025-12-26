@@ -1,0 +1,311 @@
+#  Deploying Spring Boot messaging applications on OpenShift
+
+Here is the detailed educational content on deploying Spring Boot messaging applications on OpenShift, presented in Antora AsciiDoc format.
+
+```adoc
+== Deploying Spring Boot Messaging Applications on OpenShift
+
+This section focuses on the practical aspects of taking a Spring Boot application designed for messaging and deploying it into an OpenShift environment. We'll cover containerization, deployment strategies, and crucial configurations for seamless integration with an ActiveMQ Artemis broker running within the same cluster.
+
+=== Introduction to Deploying Spring Boot on OpenShift
+
+OpenShift, Red Hat's enterprise Kubernetes platform, provides a robust and scalable environment for deploying cloud-native applications, including those built with Spring Boot. When dealing with messaging applications, factors like high availability, scalability, and seamless connectivity to message brokers (like ActiveMQ Artemis) become paramount. OpenShift simplifies these challenges by offering built-in features for container orchestration, service discovery, load balancing, and secure configuration management.
+
+Deploying a Spring Boot messaging application on OpenShift typically involves:
+
+.  **Containerizing the application**: Packaging the Spring Boot JAR into a Docker/OCI image.
+.  **Defining OpenShift resources**: Creating `DeploymentConfig` (or `Deployment`), `Service`, and potentially `Route` resources.
+.  **Configuring connectivity**: Ensuring the Spring Boot application can discover and connect securely to the ActiveMQ Artemis broker.
+.  **Managing dependencies**: Handling external configurations like secrets and environment variables.
+.  **Ensuring resilience**: Implementing probes and resource limits for robust operation.
+
+=== Containerizing the Spring Boot Application
+
+The first step in deploying any application to OpenShift is to containerize it. This involves creating a `Dockerfile` that specifies how to build a Docker/OCI image containing your Spring Boot executable JAR.
+
+==== Creating a Dockerfile
+
+A typical `Dockerfile` for a Spring Boot application will:
+
+*   Use a suitable base image (e.g., `openjdk`).
+*   Copy the application JAR into the image.
+*   Define the entrypoint command to run the JAR.
+
+.Example `Dockerfile` for a Spring Boot messaging application
+[source,dockerfile]
+----
+# Use an official OpenJDK runtime as a parent image
+FROM registry.access.redhat.com/ubi8/openjdk-11
+
+# Set the working directory to /app
+WORKDIR /app
+
+# Copy the executable JAR file from the target directory into the container
+# Assuming your Spring Boot build produces 'target/spring-messaging-app.jar'
+COPY target/spring-messaging-app.jar app.jar
+
+# Expose the port your application listens on (e.g., for Actuator or web endpoints)
+EXPOSE 8080
+
+# Run the JAR file
+ENTRYPOINT ["java", "-jar", "app.jar"]
+----
+
+.Building the Docker Image
+Once you have your `Dockerfile`, you can build the image using the `docker` or `podman` CLI.
+
+[source,bash]
+----
+# Navigate to your Spring Boot project root
+cd /path/to/your/spring-boot-project
+
+# Build the Spring Boot application JAR (if not already done)
+mvn clean package
+
+# Build the Docker image
+# Replace 'my-registry/my-project/spring-messaging-app:latest' with your desired image name and tag
+docker build -t my-registry/my-project/spring-messaging-app:latest .
+----
+
+.Pushing the Docker Image to a Registry
+After building, push the image to a container registry that OpenShift can access (e.g., Quay.io, Docker Hub, or OpenShift's internal registry).
+
+[source,bash]
+----
+# Log in to your container registry if it's private
+docker login my-registry
+
+# Push the image
+docker push my-registry/my-project/spring-messaging-app:latest
+----
+
+=== Deploying to OpenShift using `oc new-app`
+
+OpenShift provides the `oc new-app` command as a convenient way to deploy applications. It can create multiple resources (like `DeploymentConfig`, `Service`, and `Route`) from a single command based on an existing image.
+
+.Deploying with `oc new-app`
+[source,bash]
+----
+# Log in to your OpenShift cluster
+oc login -u developer -p developer --server=https://api.cluster.example.com:6443
+
+# Switch to your project
+oc project my-messaging-project
+
+# Deploy the application using the image you pushed
+# Replace with your actual image path
+oc new-app my-registry/my-project/spring-messaging-app:latest \
+    --name=spring-messaging-app \
+    --labels=app=spring-messaging-app,app.kubernetes.io/instance=spring-messaging-app \
+    --allow-missing-images
+
+# If your Spring Boot app provides a web endpoint (e.g., for Actuator or a REST API),
+# you might want to expose it via a Route.
+# This assumes your app exposes port 8080.
+oc expose service spring-messaging-app --port=8080
+----
+
+This command will typically create a `DeploymentConfig` (or `Deployment` in OpenShift 4.x), a `Service` for internal network access, and potentially an `ImageStream` if using the internal registry.
+
+=== Deploying with YAML Manifests
+
+For more control, especially in GitOps workflows, you can define your OpenShift resources using YAML manifests. This allows for detailed configuration of deployments, services, probes, and environment variables.
+
+==== Defining Deployment (or DeploymentConfig)
+
+A `Deployment` (or `DeploymentConfig` in older OpenShift versions) specifies how to run your application's pods, including the container image, replicas, resource limits, and environment variables.
+
+.Example `Deployment.yaml` for a Spring Boot messaging application
+[source,yaml]
+----
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: spring-messaging-app
+  labels:
+    app: spring-messaging-app
+spec:
+  replicas: 2 # Deploy multiple instances for high availability
+  selector:
+    matchLabels:
+      app: spring-messaging-app
+  template:
+    metadata:
+      labels:
+        app: spring-messaging-app
+    spec:
+      containers:
+      - name: spring-messaging-app
+        image: my-registry/my-project/spring-messaging-app:latest # Replace with your image
+        ports:
+        - containerPort: 8080
+          name: http
+        env:
+        - name: ARTEMIS_HOST
+          value: artemis-broker-cluster-ss-0.artemis-broker-cluster-ss.my-messaging-project.svc.cluster.local # Example Artemis service name
+        - name: ARTEMIS_PORT
+          value: "61616" # Default OpenWire/AMQP port for Artemis
+        - name: ARTEMIS_USERNAME
+          valueFrom:
+            secretKeyRef:
+              name: artemis-credentials # Name of the OpenShift Secret
+              key: username
+        - name: ARTEMIS_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: artemis-credentials
+              key: password
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "250m"
+          limits:
+            memory: "1Gi"
+            cpu: "1"
+        livenessProbe: # Checks if the container is still running
+          httpGet:
+            path: /actuator/health/liveness # Assuming Spring Boot Actuator is configured
+            port: 8080
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        readinessProbe: # Checks if the container is ready to serve requests/process messages
+          httpGet:
+            path: /actuator/health/readiness # Assuming Spring Boot Actuator is configured
+            port: 8080
+          initialDelaySeconds: 60
+          periodSeconds: 15
+          timeoutSeconds: 5
+          failureThreshold: 3
+----
+
+**Key Configuration Details:**
+
+*   **`image`**: Specifies the container image to use.
+*   **`replicas`**: Defines the number of instances (pods) of your application to run, providing high availability and load distribution.
+*   **`env`**: Environment variables are crucial for configuring your Spring Boot application.
+    *   **`ARTEMIS_HOST`**: This should point to your ActiveMQ Artemis broker's internal service name within OpenShift. For a stateful set deployment of Artemis, the service name is typically in the format `broker-name-ss-0.broker-name-ss.namespace.svc.cluster.local`. If you have a cluster of Artemis brokers, you might point to the Headless Service which ensures DNS resolution to all broker pod IPs.
+    *   **`ARTEMIS_PORT`**: The port ActiveMQ Artemis listens on (e.g., 61616 for OpenWire/AMQP).
+    *   **Secrets (`valueFrom: secretKeyRef`)**: Never hardcode sensitive information like usernames and passwords. Use OpenShift `Secret` resources to securely inject them as environment variables.
+*   **`resources`**: Define CPU and memory requests and limits to ensure your application gets the necessary resources and doesn't consume too much, preventing resource exhaustion for other applications.
+*   **`livenessProbe` and `readinessProbe`**: These are critical for the reliability of messaging applications.
+    *   **Liveness Probe**: OpenShift uses this to know when to restart a container. If the probe fails, OpenShift restarts the pod. For Spring Boot, `/actuator/health/liveness` is commonly used.
+    *   **Readiness Probe**: OpenShift uses this to know when a container is ready to accept traffic. A pod won't receive traffic (or messages in a consumer group scenario) until its readiness probe passes. For Spring Boot, `/actuator/health/readiness` is typically used to indicate if the application components (like the JMS connection) are healthy.
+
+==== Defining Service
+
+A `Service` defines a logical set of Pods and a policy by which to access them. For a Spring Boot messaging application, the service often exposes ports for internal access (e.g., for Spring Boot Actuator or internal APIs) rather than external client access to the messaging core.
+
+.Example `Service.yaml`
+[source,yaml]
+----
+apiVersion: v1
+kind: Service
+metadata:
+  name: spring-messaging-app
+  labels:
+    app: spring-messaging-app
+spec:
+  selector:
+    app: spring-messaging-app
+  ports:
+  - name: http # Name the port
+    protocol: TCP
+    port: 8080 # The service's port
+    targetPort: 8080 # The container's port
+----
+
+==== Applying the Manifests
+
+To deploy using YAML, save the configurations (e.g., `deployment.yaml`, `service.yaml`) and apply them using the `oc apply` command.
+
+.Applying OpenShift manifests
+[source,bash]
+----
+# Apply the Deployment (or DeploymentConfig)
+oc apply -f deployment.yaml
+
+# Apply the Service
+oc apply -f service.yaml
+
+# Monitor the deployment status
+oc get pods -l app=spring-messaging-app
+oc logs -f <pod-name> -c spring-messaging-app
+----
+
+=== Connecting to ActiveMQ Artemis on OpenShift
+
+Your Spring Boot application needs to be configured to connect to the ActiveMQ Artemis broker running within the OpenShift cluster. This typically involves setting connection parameters in `application.properties` or `application.yaml` and referencing the environment variables injected by OpenShift.
+
+.Example `application.properties` for Spring Boot messaging client
+[source,properties]
+----
+# ActiveMQ Artemis connection details
+spring.artemis.broker-url=tcp://${ARTEMIS_HOST}:${ARTEMIS_PORT}
+spring.artemis.user=${ARTEMIS_USERNAME}
+spring.artemis.password=${ARTEMIS_PASSWORD}
+
+# Enable auto-configuration for JMS/AMQP if using Spring Boot's built-in support
+spring.jms.enabled=true
+# Or for AMQP (if using RabbitMQ or a similar AMQP 0-9-1/1.0 broker)
+# spring.rabbitmq.host=${ARTEMIS_HOST}
+# spring.rabbitmq.port=${ARTEMIS_PORT}
+# spring.rabbitmq.username=${ARTEMIS_USERNAME}
+# spring.rabbitmq.password=${ARTEMIS_PASSWORD}
+
+# Connection factory configuration for better resilience
+# For JMS connection factory (e.g., pooling, failover)
+spring.artemis.mode=native # Or embedded if using embedded broker, but here we connect to external
+spring.artemis.pool.enabled=true
+spring.artemis.pool.max-connections=10
+spring.artemis.pool.idle-timeout=30s
+
+# For client-side failover in case of broker node failure
+# The broker-url can be a comma-separated list of broker endpoints for automatic failover
+# e.g., tcp://broker1:61616,tcp://broker2:61616
+# When deployed as a StatefulSet on OpenShift, the headless service often resolves to multiple IPs,
+# so using just the service name (as in ARTEMIS_HOST above) can work with client-side failover enabled.
+# For example, if ARTEMIS_HOST resolves to multiple IPs, a client with failover enabled
+# will try each IP in succession.
+# Refer to the "Client Side Solution" section for more details on client failover mechanisms.
+
+# Spring Boot Actuator for health checks and monitoring
+management.endpoints.web.exposure.include=health,info,prometheus
+management.endpoint.health.show-details=always
+management.health.livenessstate.enabled=true
+management.health.readinessstate.enabled=true
+----
+
+**Explanation of Configuration:**
+
+*   **`spring.artemis.broker-url`**: This uses the `tcp://` protocol to connect to ActiveMQ Artemis. Crucially, it references the `ARTEMIS_HOST` and `ARTEMIS_PORT` environment variables which are dynamically injected by OpenShift from the `Deployment` configuration.
+*   **`spring.artemis.user` and `spring.artemis.password`**: These similarly reference environment variables populated from OpenShift Secrets, ensuring secure credential handling.
+*   **`spring.artemis.pool.enabled`**: Enabling connection pooling is a best practice for messaging applications to efficiently manage connections and reduce overhead.
+*   **Actuator Endpoints**: Configuring Actuator's `health`, `info`, and `prometheus` endpoints is essential for OpenShift's liveness and readiness probes, as well as for general monitoring and observability.
+
+=== Scaling and Resilience
+
+OpenShift provides features to ensure your Spring Boot messaging applications are scalable and resilient:
+
+*   **Multiple Replicas**: As shown in the `Deployment.yaml` example, setting `spec.replicas` to a value greater than one (`2` in the example) ensures that multiple instances of your application are running. If one pod fails, OpenShift automatically replaces it, and other pods continue processing messages.
+*   **Horizontal Pod Autoscaler (HPA)**: For dynamic scaling based on CPU utilization or custom metrics, you can configure an HPA. This automatically adjusts the number of replicas of your Spring Boot application up or down to meet demand.
+*   **Liveness and Readiness Probes**: These are fundamental for OpenShift to manage the lifecycle of your application pods. They ensure that unhealthy pods are restarted and that traffic is only routed to pods that are fully initialized and ready to process messages.
+
+=== Troubleshooting Deployment Issues
+
+When deploying Spring Boot messaging applications on OpenShift, common issues can arise:
+
+*   **Image Pull Failures**: Ensure the image name is correct, the registry is accessible from OpenShift, and any required image pull secrets are configured for private registries.
+    *   *Check*: `oc get events`, `oc describe pod <pod-name>`
+*   **Application Startup Failures**: The Spring Boot application might fail to start due to misconfigured environment variables, missing dependencies, or incorrect application properties.
+    *   *Check*: `oc logs -f <pod-name>` for application-specific errors.
+*   **Connectivity to ActiveMQ Artemis**: The application might not be able to connect to the broker due to incorrect host/port, network policies, or firewall rules.
+    *   *Check*: Verify `ARTEMIS_HOST` and `ARTEMIS_PORT` environment variables in the pod. Test network connectivity from within the pod using `oc rsh <pod-name> curl <artemis-service-ip>:<artemis-port>`. Ensure network policies allow communication between the Spring Boot app and Artemis pods.
+*   **Readiness Probe Failures**: If your application takes too long to connect to Artemis or perform initial setup, the readiness probe might fail, preventing the pod from receiving traffic.
+    *   *Check*: Increase `initialDelaySeconds` or `periodSeconds` for the readiness probe. Examine application logs for clues on slow startup.
+*   **Resource Exhaustion**: Pods might be killed due to exceeding memory or CPU limits.
+    *   *Check*: Adjust `resources.limits` in your `Deployment` definition. Monitor resource usage using OpenShift's monitoring tools.
+
+This guide provides the foundational knowledge and steps for successfully deploying Spring Boot messaging applications on OpenShift, ensuring they are robust, scalable, and well-integrated with your ActiveMQ Artemis infrastructure. The subsequent hands-on lab will provide a concrete example of developing and deploying such a microservice.
+```

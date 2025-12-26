@@ -1,0 +1,8 @@
+* xref:message-distribution-issues.adoc[]
+** xref:understanding-distributed-messaging-patterns.adoc[]
+** xref:load-balancing-messages-across-consumers.adoc[]
+** xref:message-routing-strategies-and-challenges.adoc[]
+** xref:consumer-groups-and-shared-subscriptions.adoc[]
+** xref:ensuring-message-ordering-in-distributed-systems.adoc[]
+** xref:handling-message-durability-and-reliability.adoc[]
+** xref:addressing-fault-tolerance-and-high-availability-for-messages.adoc[]

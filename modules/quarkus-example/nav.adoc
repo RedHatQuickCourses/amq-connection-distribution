@@ -1,0 +1,8 @@
+* xref:quarkus-example.adoc[]
+** xref:integrating-jmsamqp-clients-with-quarkus.adoc[]
+** xref:configuring-quarkus-for-activemq-artemis-connectivity.adoc[]
+** xref:implementing-message-producers-in-quarkus.adoc[]
+** xref:implementing-message-consumers-in-quarkus.adoc[]
+** xref:reactive-messaging-with-quarkus-and-artemis.adoc[]
+** xref:deploying-quarkus-messaging-applications-on-openshift.adoc[]
+** xref:hands-on-lab-developing-a-quarkus-microservice-with-distributed-messaging.adoc[]

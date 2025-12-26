@@ -1,0 +1,120 @@
+#  Scaling Artemis brokers on OpenShift
+
+[[_scaling_artemis_brokers_on_openshift]]
+= Scaling ActiveMQ Artemis Brokers on OpenShift
+
+When building resilient messaging applications, the ability to scale your message broker infrastructure is paramount. Scaling allows you to handle increased message throughput, a larger number of connected clients, and maintain low latency as your application's demands grow. On OpenShift, ActiveMQ Artemis can leverage the platform's orchestration capabilities to scale effectively, ensuring high availability and performance.
+
+== Understanding Scaling Strategies for ActiveMQ Artemis on OpenShift
+
+Scaling ActiveMQ Artemis on OpenShift primarily involves two strategies: horizontal scaling and vertical scaling.
+
+=== Horizontal Scaling
+
+Horizontal scaling involves adding more instances (pods) of the ActiveMQ Artemis broker to distribute the workload. This is the most common and effective way to increase throughput and capacity for messaging applications.
+
+*   **How it Works on OpenShift**: The ActiveMQ Artemis Operator, in conjunction with OpenShift's StatefulSets, manages the deployment of multiple broker pods. Each pod runs an independent ActiveMQ Artemis instance. When these instances are configured as a cluster, they can coordinate to provide a unified messaging fabric.
+*   **Benefits**:
+    *   **Increased Throughput**: More brokers mean more processing power for messages.
+    *   **Enhanced Reliability**: If one broker fails, others can continue processing messages.
+    *   **Improved Client Capacity**: Distributes client connections across multiple brokers.
+*   **Implementation with the ActiveMQ Artemis Operator**:
+    The ActiveMQ Artemis Operator simplifies horizontal scaling by allowing you to specify the desired number of broker instances directly in the `ActiveMQArtemis` custom resource (CR).
+
+    [source,yaml]
+    ----
+    apiVersion: broker.amq.io/v1beta1
+    kind: ActiveMQArtemis
+    metadata:
+      name: my-artemis-cluster
+    spec:
+      # ... other configurations ...
+      deploymentPlan:
+        size: 3 # <1>
+        extraMounts:
+          - name: artemis-config-volume
+            mountPath: "/opt/broker/etc-override"
+            configMap:
+              name: artemis-broker-config
+        image: quay.io/artemiscloud/activemq-artemis-broker:latest
+        resources:
+          limits:
+            cpu: 1000m
+            memory: 2Gi
+          requests:
+            cpu: 500m
+            memory: 1Gi
+    ----
+    <1> The `size` parameter in the `deploymentPlan` determines the number of broker pods in the cluster. Changing this value (e.g., from 1 to 3) will instruct the Operator to scale out or scale in the broker instances.
+
+    When you increase the `size`, the Operator creates new StatefulSet pods, PVCs (if persistent storage is configured for each pod), and configures the new brokers to join the existing cluster. When you decrease the `size`, the Operator gracefully shuts down and removes the excess broker pods.
+
+=== Vertical Scaling
+
+Vertical scaling involves increasing the computational resources (CPU, memory) allocated to existing ActiveMQ Artemis broker pods. This is useful when individual brokers need more power to handle specific workloads, such as processing very large messages or managing a high number of concurrent connections per broker.
+
+*   **How it Works on OpenShift**: You adjust the `resources` section within the `deploymentPlan` of your `ActiveMQArtemis` CR. OpenShift's scheduler will then ensure that your broker pods are allocated the specified CPU and memory resources.
+*   **Benefits**:
+    *   **Increased Capacity per Instance**: A single broker can handle more load.
+    *   **Simpler Management**: Fewer instances to manage compared to horizontal scaling.
+*   **Limitations**: There's an upper limit to how much a single instance can scale vertically, typically constrained by the underlying node's resources and the architecture of the broker itself.
+*   **Implementation with the ActiveMQ Artemis Operator**:
+    You configure resource requests and limits for the broker pods within the `deploymentPlan` spec:
+
+    [source,yaml]
+    ----
+    apiVersion: broker.amq.io/v1beta1
+    kind: ActiveMQArtemis
+    metadata:
+      name: my-artemis-cluster
+    spec:
+      # ... other configurations ...
+      deploymentPlan:
+        size: 3
+        image: quay.io/artemiscloud/activemq-artemis-broker:latest
+        resources: # <1>
+          limits:
+            cpu: 2000m # <2>
+            memory: 4Gi # <3>
+          requests:
+            cpu: 1000m # <4>
+            memory: 2Gi # <5>
+    ----
+    <1> The `resources` block defines resource requirements.
+    <2> `limits.cpu`: The maximum CPU an instance can use (e.g., 2 CPU cores).
+    <3> `limits.memory`: The maximum memory an instance can use (e.g., 4 Gigabytes).
+    <4> `requests.cpu`: The minimum CPU guaranteed to an instance.
+    <5> `requests.memory`: The minimum memory guaranteed to an instance.
+
+    Modifying these values will trigger a rolling restart of the broker pods by the Operator, applying the new resource allocations without downtime if a highly available setup is configured.
+
+== Operator's Role in Scaling
+
+The ActiveMQ Artemis Operator plays a crucial role in simplifying scaling operations on OpenShift:
+
+*   **Automated Provisioning**: When scaling horizontally, the Operator automatically provisions new broker pods, configures them to join the existing cluster, and sets up necessary network services.
+*   **Persistent Storage Management**: For each new scaled-out broker, the Operator can automatically provision a new Persistent Volume Claim (PVC) if `spec.deploymentPlan.persistenceEnabled` is set to `true`, ensuring each broker has its own dedicated storage for message durability.
+*   **Configuration Consistency**: The Operator ensures that all scaled instances share the same configuration, which is derived from the `ActiveMQArtemis` CR.
+*   **Rolling Updates**: When scaling vertically or updating other configurations, the Operator performs rolling updates, replacing old pods with new ones without disrupting the entire cluster.
+
+== Considerations for Scaling Artemis on OpenShift
+
+When planning your scaling strategy, consider the following:
+
+1.  **Shared-Nothing vs. Shared-Store Clustering**:
+    *   **Shared-Nothing (Recommended for Scale)**: Each broker instance has its own persistence store. Messages are typically sharded across queues on different brokers, or topics are mirrored. This approach offers the best horizontal scalability and fault tolerance.
+    *   **Shared-Store**: Multiple brokers share a single persistent store. Only one active broker can write to the store at a time; others are standbys. This is primarily for high availability (failover) rather than horizontal scaling for throughput. For scaling throughput, shared-nothing is preferred. The Operator configures shared-nothing clustering by default when `size > 1` and `persistenceEnabled: true`.
+
+2.  **Client Connectivity and Load Balancing**:
+    When scaling horizontally, clients need a mechanism to connect to any available broker and distribute their workload.
+    *   **OpenShift Routes/Services**: OpenShift's `Service` objects and `Routes` can act as a load balancer, distributing incoming client connections across the available broker pods.
+    *   **Client-Side Discovery**: ActiveMQ Artemis clients support discovery mechanisms (e.g., `failover:(tcp://broker-0-svc:61616,tcp://broker-1-svc:61616)` or using OpenShift service discovery) to find available brokers in a cluster. This allows clients to connect to multiple brokers and perform their own load balancing or failover.
+
+3.  **Message Distribution**:
+    *   **Queues**: For point-to-point messaging with queues, messages can be distributed across different broker instances. Clients can connect to specific brokers, or intelligent client-side routing can ensure messages are sent to the correct broker.
+    *   **Topics/Subscriptions**: For publish-subscribe messaging, a topic on one broker can replicate messages to other brokers in the cluster, ensuring all subscribers receive the message regardless of which broker they are connected to. Shared subscriptions and consumer groups are critical here to ensure messages are processed by a single consumer within a group, even across multiple brokers.
+
+4.  **Persistent Storage**:
+    Ensure your OpenShift environment has a robust storage provisioner capable of dynamically provisioning Persistent Volumes for each broker instance when scaling horizontally. For a cluster of 3 brokers with persistence, the Operator will provision 3 separate PVCs.
+
+By strategically combining horizontal and vertical scaling, and leveraging the ActiveMQ Artemis Operator, you can build a highly performant and resilient messaging infrastructure on OpenShift that can adapt to changing demands.

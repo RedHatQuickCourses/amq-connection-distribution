@@ -1,0 +1,16 @@
+#  Spring Boot Example
+
+
+=== Spring Boot Example
+
+This section focuses on integrating messaging applications with Spring Boot and ActiveMQ Artemis.
+
+Key aspects include:
+
+*   Integrating JMS/AMQP clients with Spring Boot.
+*   Configuring Spring Boot for ActiveMQ Artemis connectivity.
+*   Utilizing Spring JMS/AMQP templates for streamlined messaging operations.
+*   Implementing message producers and consumers within Spring Boot applications.
+*   Configuring listener containers and managing concurrency for message processing.
+*   Deploying Spring Boot messaging applications on OpenShift.
+*   A hands-on lab to develop a Spring Boot microservice with distributed messaging.

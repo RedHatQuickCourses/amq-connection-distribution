@@ -1,0 +1,227 @@
+#  Client-side load balancing for message consumption
+
+Here is the Antora AsciiDoc content for "Client-side load balancing for message consumption":
+
+```asciidoc
+[[client-side-load-balancing-for-message-consumption]]
+= Client-side Load Balancing for Message Consumption
+
+Client-side load balancing is a critical technique in distributed messaging systems like ActiveMQ Artemis, enhancing the resilience, scalability, and performance of message consumers. Instead of relying on a centralized load balancer for distributing connections, the intelligence for distributing message consumption across multiple broker instances or broker clusters resides directly within the client application.
+
+== Understanding Client-Side Load Balancing
+
+In a distributed messaging environment, especially one leveraging a highly available ActiveMQ Artemis cluster on OpenShift, multiple broker instances are available to serve client connections. Without client-side load balancing, a consumer might connect to a single broker, becoming a bottleneck or a single point of failure for its message stream if that broker becomes overloaded or unavailable.
+
+Client-side load balancing addresses this by enabling the consumer client to:
+
+.  **Discover Multiple Broker Endpoints:** The client is configured with, or can dynamically discover, a list of available broker addresses within the cluster.
+.  **Distribute Connections:** When establishing a connection, the client intelligently selects one of the available brokers from its known list. This selection can be based on various strategies, such as:
+    *   **Round-Robin:** Connections are distributed sequentially to each broker in the list.
+    *   **Random:** Connections are distributed randomly among the available brokers.
+    *   **Weighted Round-Robin/Random:** Brokers can be assigned weights, influencing the probability of a client connecting to them, useful for unevenly resourced brokers.
+.  **Monitor Broker Health:** Advanced clients can continuously monitor the health and availability of connected brokers, dynamically switching to a healthy broker if the current one fails (failover) or if it becomes unresponsive (reconnection).
+.  **Consume from Multiple Brokers:** By configuring multiple connections or distinct connection factories, different instances of a consumer application can connect to different brokers in the cluster, distributing the overall message consumption load.
+
+The primary goal is to ensure that message consumers can efficiently connect to and receive messages from any available broker in the cluster, preventing individual brokers from being overwhelmed and maximizing throughput.
+
+== ActiveMQ Artemis Client-Side Load Balancing Mechanisms
+
+ActiveMQ Artemis clients (JMS, AMQP, STOMP, etc.) provide robust mechanisms to configure client-side load balancing, primarily through the connection URL or connection factory configuration.
+
+=== Static Configuration with Multiple URLs
+
+The simplest form involves providing a comma-separated list of broker URLs in the connection string. The client library then uses these URLs to establish a connection. When the first connection attempt fails, it will try the next URL in the list. For load balancing, different client instances can be configured with the same list, and upon initial connection, they will attempt to connect to the first available broker, often leading to a distribution of connections across the cluster over time as new clients connect.
+
+For example, a `tcp` URL can specify multiple hosts:
+
+[source,text,subs="attributes+"]
+----
+tcp://broker1:61616,tcp://broker2:61616,tcp://broker3:61616
+----
+
+=== Failover and Static Discovery URLs
+
+For more sophisticated client-side load balancing and failover, ActiveMQ Artemis clients often utilize special connection URLs.
+
+*   `static:` prefix: This allows specifying multiple servers for static discovery. The client will attempt to connect to one of the listed servers. If the initial connection fails or is lost, it will attempt to reconnect to another server from the list. This implicitly provides a form of load balancing on initial connection and robust failover.
+*   `failover:` prefix: This is often used in conjunction with `static:` or other discovery methods. It wraps the underlying transport configuration and dictates the client's behavior during connection loss, including retry attempts, delays, and whether to re-establish the connection to *any* available broker from the list (thus contributing to load balancing across the cluster over time).
+
+The `failover:` URL structure typically looks like:
+
+[source,text,subs="attributes+"]
+----
+failover:(tcp://broker1:61616,tcp://broker2:61616)?param=value
+----
+
+When using `failover:`, the client will try to connect to the first URI in the list. If it fails or disconnects, it will then try the next URI in a round-robin fashion or based on other configured policies (e.g., `randomize=true`). This helps distribute reconnection attempts and new connections across the available brokers.
+
+== Benefits of Client-Side Load Balancing
+
+*   **Improved Throughput:** By distributing consumer connections across multiple broker instances, the total message processing capacity of the system increases, as no single broker is solely responsible for serving all consumers.
+*   **Enhanced Fault Tolerance:** If a broker instance fails, consumers connected to other brokers remain operational. Clients can also be configured to automatically reconnect to another available broker, minimizing downtime.
+*   **Better Resource Utilization:** It ensures that all active broker instances in a cluster are effectively utilized, preventing "hot spots" where one broker is overloaded while others are idle or underutilized.
+*   **Reduced Latency:** Messages can be routed to consumers connected to closer or less-loaded brokers, potentially reducing end-to-end message latency.
+*   **Simpler Deployment for Consumers:** Consumers don't need to be aware of the underlying cluster topology beyond a list of potential endpoints.
+
+== Hands-on Activity: Configuring a JMS Client for Load-Balanced Consumption
+
+This hands-on activity demonstrates how to configure a simple Java JMS consumer to leverage client-side load balancing using the `failover:` transport in ActiveMQ Artemis.
+
+=== Prerequisites
+
+*   A running ActiveMQ Artemis cluster (e.g., deployed on OpenShift as described in previous sections, with at least two broker instances accessible).
+*   Java Development Kit (JDK) 11 or newer.
+*   Apache Maven.
+
+=== Steps
+
+.  **Create a Maven Project:**
+    Create a new Maven project for your consumer application.
+
+    [source,bash]
+    ----
+    mvn archetype:generate -DgroupId=com.example.messaging -DartifactId=artemis-consumer -DarchetypeArtifactId=maven-archetype-quickstart -DinteractiveMode=false
+    cd artemis-consumer
+    ----
+
+.  **Add ActiveMQ Artemis JMS Client Dependency:**
+    Open the `pom.xml` file and add the ActiveMQ Artemis JMS client dependency.
+
+    [source,xml]
+    ----
+    <dependencies>
+        <dependency>
+            <groupId>org.apache.activemq</groupId>
+            <artifactId>artemis-jms-client</artifactId>
+            <version>2.31.2</version> <!-- Use a recent stable version -->
+        </dependency>
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-simple</artifactId>
+            <version>1.7.36</version> <!-- For simple logging -->
+            <scope>runtime</scope>
+        </dependency>
+    </dependencies>
+    ----
+
+.  **Implement the Load-Balanced Consumer:**
+    Create a Java class (e.g., `src/main/java/com/example/messaging/LoadBalancedConsumer.java`) with the following content. This example configures the `failover:` URL to include multiple broker endpoints. When this consumer application is started multiple times, instances will attempt to connect to different brokers, distributing the load.
+
+    Replace `broker1-ip:port`, `broker2-ip:port`, and `broker3-ip:port` with the actual connection details of your ActiveMQ Artemis brokers. For OpenShift, these might be service routes or cluster IP addresses with their respective ports.
+
+    [source,java,subs="attributes+"]
+    ----
+    package com.example.messaging;
+
+    import org.apache.activemq.artemis.jms.client.ActiveMQJMSConnectionFactory;
+    import javax.jms.*;
+
+    public class LoadBalancedConsumer {
+
+        private static final String CONNECTION_URL =
+            "failover:(tcp://broker1-ip:61616,tcp://broker2-ip:61616,tcp://broker3-ip:61616)?initialConnectAttempts=5;reconnectAttempts=-1;retryInterval=1000;maxRetryInterval=5000;randomize=true";
+        private static final String QUEUE_NAME = "myQueue";
+
+        public static void main(String[] args) {
+            Connection connection = null;
+            Session session = null;
+            MessageConsumer consumer = null;
+
+            try {
+                // Create a connection factory with the failover URL
+                ConnectionFactory connectionFactory = new ActiveMQJMSConnectionFactory(CONNECTION_URL);
+                System.out.println("Attempting to connect to: " + CONNECTION_URL);
+
+                // Create a connection
+                connection = connectionFactory.createConnection();
+                connection.setClientID("LoadBalancedConsumer-" + System.currentTimeMillis()); // Unique ClientID
+                connection.start();
+                System.out.println("Connection established successfully.");
+
+                // Create a session
+                session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
+
+                // Create a destination (queue)
+                Destination destination = session.createQueue(QUEUE_NAME);
+
+                // Create a message consumer
+                consumer = session.createConsumer(destination);
+                System.out.println("Consumer created for queue: " + QUEUE_NAME);
+
+                // Set a message listener
+                consumer.setMessageListener(message -> {
+                    try {
+                        if (message instanceof TextMessage) {
+                            TextMessage textMessage = (TextMessage) message;
+                            System.out.println("Received message: " + textMessage.getText() +
+                                               " from broker: " + connection.getMetaData().getJMSProviderName() +
+                                               " on connection: " + connection.getClientID());
+                        } else {
+                            System.out.println("Received non-text message: " + message.getClass().getName());
+                        }
+                    } catch (JMSException e) {
+                        System.err.println("Error processing message: " + e.getMessage());
+                    }
+                });
+
+                System.out.println("Waiting for messages. Press Ctrl+C to exit.");
+                Thread.currentThread().join(); // Keep the main thread alive
+
+            } catch (JMSException e) {
+                System.err.println("JMS Exception: " + e.getMessage());
+                e.printStackTrace();
+            } catch (InterruptedException e) {
+                System.out.println("Consumer interrupted. Shutting down.");
+            } finally {
+                // Clean up resources
+                if (consumer != null) {
+                    try {
+                        consumer.close();
+                    } catch (JMSException e) {
+                        System.err.println("Error closing consumer: " + e.getMessage());
+                    }
+                }
+                if (session != null) {
+                    try {
+                        session.close();
+                    } catch (JMSException e) {
+                        System.err.println("Error closing session: " + e.getMessage());
+                    }
+                }
+                if (connection != null) {
+                    try {
+                        connection.close();
+                    } catch (JMSException e) {
+                        System.err.println("Error closing connection: " + e.getMessage());
+                    }
+                }
+                System.out.println("Consumer application shut down.");
+            }
+        }
+    }
+    ----
+
+.  **Compile and Run:**
+    Compile your Java code:
+
+    [source,bash]
+    ----
+    mvn clean install
+    ----
+
+    Run the consumer application:
+
+    [source,bash]
+    ----
+    mvn exec:java -Dexec.mainClass="com.example.messaging.LoadBalancedConsumer"
+    ----
+
+    You can open multiple terminal windows and run this command simultaneously to simulate multiple consumers. Each consumer instance will attempt to connect to one of the brokers specified in the `failover:` URL. Due to `randomize=true` and the failover logic, they should distribute their connections across the available brokers.
+
+.  **Observe Load Balancing:**
+    *   Monitor your ActiveMQ Artemis broker logs or management console (Hawtio/JMX) to see which brokers clients are connecting to.
+    *   Send messages to `myQueue` using a producer. Observe that different consumer instances (running in different terminals) receive messages, and their output will indicate which broker they are connected to, demonstrating the load distribution.
+    *   If you stop one of the brokers, the connected consumer should attempt to reconnect to another available broker in the list, showcasing the failover capability which works hand-in-hand with load balancing.
+
+This setup ensures that your consumers are not tied to a single broker instance, providing both fault tolerance and distribution of message processing load across your ActiveMQ Artemis cluster.
+```

@@ -1,0 +1,11 @@
+#  Deploying ActiveMQ Artemis on OpenShift
+
+xref:deploying-activemq-artemis-on-openshift.adoc[Deploying ActiveMQ Artemis on OpenShift] involves leveraging OpenShift's container orchestration capabilities to host and manage the messaging broker.
+
+Key aspects include:
+
+*   **OpenShift Fundamentals**: Understanding how OpenShift provides a robust platform for messaging applications.
+*   **ActiveMQ Artemis Operator**: Utilizing the Operator pattern for simplified deployment, management, and scaling of Artemis instances.
+*   **Custom Resource Definitions (CRDs)**: Defining and configuring Artemis brokers through OpenShift's declarative API.
+*   **Persistent Storage**: Ensuring message durability by configuring reliable persistent storage for Artemis data.
+*   **Scaling and Monitoring**: Implementing strategies for scaling brokers horizontally and monitoring their health and performance within OpenShift.

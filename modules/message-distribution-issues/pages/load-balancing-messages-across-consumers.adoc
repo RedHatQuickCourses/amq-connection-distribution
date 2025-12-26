@@ -1,0 +1,112 @@
+#  Load balancing messages across consumers
+
+The following content provides a detailed explanation of load balancing messages across consumers within a distributed messaging system, particularly focusing on ActiveMQ Artemis.
+
+= Load Balancing Messages Across Consumers
+
+In a distributed messaging system, efficiently distributing messages to multiple consumers is crucial for achieving high throughput, scalability, and resilience. Load balancing messages across consumers ensures that no single consumer becomes a bottleneck, resources are utilized effectively, and the system can gracefully handle increasing message volumes and consumer failures.
+
+== Understanding Message Distribution Challenges
+
+When multiple consumers are subscribed to the same destination (queue or topic), the messaging broker's responsibility is to distribute messages among them. Without proper load balancing, messages might be unevenly processed, leading to:
+
+*   **Hotspots**: A single consumer or a small subset of consumers processing the majority of messages, leading to resource exhaustion for those consumers.
+*   **Underutilization**: Other consumers remaining idle or underutilized, wasting compute resources.
+*   **Reduced Throughput**: The overall message processing rate being limited by the slowest or most burdened consumer.
+*   **Scalability Issues**: Difficulty in scaling the system by simply adding more consumers, as the new consumers may not receive messages effectively.
+*   **Fault Tolerance Concerns**: If a heavily loaded consumer fails, it could lead to a significant backlog of unacknowledged messages or processing delays, impacting the entire system.
+
+== ActiveMQ Artemis's Approach to Load Balancing
+
+ActiveMQ Artemis, by design, incorporates robust mechanisms for load balancing messages across multiple consumers subscribed to a queue or a shared subscription on a topic.
+
+=== Queues: Automatic Load Balancing
+
+For queues, Artemis inherently distributes messages in a load-balanced fashion to all active consumers subscribed to that queue. When a new message arrives at a queue with multiple consumers, Artemis employs a distribution strategy to decide which consumer should receive the message. The most common and default strategy is a variation of round-robin.
+
+Consider a scenario with a single queue `/my-queue` and three active consumers (`C1`, `C2`, `C3`) subscribing to it.
+. A message `M1` arrives. Artemis sends `M1` to `C1`.
+. A message `M2` arrives. Artemis sends `M2` to `C2`.
+. A message `M3` arrives. Artemis sends `M3` to `C3`.
+. A message `M4` arrives. Artemis sends `M4` to `C1`.
+
+This ensures that messages are spread out, assuming all consumers are equally capable and acknowledge messages at similar rates.
+
+[NOTE]
+====
+ActiveMQ Artemis prioritizes delivering messages to consumers that are ready to accept them, often considering factors like prefetch limits and current outstanding messages for a consumer. This intelligent distribution ensures consumers aren't overwhelmed and messages are delivered efficiently.
+====
+
+=== Shared Subscriptions for Topics: Scalable Consumption
+
+While traditional topics deliver each message to *all* subscribers, ActiveMQ Artemis supports *shared subscriptions* (or *consumer groups*) which enable topic messages to be load-balanced among a group of consumers. This is a powerful feature for scaling consumption of topic messages.
+
+A shared subscription allows multiple consumers to subscribe to the same topic using a common subscription name. When messages are published to the topic, Artemis treats this group of consumers as a single logical subscriber and load balances the messages among them, similar to how it handles messages on a queue.
+
+[source,xml]
+.Example: Configuring a Shared Subscription on a Topic (Client Side - JMS)
+----
+// Consumer 1
+Topic topic = session.createTopic("myTopic");
+MessageConsumer consumer1 = session.createSharedConsumer(topic, "mySharedSubscriptionGroup");
+consumer1.setMessageListener(message -> {
+    System.out.println("Consumer 1 received: " + message.getBody(String.class));
+    try {
+        message.acknowledge();
+    } catch (JMSException e) {
+        e.printStackTrace();
+    }
+});
+
+// Consumer 2 (same application or different application, but with the same shared subscription name)
+// This consumer will join the "mySharedSubscriptionGroup" and receive a share of the messages
+MessageConsumer consumer2 = session.createSharedConsumer(topic, "mySharedSubscriptionGroup");
+consumer2.setMessageListener(message -> {
+    System.out.println("Consumer 2 received: " + message.getBody(String.class));
+    try {
+        message.acknowledge();
+    } catch (JMSException e) {
+        e.printStackTrace();
+    }
+});
+----
+
+In this example, `consumer1` and `consumer2` are part of `mySharedSubscriptionGroup`. Any message sent to `myTopic` will be delivered to *either* `consumer1` *or* `consumer2`, but not both, thus achieving load balancing across the group. If more consumers join the same shared subscription group, messages will be further distributed among them.
+
+=== Distribution Strategies
+
+While the default is often a form of round-robin, ActiveMQ Artemis's internal distribution algorithm is optimized for performance and fairness. It considers factors such as:
+
+*   **Consumer Availability**: Only delivers messages to consumers that are active and not currently saturated (e.g., have not reached their prefetch limit).
+*   **Acknowledgement Status**: Prioritizes consumers that are actively acknowledging messages, indicating they are processing effectively.
+*   **Message Prioritization**: If message priority is used, higher priority messages might be routed to available consumers first.
+
+== Advanced Load Balancing Considerations
+
+While Artemis handles the core load balancing, certain factors influence its effectiveness:
+
+*   **Consumer Concurrency**: The number of threads or instances a single consumer application uses to process messages. Configuring more concurrent listeners or threads can increase a consumer's capacity.
+*   **Message Prefetch/Window Size**: This setting controls how many messages a consumer can receive from the broker before acknowledging them. A larger prefetch can increase throughput but also increases the risk of message loss if the consumer crashes before acknowledging. A smaller prefetch ensures more even distribution if consumers have varying processing speeds.
+*   **Exclusive Consumers**: For certain critical tasks where only *one* consumer should process messages at a time from a queue, Artemis supports exclusive consumers. While not strictly load balancing (as only one consumer gets messages), it's a form of controlled distribution where a single active consumer is designated. If it fails, another in the group takes over.
+    [source,java]
+    .Example: Creating an Exclusive Consumer (JMS)
+    ----
+    // Create an exclusive consumer on a queue named "myExclusiveQueue"
+    Queue exclusiveQueue = session.createQueue("myExclusiveQueue?exclusive=true");
+    MessageConsumer exclusiveConsumer = session.createConsumer(exclusiveQueue);
+    ----
+    When `exclusive=true` is appended to the queue name, only one consumer will receive messages at any given time. Other consumers for that queue will be "backup" consumers, becoming active if the primary exclusive consumer fails.
+*   **Client-Side Load Balancing**: While the broker handles distribution, client applications can also implement strategies, especially when connecting to multiple brokers in a cluster. This is covered in detail in the "Client-Side Solution" section, where client failover and connection pooling become important for ensuring continuous connection to *any* available broker that can serve messages.
+
+== Troubleshooting Load Balancing
+
+If you suspect messages are not being load balanced effectively, consider the following:
+
+*   **Consumer Liveness**: Are all consumers truly active and connected to the broker? Check broker logs and management consoles.
+*   **Consumer Performance**: Is one consumer significantly slower at processing and acknowledging messages? This can cause Artemis to favor faster consumers or back up messages on the slower one.
+*   **Prefetch Settings**: Review the client's prefetch configuration. If it's too high for a slow consumer, that consumer might hoard messages, appearing busy even if it's processing slowly.
+*   **Shared Subscription Names**: For topics, ensure all consumers intended to share messages use *exactly* the same shared subscription name. Mismatched names will create separate subscriptions, leading to duplicate message delivery to different groups.
+*   **Resource Constraints**: Is the consumer application itself resource-constrained (CPU, memory, database connections)? This can impede message processing and indirectly affect load balancing.
+*   **Poison Messages**: A consumer might get stuck on a "poison message" that repeatedly fails processing, blocking further messages for that consumer until the issue is resolved or the message is moved to a dead-letter queue.
+
+By understanding these mechanisms and configurations, developers can build highly scalable and resilient messaging applications that effectively distribute the processing load across multiple consumers using ActiveMQ Artemis.

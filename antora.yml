@@ -1,0 +1,18 @@
+name: amq-connection-distribution
+title:  Building Resilient Messaging Applications with ActiveMQ Artemis and OpenShift
+version: 1.0.0
+nav:
+- modules/ROOT/nav.adoc
+- modules/LABENV/nav.adoc
+
+- modules/deploying-activemq-artemis-on-openshift/nav.adoc
+
+- modules/message-distribution-issues/nav.adoc
+
+- modules/client-side-solution/nav.adoc
+
+- modules/quarkus-example/nav.adoc
+
+- modules/spring-boot-example/nav.adoc
+
+- modules/appendix/nav.adoc

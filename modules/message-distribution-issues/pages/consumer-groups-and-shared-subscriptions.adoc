@@ -1,0 +1,103 @@
+#  Consumer groups and shared subscriptions
+
+= Consumer Groups and Shared Subscriptions
+
+In distributed messaging systems, efficiently distributing messages to multiple consumers while ensuring reliability and scalability is a critical challenge. Consumer groups and shared subscriptions are powerful mechanisms designed to address these requirements, enabling load balancing, high availability, and simplified consumer management.
+
+[[consumer-groups]]
+== Understanding Consumer Groups
+
+A consumer group, also often referred to as a "shared consumer group" or "subscription group," represents a logical collection of multiple consumer instances that collectively subscribe to the *same* destination (e.g., a queue or a topic). The primary purpose of a consumer group is to distribute messages arriving at that destination among its members, typically in a load-balanced fashion.
+
+When a message arrives, only one member of the consumer group will receive and process that message. This "competing consumer" pattern ensures that messages are processed once and only once, even with multiple consumers active.
+
+Key characteristics of consumer groups:
+
+*   *Load Balancing*: Messages are distributed across the active consumers in the group, enhancing throughput and distributing the processing workload.
+*   *High Availability*: If one consumer instance within the group fails, other active consumers in the same group can automatically take over the processing of new messages, ensuring continuous operation without manual intervention.
+*   *Scalability*: You can dynamically add or remove consumer instances from a group based on message load, allowing the system to scale horizontally to meet demand.
+
+For instance, in ActiveMQ Artemis, when you create multiple consumers with the *same* subscription name (especially for topics with shared subscriptions or for queues), they implicitly form a consumer group.
+
+[[shared-subscriptions]]
+== Shared Subscriptions
+
+Shared subscriptions are a specific type of subscription, particularly relevant for topics, that allow multiple consumers to attach to the same logical subscription. Unlike traditional "exclusive" or "non-shared" topic subscriptions where each subscriber typically receives its own copy of all messages published to the topic, a shared subscription behaves more like a queue for topic messages within a group.
+
+When multiple consumers subscribe to a topic using the same shared subscription name:
+
+1.  All messages published to the topic are logically delivered to this shared subscription.
+2.  These messages are then distributed among the active consumers *within that shared subscription group*.
+3.  Each message is delivered to *only one* consumer in the group.
+
+This pattern combines the broadcast capabilities of topics (multiple distinct shared subscriptions can each get a copy of the message) with the load-balancing and competing consumer benefits of queues (within each shared subscription group).
+
+The Java Message Service (JMS) 2.0 specification introduced explicit support for shared subscriptions, allowing clients to declare them. Similarly, AMQP 1.0 brokers like ActiveMQ Artemis support similar concepts through durable subscriptions and consumer groups.
+
+=== Distinguishing Shared vs. Non-Shared (Exclusive) Subscriptions
+
+|===
+| Feature | Non-Shared (Exclusive) Subscription | Shared Subscription
+
+| *Scope* | One consumer per subscription ID | Multiple consumers per subscription ID
+| *Delivery* | Each active consumer receives a copy of *all* messages | Messages are load-balanced across consumers in the group; each message delivered to *one* consumer.
+| *Use Case* | Broadcasting messages to all interested parties, individual processing | Distributing workload among a group of consumers, high availability, competing consumers pattern for topic messages
+| *Client Side* | Each consumer typically has a unique client ID and subscription name | Multiple consumers specify the *same* subscription name
+| *Durability* | Can be durable (messages persist for inactive consumer) | Inherently supports durability within the group (messages persist until *any* group member consumes them)
+|===
+
+=== Benefits of Shared Subscriptions
+
+*   *Enhanced Load Balancing for Topics*: Distributes messages from a topic across a pool of consumers, preventing a single consumer from becoming a bottleneck.
+*   *Simplified High Availability*: If a consumer processing messages from a shared subscription fails, other consumers in the group automatically pick up the load, ensuring no messages are lost and processing continues seamlessly.
+*   *Resource Efficiency*: Reduces the number of redundant messages being sent over the network compared to each consumer having its own exclusive subscription and filtering.
+*   *Flexible Scaling*: Easily scale consumer applications horizontally by adding more instances to the shared subscription group.
+
+[[client-side-implementation-considerations]]
+== Client-Side Implementation Considerations
+
+When implementing clients that utilize consumer groups and shared subscriptions, especially with ActiveMQ Artemis, it's crucial to understand how to configure them correctly.
+
+=== JMS Example (Conceptual)
+
+For JMS 2.0 compliant clients, creating a shared durable subscription is straightforward:
+
+[source,java]
+----
+// Assume 'connection' is an active JMSConnection and 'topic' is a JMSTopic
+try (JMSContext context = connection.createContext(JMSContext.AUTO_ACKNOWLEDGE)) {
+    // Create a shared durable subscription with a given subscription name
+    // Multiple consumers can use the same sharedSubscriptionName
+    JMSConsumer consumer = context.createSharedDurableConsumer(topic, "mySharedSubscriptionName");
+    consumer.setMessageListener(message -> {
+        System.out.println("Message received by consumer: " + message.getBody(String.class));
+        // Process message
+    });
+    // Keep connection and context open for message reception
+    // ...
+} catch (JMSException e) {
+    e.printStackTrace();
+}
+----
+
+In this example, any other consumer client using `createSharedDurableConsumer(topic, "mySharedSubscriptionName")` will join the same consumer group for that shared subscription, and messages sent to `topic` will be distributed among them.
+
+=== AMQP 1.0 Example (Conceptual)
+
+AMQP 1.0 clients interact with the broker using links. ActiveMQ Artemis, when acting as an AMQP 1.0 broker, supports shared subscriptions through specific link properties or address syntax. For queues, multiple consumers simply connect to the same queue address. For topics, specific configurations on the consumer link might be used to indicate a shared subscription or durability. Often, the broker's address settings determine how messages are distributed.
+
+For example, connecting multiple AMQP consumers to a FQQN (Fully Qualified Queue Name) or using a specific routing type on the address can achieve similar shared consumer group behavior.
+
+[source,text]
+----
+// Conceptual AMQP 1.0 consumer connection for a shared subscription
+// (Actual implementation depends on the AMQP client library, e.g., proton-j)
+
+// Consumer A
+connection.createReceiver("topic://myTopic::mySharedSubscriptionName")
+
+// Consumer B (joins the same shared subscription group)
+connection.createReceiver("topic://myTopic::mySharedSubscriptionName")
+----
+
+In the ActiveMQ Artemis context, shared subscriptions are a fundamental mechanism for building resilient and scalable messaging applications, especially when dealing with high message volumes on topics or requiring fault-tolerant processing of messages. By leveraging these features, developers can ensure that messages are processed efficiently, reliably, and with high availability.

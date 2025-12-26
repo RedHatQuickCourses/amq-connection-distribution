@@ -1,0 +1,13 @@
+#  Quarkus Example
+
+=== Quarkus Example
+
+This section explores integrating Quarkus applications with ActiveMQ Artemis for robust messaging.
+
+Key areas include:
+
+*   Integrating JMS/AMQP clients with Quarkus.
+*   Configuring Quarkus for ActiveMQ Artemis connectivity.
+*   Implementing message producers and consumers in Quarkus.
+*   Leveraging reactive messaging with Quarkus and Artemis.
+*   Deploying Quarkus messaging applications on OpenShift.

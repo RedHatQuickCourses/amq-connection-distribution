@@ -1,0 +1,268 @@
+#  Transaction management for message producers and consumers
+
+= Transaction Management for Message Producers and Consumers
+
+Transaction management is a critical aspect of building reliable messaging applications. It ensures the atomicity, consistency, isolation, and durability (ACID) properties of message operations, guaranteeing that messages are processed reliably even in the face of failures. For both message producers and consumers, transactions provide a mechanism to group multiple operations into a single, atomic unit of work.
+
+== Understanding Transactions in Messaging
+
+In the context of messaging, a transaction ensures that a set of operations—such as sending one or more messages, or receiving and processing one or more messages—either all succeed or all fail together. This prevents partial updates and maintains data integrity.
+
+Consider these scenarios:
+
+*   **Producer Transaction**: A producer needs to send two related messages. If one message fails to send, the other should also not be sent. A transaction ensures both are sent successfully or neither are. This is vital for maintaining data consistency, for example, when updating multiple related records through messages.
+*   **Consumer Transaction**: A consumer receives a message, processes it, and then updates a database. If the database update fails, the message should not be considered "acknowledged" and should be redelivered. A transaction encompasses both the message consumption and the business logic execution, ensuring *at-least-once* delivery semantics.
+
+Most message queuing systems, including ActiveMQ Artemis, support transactional sessions, often following the Java Message Service (JMS) specification for Java clients.
+
+== Producer-Side Transaction Management
+
+For message producers, transaction management ensures that messages are reliably sent to the broker. A producer can begin a transaction, send multiple messages within that transaction, and then either commit the transaction (making all messages visible to consumers) or roll it back (discarding all messages sent within that transaction).
+
+=== How it Works for Producers
+
+1.  **Create a Transactional Session**: When creating a `Session` (in JMS), you explicitly specify it as transactional. This means all message operations within this session are part of a single unit of work until committed or rolled back.
+2.  **Send Messages**: Produce messages using the `MessageProducer` associated with this transactional session. These messages are not immediately visible to consumers; they are held in a pending state by the broker.
+3.  **Commit or Rollback**:
+    *   `session.commit()`: This operation finalizes the transaction. All messages sent since the last commit (or the start of the session) are made persistent by the broker and become immediately available to eligible consumers.
+    *   `session.rollback()`: This operation aborts the transaction. All messages sent since the last commit are discarded by the broker, ensuring they are never delivered to consumers. This is critical when an error occurs during the batch sending process.
+
+=== Example: Transactional Message Producer (JMS)
+
+Here’s a conceptual example using JMS to demonstrate a transactional producer interacting with an ActiveMQ Artemis broker.
+
+[source,java]
+----
+import javax.jms.*;
+import org.apache.activemq.artemis.jms.client.ActiveMQConnectionFactory;
+
+public class TransactionalProducer {
+
+    public static void main(String[] args) throws JMSException {
+        Connection connection = null;
+        Session session = null;
+        try {
+            // 1. Create a ConnectionFactory for ActiveMQ Artemis
+            ConnectionFactory connectionFactory = new ActiveMQConnectionFactory("tcp://localhost:61616");
+
+            // 2. Create a Connection to the broker
+            connection = connectionFactory.createConnection();
+            connection.start(); // Start the connection
+
+            // 3. Create a transactional Session
+            // The 'true' argument indicates a transactional session, and Session.SESSION_TRANSACTED is the acknowledgment mode.
+            session = connection.createSession(true, Session.SESSION_TRANSACTED);
+
+            // 4. Create a Destination (Queue) for sending messages
+            Queue queue = session.createQueue("myTransactionalQueue");
+
+            // 5. Create a MessageProducer for the queue
+            MessageProducer producer = session.createProducer(queue);
+
+            // 6. Send multiple messages within a single transaction
+            TextMessage message1 = session.createTextMessage("Hello from transaction message 1!");
+            producer.send(message1);
+            System.out.println("Sent message to session buffer: " + message1.getText());
+
+            TextMessage message2 = session.createTextMessage("Hello from transaction message 2!");
+            producer.send(message2);
+            System.out.println("Sent message to session buffer: " + message2.getText());
+
+            // --- Simulate an error before committing ---
+            // Uncomment the following lines to observe a transaction rollback
+            // if (Math.random() > 0.5) {
+            //     throw new RuntimeException("Simulated error: Triggering transaction rollback.");
+            // }
+
+            // 7. Commit the transaction
+            // Only after this call, both messages become durable and visible to consumers.
+            session.commit();
+            System.out.println("Transaction committed successfully. Messages are now available to consumers.");
+
+        } catch (JMSException e) {
+            System.err.println("JMS Exception occurred: " + e.getMessage());
+            if (session != null) {
+                try {
+                    session.rollback(); // Rollback on JMS-related errors
+                    System.out.println("Transaction rolled back due to JMS error.");
+                } catch (JMSException rollbackEx) {
+                    System.err.println("Error during rollback after JMS exception: " + rollbackEx.getMessage());
+                }
+            }
+        } catch (RuntimeException e) {
+            System.err.println("Runtime Exception occurred: " + e.getMessage());
+            if (session != null) {
+                try {
+                    session.rollback(); // Rollback on application-specific runtime errors
+                    System.out.println("Transaction rolled back due to runtime error.");
+                } catch (JMSException rollbackEx) {
+                    System.err.println("Error during rollback after runtime exception: " + rollbackEx.getMessage());
+                }
+            }
+        } finally {
+            // 8. Close resources in a finally block to ensure they are always released
+            if (session != null) {
+                try {
+                    session.close();
+                } catch (JMSException e) {
+                    System.err.println("Error closing session: " + e.getMessage());
+                }
+            }
+            if (connection != null) {
+                try {
+                    connection.close();
+                } catch (JMSException e) {
+                    System.err.println("Error closing connection: " + e.getMessage());
+                }
+            }
+        }
+    }
+}
+----
+
+In this example, both `message1` and `message2` are sent within the same transaction. If `session.commit()` is called, both messages become available to consumers. If an error occurs (e.g., the simulated `RuntimeException` is uncommented) and `session.rollback()` is called, neither message is sent to the queue, ensuring atomicity.
+
+== Consumer-Side Transaction Management
+
+For message consumers, transaction management ensures that a message is processed completely and successfully before it's removed from the queue. If an error occurs during processing, the message is automatically redelivered (up to a configured maximum number of times by the broker) for another attempt. This is crucial for *at-least-once* delivery semantics and reliable message processing.
+
+=== How it Works for Consumers
+
+1.  **Create a Transactional Session**: Similar to producers, the `Session` for consumers must be transactional (`true`, `Session.SESSION_TRANSACTED`).
+2.  **Receive Messages**: Messages are received via a `MessageConsumer`. When a message is received in a transactional session, it is *not* immediately removed from the queue. The broker marks it as "in flight" to this consumer.
+3.  **Process Message**: The consumer applies its business logic to the message. This processing might involve interacting with other systems like databases.
+4.  **Commit or Rollback**:
+    *   `session.commit()`: Acknowledges all messages received within the current transaction, effectively removing them from the queue. This signifies successful processing and confirms to the broker that the messages can be safely discarded.
+    *   `session.rollback()`: Causes all messages received within the current transaction to be redelivered. This occurs if processing fails or if the consumer decides to explicitly roll back due to business logic. The broker then makes the messages available again to eligible consumers (possibly the same consumer or a different one in a cluster). The `JMSRedelivered` header and redelivery count are updated.
+
+=== Relationship to Acknowledgment Patterns
+
+When a session is transactional (`Session.SESSION_TRANSACTED`), explicit acknowledgment modes like `AUTO_ACKNOWLEDGE` and `CLIENT_ACKNOWLEDGE` are overridden. The acknowledgment of messages is implicitly handled by the `session.commit()` or `session.rollback()` operations.
+
+*   `AUTO_ACKNOWLEDGE`: Messages are automatically acknowledged *by the broker* as soon as they are delivered to the consumer. This mode is *not transactional* at the application level and generally provides *at-most-once* delivery, as a failure after delivery but before processing completion can lead to message loss.
+*   `CLIENT_ACKNOWLEDGE`: The client explicitly acknowledges messages using `message.acknowledge()`. While offering more control than `AUTO_ACKNOWLEDGE`, it doesn't provide the atomicity of a full transaction, especially when coordinating with other resources. It only acknowledges the individual message.
+*   `SESSION_TRANSACTED`: Provides robust *at-least-once* delivery with atomicity. Messages are held by the broker until the transaction is committed or rolled back. If rolled back, they are redelivered, and if committed, they are removed. This ensures that a message is either fully processed or fully available for reprocessing.
+
+=== Example: Transactional Message Consumer (JMS)
+
+Here’s a conceptual example using JMS for a transactional consumer interacting with an ActiveMQ Artemis broker.
+
+[source,java]
+----
+import javax.jms.*;
+import org.apache.activemq.artemis.jms.client.ActiveMQConnectionFactory;
+
+public class TransactionalConsumer {
+
+    public static void main(String[] args) throws JMSException {
+        Connection connection = null;
+        Session session = null;
+        try {
+            // 1. Create a ConnectionFactory
+            ConnectionFactory connectionFactory = new ActiveMQConnectionFactory("tcp://localhost:61616");
+
+            // 2. Create a Connection
+            connection = connectionFactory.createConnection();
+            connection.start();
+
+            // 3. Create a transactional Session
+            session = connection.createSession(true, Session.SESSION_TRANSACTED);
+
+            // 4. Create a Destination (Queue)
+            Queue queue = session.createQueue("myTransactionalQueue");
+
+            // 5. Create a MessageConsumer
+            MessageConsumer consumer = session.createConsumer(queue);
+
+            System.out.println("Waiting for messages on 'myTransactionalQueue'...");
+
+            while (true) { // Continuously consume messages
+                try {
+                    // 6. Receive a message (blocking call with timeout)
+                    TextMessage message = (TextMessage) consumer.receive(5000); // Wait up to 5 seconds
+
+                    if (message != null) {
+                        System.out.println("Received message: " + message.getText());
+                        System.out.println("  Redelivered: " + message.getJMSRedelivered()); // Check if it's a redelivered message
+
+                        // Simulate message processing and potential failure
+                        // For demonstration, messages containing "fail" will cause a rollback
+                        if (message.getText().contains("fail")) {
+                            System.err.println("Simulating processing error for message: " + message.getText());
+                            throw new RuntimeException("Processing logic failed for message: " + message.getText());
+                        }
+
+                        // 7. Process the message successfully (e.g., write to database, perform business logic)
+                        System.out.println("Successfully processed message: " + message.getText());
+
+                        // 8. Commit the transaction
+                        // This acknowledges the message and removes it from the queue.
+                        session.commit();
+                        System.out.println("Transaction committed. Message acknowledged and removed from queue.");
+                    } else {
+                        // System.out.println("No message received within timeout.");
+                    }
+                } catch (RuntimeException e) {
+                    System.err.println("Application processing error: " + e.getMessage());
+                    // 9. Rollback the transaction
+                    // This causes the message to be redelivered by the broker.
+                    if (session != null) {
+                        try {
+                            session.rollback();
+                            System.out.println("Transaction rolled back. Message will be redelivered.");
+                        } catch (JMSException rollbackEx) {
+                            System.err.println("Error during rollback after application error: " + rollbackEx.getMessage());
+                        }
+                    }
+                }
+            }
+        } catch (JMSException e) {
+            System.err.println("JMS Exception occurred: " + e.getMessage());
+            // Global error handling, potentially rolling back an ongoing transaction if any
+            if (session != null) {
+                try {
+                    session.rollback(); // Attempt to roll back any pending messages
+                } catch (JMSException rollbackEx) {
+                    System.err.println("Error during global rollback after JMS exception: " + rollbackEx.getMessage());
+                }
+            }
+        } finally {
+            // 10. Close resources in a finally block to ensure they are always released
+            if (session != null) {
+                try {
+                    session.close();
+                } catch (JMSException e) {
+                    System.err.println("Error closing session: " + e.getMessage());
+                }
+            }
+            if (connection != null) {
+                try {
+                    connection.close();
+                } catch (JMSException e) {
+                    System.err.println("Error closing connection: " + e.getMessage());
+                }
+            }
+        }
+    }
+}
+----
+
+In this consumer example, if the message processing (simulated by checking for "fail" in the message text) throws a `RuntimeException`, `session.rollback()` is called. This tells the broker that the message was *not* successfully processed, and it should be redelivered. If processing succeeds, `session.commit()` acknowledges the message, removing it from the queue.
+
+== Distributed Transactions (XA Transactions)
+
+While the examples above cover local transactions (transactions involving only the messaging session), real-world enterprise applications often need to coordinate transactions across multiple distinct resource managers, such as a database and a message broker. This is where *distributed transactions*, often managed using the XA standard (e.g., via the Java Transaction API - JTA), come into play.
+
+*   **Scenario**: A message is received from a queue, a record is updated in a relational database, and then a confirmation message is sent to a different topic. All three operations must succeed or fail as a single atomic unit.
+*   **XA Requirements**: For such a scenario, both the database driver and the message broker's client (e.g., ActiveMQ Artemis JMS client) must be XA-compliant. A transaction manager (like Narayana in Quarkus, Atomikos, or Spring's JTA support with an underlying manager) coordinates the two-phase commit protocol across these disparate resources, ensuring atomicity across the entire operation.
+
+Implementing XA transactions is typically more complex and is often handled by application servers or modern microservice frameworks (like Spring Boot with Atomikos, or Quarkus with Narayana) which abstract away much of the underlying JTA/XA machinery, allowing developers to focus on business logic while still achieving global transaction guarantees.
+
+== Best Practices for Transaction Management
+
+*   **Transaction Scope**: Keep transactions as small and short-lived as possible to minimize resource locking, improve throughput, and reduce the impact of rollbacks. Avoid long-running business processes that tie up a transaction for extended periods.
+*   **Robust Error Handling and Rollback**: Always include comprehensive error handling in your message processing logic. Ensure that `session.rollback()` is explicitly called when application-level failures occur, guaranteeing messages are not lost and are available for reprocessing.
+*   **Idempotency for Consumers**: While transactional messaging provides *at-least-once* delivery, consumers should be designed to be *idempotent*. This means that processing the same message multiple times (due to redelivery after a rollback) should produce the same result as processing it once. This prevents undesirable side effects from duplicate processing.
+*   **Dead-Letter Queues (DLQ)**: Combine transactional consumption with the use of Dead-Letter Queues (DLQs). If a message consistently fails processing and is redelivered a maximum number of times (configured on the broker, e.g., using `max-delivery-attempts` in Artemis), it should be moved to a DLQ instead of endlessly attempting redelivery. This prevents "poison messages" from perpetually blocking the queue.
+*   **Resource Management**: Always ensure that JMS `Connection`, `Session`, `MessageProducer`, and `MessageConsumer` objects are properly closed in `finally` blocks to prevent resource leaks and ensure graceful shutdown.
+*   **Asynchronous Consumers**: For asynchronous message consumers (using `MessageListener` or `@JmsListener` in Spring, or `@Incoming` in Quarkus), the underlying framework or container typically manages the transaction scope for each message received, abstracting the explicit `commit`/`rollback` calls from the application developer. Understand how your chosen framework handles transactions in these scenarios.

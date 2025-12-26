@@ -1,0 +1,295 @@
+#  Hands-on Lab: Developing a Spring Boot microservice with distributed messaging
+
+= Hands-on Lab: Developing a Spring Boot Microservice with Distributed Messaging
+
+This lab guides you through the process of developing a Spring Boot microservice that leverages ActiveMQ Artemis for distributed messaging. You will learn how to configure Spring Boot to connect to an Artemis broker, implement message producers to send messages to queues, and create message consumers to receive and process messages.
+
+[NOTE]
+This lab assumes you have an ActiveMQ Artemis broker accessible (e.g., a local instance, a Docker container, or an instance deployed on OpenShift from a previous lab). Ensure you have the broker's connection details (host, port, user, password, and desired queue names) readily available.
+
+== Learning Objectives
+
+Upon completion of this lab, you will be able to:
+
+*   Set up a Spring Boot project with the necessary ActiveMQ Artemis dependencies.
+*   Configure your Spring Boot application to connect to an ActiveMQ Artemis broker using its native JMS protocol.
+*   Implement a message producer component to send messages to an Artemis queue using `JmsTemplate`.
+*   Implement a message consumer component to receive and process messages from an Artemis queue using `@JmsListener`.
+*   Test your Spring Boot messaging application locally.
+
+== Prerequisites
+
+Before you begin, ensure you have the following installed and configured:
+
+*   **Java Development Kit (JDK) 17 or higher:** Required for Spring Boot applications.
+*   **Apache Maven 3.6+ or Gradle 7.x+:** Build automation tool for your Spring Boot project.
+*   **An Integrated Development Environment (IDE):** Such as IntelliJ IDEA, VS Code, or Eclipse, for developing your Java application.
+*   **Access to an ActiveMQ Artemis broker:** This could be a standalone instance, a Docker container, or an OpenShift deployment. You will need its connection details (e.g., `tcp://localhost:61616`, username, password).
+*   **A REST client (Optional but recommended):** Tools like `curl` (command line) or Postman/Insomnia for testing the message producer endpoint.
+
+== Lab Activities
+
+=== Activity 1: Create a Spring Boot Project
+
+In this activity, you will create a new Spring Boot project using Spring Initializr and add the necessary dependencies for JMS messaging with ActiveMQ Artemis.
+
+.  Navigate to the Spring Initializr website: https://start.spring.io/
+.  Configure your project with the following settings:
+    *   **Project:** Maven Project (or Gradle Project if you prefer)
+    *   **Language:** Java
+    *   **Spring Boot:** Choose the latest stable 3.x.x version (e.g., 3.2.x)
+    *   **Project Metadata:**
+        *   **Group:** `com.example`
+        *   **Artifact:** `artemis-spring-microservice`
+        *   **Name:** `Artemis Spring Microservice`
+        *   **Package Name:** `com.example.artemismicroservice`
+        *   **Java:** 17
+.  Add the following dependencies by searching for them:
+    *   `Spring Web`: Provides embedded Tomcat and `RestController` for a simple HTTP endpoint to trigger message sending.
+    *   `Spring for Apache ActiveMQ 5` (This starter works seamlessly with ActiveMQ Artemis, providing the necessary `spring-jms` module and configuring the `JmsTemplate` and `JmsListenerContainerFactory`).
+.  Click the *GENERATE* button to download the project as a ZIP file.
+.  Extract the downloaded ZIP file to your preferred development directory.
+.  Open the extracted project in your IDE (e.g., by importing the `pom.xml` file for Maven projects).
+
+=== Activity 2: Configure ActiveMQ Artemis Connection
+
+Now, you will configure your Spring Boot application to connect to your ActiveMQ Artemis broker by updating the `application.properties` file.
+
+.  Open the `src/main/resources/application.properties` file in your project.
+.  Add the following configuration properties. **Replace** `your-artemis-host`, `your-artemis-port`, `your-artemis-user`, and `your-artemis-password` with the actual connection details of your ActiveMQ Artemis broker.
+
+[source,properties]
+----
+# ActiveMQ Artemis Broker Connection Properties
+# Specifies the messaging mode for Artemis, 'native' uses the core protocol.
+spring.artemis.mode=native
+# The URL for the Artemis broker. Using tcp:// for the native core protocol.
+spring.artemis.broker-url=tcp://your-artemis-host:your-artemis-port
+# Username for connecting to Artemis.
+spring.artemis.user=your-artemis-user
+# Password for connecting to Artemis.
+spring.artemis.password=your-artemis-password
+
+# Optional: JMS connection factory caching for performance.
+# Caches the ConnectionFactory for reuse.
+spring.jms.cache.connection-factory=true
+# Specifies the size of the session cache for each connection.
+spring.jms.cache.session-cache-size=10
+----
+
+[NOTE]
+The `spring.artemis.mode=native` configuration instructs Spring Boot to use ActiveMQ Artemis's native JMS client and protocol. If your Artemis instance were configured primarily for AMQP, you might change the `broker-url` to `amqp://...` and potentially set `spring.artemis.mode=amqp` (though the default `spring-boot-starter-activemq` mostly targets JMS). For this lab, we focus on the native JMS protocol, which is the most common way to interact with Artemis using `JmsTemplate`.
+
+=== Activity 3: Implement a Message Producer
+
+In this activity, you will create a Spring service that sends messages to an ActiveMQ Artemis queue and a REST controller to trigger this sending.
+
+.  Create a new package named `com.example.artemismicroservice.producer` under `src/main/java/com/example/artemismicroservice`.
+.  Inside this package, create a new Java class named `MessageProducerService.java`.
+.  Add the following code to `MessageProducerService.java`. This service uses Spring's `JmsTemplate` to simplify sending messages.
+
+[source,java]
+----
+package com.example.artemismicroservice.producer;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.jms.core.JmsTemplate;
+import org.springframework.stereotype.Service;
+
+/**
+ * Service responsible for sending messages to ActiveMQ Artemis queues.
+ */
+@Service
+public class MessageProducerService {
+
+    private final JmsTemplate jmsTemplate;
+
+    @Autowired
+    public MessageProducerService(JmsTemplate jmsTemplate) {
+        this.jmsTemplate = jmsTemplate;
+    }
+
+    /**
+     * Sends a text message to the specified JMS queue.
+     *
+     * @param queueName The name of the queue to send the message to.
+     * @param message   The content of the message to be sent.
+     */
+    public void sendMessage(String queueName, String message) {
+        System.out.println("Producer: Attempting to send message to queue '" + queueName + "': '" + message + "'");
+        jmsTemplate.convertAndSend(queueName, message);
+        System.out.println("Producer: Message successfully sent to queue '" + queueName + "'.");
+    }
+}
+----
+
+.  To easily trigger message sending for testing, create a simple REST controller.
+.  Create a new package named `com.example.artemismicroservice.controller` under `src/main/java/com/example/artemismicroservice`.
+.  Inside this package, create a new Java class named `MessageController.java`.
+.  Add the following code to `MessageController.java`:
+
+[source,java]
+----
+package com.example.artemismicroservice.controller;
+
+import com.example.artemismicroservice.producer.MessageProducerService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+
+/**
+ * REST Controller to expose an endpoint for sending messages.
+ */
+@RestController
+public class MessageController {
+
+    private final MessageProducerService messageProducerService;
+
+    @Autowired
+    public MessageController(MessageProducerService messageProducerService) {
+        this.messageProducerService = messageProducerService;
+    }
+
+    /**
+     * Handles POST requests to send a message to a specified queue.
+     *
+     * @param queue   The name of the queue to send the message to.
+     * @param message The content of the message.
+     * @return A confirmation string.
+     */
+    @PostMapping("/send")
+    public String sendMessage(@RequestParam String queue, @RequestParam String message) {
+        messageProducerService.sendMessage(queue, message);
+        return "Message '" + message + "' sent to queue: " + queue;
+    }
+}
+----
+
+=== Activity 4: Implement a Message Consumer
+
+Next, you will create a Spring component that listens for messages on an ActiveMQ Artemis queue and processes them.
+
+.  Create a new package named `com.example.artemismicroservice.consumer` under `src/main/java/com/example/artemismicroservice`.
+.  Inside this package, create a new Java class named `MessageConsumerService.java`.
+.  Add the following code to `MessageConsumerService.java`. The `@JmsListener` annotation automatically configures a message listener container.
+
+[source,java]
+----
+package com.example.artemismicroservice.consumer;
+
+import org.springframework.jms.annotation.JmsListener;
+import org.springframework.stereotype.Component;
+
+/**
+ * Component responsible for consuming messages from ActiveMQ Artemis queues.
+ */
+@Component
+public class MessageConsumerService {
+
+    /**
+     * Listens for messages on the 'myTestQueue' destination.
+     *
+     * @param message The received text message.
+     */
+    @JmsListener(destination = "myTestQueue") // Replace "myTestQueue" with your desired queue name
+    public void receiveMessageFromTestQueue(String message) {
+        System.out.println("Consumer (myTestQueue): Received message: '" + message + "'");
+        // Add your specific business logic for processing messages from 'myTestQueue' here.
+        // For example, parsing JSON, storing in a database, or calling another service.
+    }
+
+    /**
+     * Listens for messages on a different queue, 'anotherQueue'.
+     * This demonstrates configuring multiple listeners for different destinations.
+     *
+     * @param message The received text message.
+     */
+    @JmsListener(destination = "anotherQueue")
+    public void receiveMessageFromAnotherQueue(String message) {
+        System.out.println("Consumer (anotherQueue): Received message: '" + message + "'");
+        // Add business logic for 'anotherQueue' messages here.
+    }
+}
+----
+
+[IMPORTANT]
+Ensure the `destination` specified in `@JmsListener` annotations (e.g., `myTestQueue`, `anotherQueue`) matches the queue names that will exist on your ActiveMQ Artemis broker. ActiveMQ Artemis typically auto-creates queues when a producer sends a message to a non-existent queue, but it's good practice to verify or pre-configure your queues if strict naming or specific queue policies are required.
+
+=== Activity 5: Run and Test the Application
+
+Now it's time to run your Spring Boot microservice and test its distributed messaging capabilities.
+
+.  Open a terminal or command prompt in the root directory of your Spring Boot project (where the `pom.xml` or `build.gradle` file is located).
+.  Build the application using Maven (or Gradle):
+    [source,bash]
+    ----
+    ./mvnw clean install
+    ----
+    (If using Gradle: `./gradlew clean build`)
+.  Run the Spring Boot application:
+    [source,bash]
+    ----
+    ./mvnw spring-boot:run
+    ----
+    (If using Gradle: `./gradlew bootRun`)
+
+.  Observe the console output. You should see Spring Boot starting up, connecting to ActiveMQ Artemis, and logging messages indicating that the `JmsTemplate` and `JmsListener` components have been initialized. Look for messages related to JMS connection establishment.
+
+.  Open a *new* terminal or use your preferred REST client (like `curl` or Postman) to send a message via the producer endpoint. By default, Spring Boot applications run on port `8080`.
+
+    *   To send a message to `myTestQueue`:
+        [source,bash]
+        ----
+        curl -X POST "http://localhost:8080/send?queue=myTestQueue&message=Hello+Artemis+from+Spring+Boot!"
+        ----
+
+    *   To send a message to `anotherQueue`:
+        [source,bash]
+        ----
+        curl -X POST "http://localhost:8080/send?queue=anotherQueue&message=This+is+another+message+for+a+different+queue."
+        ----
+
+.  Go back to the terminal where your Spring Boot application is running. You should see output similar to this, demonstrating that the message was sent and then received:
+
+    [source,text]
+    ----
+    Producer: Attempting to send message to queue 'myTestQueue': 'Hello Artemis from Spring Boot!'
+    Producer: Message successfully sent to queue 'myTestQueue'.
+    Consumer (myTestQueue): Received message: 'Hello Artemis from Spring Boot!'
+    ----
+
+    And if you sent a message to `anotherQueue`:
+
+    [source,text]
+    ----
+    Producer: Attempting to send message to queue 'anotherQueue': 'This is another message for a different queue.'
+    Producer: Message successfully sent to queue 'anotherQueue'.
+    Consumer (anotherQueue): Received message: 'This is another message for a different queue.'
+    ----
+
+    This confirms that your Spring Boot producer successfully sent the message to ActiveMQ Artemis, and your Spring Boot consumer successfully received and processed it.
+
+== Troubleshooting Tips
+
+*   **Connection Refused / Cannot Connect:**
+    *   Verify that your ActiveMQ Artemis broker is running and accessible from the machine where your Spring Boot application is executing.
+    *   Double-check the `spring.artemis.broker-url`, `spring.artemis.user`, and `spring.artemis.password` in your `application.properties` for typos.
+    *   Ensure the host and port in the `broker-url` are correct and that no firewall is blocking the connection.
+
+*   **Queue Not Found:**
+    *   While Artemis often auto-creates queues on the first send, ensure that the queue names used in `@JmsListener` and `jmsTemplate.convertAndSend` (`myTestQueue`, `anotherQueue`) are correctly spelled and consistent.
+    *   If using an OpenShift deployment of Artemis, ensure the queues are provisioned or auto-create is enabled on the broker.
+
+*   **No Message Received by Consumer:**
+    *   Check the console output of your Spring Boot application for any errors during startup or runtime related to the `JmsListener`.
+    *   Verify that the producer successfully sent the message (check its console output).
+    *   Log into the ActiveMQ Artemis management console (if available) to see if messages are being enqueued and if consumers are actively subscribed.
+    *   Ensure the `destination` attribute in your `@JmsListener` annotation exactly matches the queue name to which the producer is sending.
+
+*   **Missing Dependencies:**
+    *   If you encounter class not found exceptions, re-verify that `spring-boot-starter-web` and `spring-boot-starter-activemq` are correctly listed in your `pom.xml` (or `build.gradle`). Perform a `clean install` to ensure all dependencies are downloaded.
+
+== Summary
+
+In this hands-on lab, you successfully developed a Spring Boot microservice that demonstrates distributed messaging capabilities using ActiveMQ Artemis. You learned how to configure the connection to the broker, implement a message producer to send messages via `JmsTemplate`, and create a message consumer to process incoming messages using `@JmsListener`. This foundation is crucial for building robust, scalable, and resilient microservices architectures leveraging enterprise messaging patterns.

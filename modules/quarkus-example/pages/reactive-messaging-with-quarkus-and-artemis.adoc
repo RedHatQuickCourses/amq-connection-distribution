@@ -1,0 +1,275 @@
+#  Reactive messaging with Quarkus and Artemis
+
+= Reactive Messaging with Quarkus and Artemis
+:navtitle: Reactive Messaging with Quarkus and Artemis
+
+This section delves into how Quarkus leverages its reactive capabilities, specifically with the SmallRye Reactive Messaging extension, to build efficient and scalable messaging applications integrated with ActiveMQ Artemis.
+
+== Introduction to Reactive Messaging in Quarkus
+
+Reactive programming is an asynchronous programming paradigm concerned with data streams and the propagation of change. It's particularly well-suited for modern microservices architectures where applications need to be highly responsive, resilient, elastic, and message-driven. Quarkus embraces this paradigm, providing a reactive foundation that allows developers to build non-blocking, event-driven applications efficiently.
+
+Quarkus's reactive messaging capabilities are powered by the `SmallRye Reactive Messaging` project, which implements the Eclipse MicroProfile Reactive Messaging specification. This specification provides a common set of APIs and concepts for building reactive, message-driven microservices.
+
+== Why Reactive Messaging?
+
+Traditional synchronous blocking I/O models can lead to inefficient resource utilization, especially when dealing with external services or message brokers that might introduce latency. Reactive messaging addresses these challenges by:
+
+*   **Improved Responsiveness:** Applications can respond to events immediately without waiting for long-running operations to complete.
+*   **Better Resource Utilization:** Non-blocking I/O allows a small number of threads to handle a large number of concurrent operations, leading to more efficient use of CPU and memory.
+*   **Enhanced Resilience:** Reactive systems are designed to handle failures gracefully, allowing for easier implementation of retry mechanisms, backpressure, and circuit breakers.
+*   **Scalability:** The asynchronous nature makes it easier to scale horizontally and handle increased message throughput.
+
+== Quarkus SmallRye Reactive Messaging Overview
+
+SmallRye Reactive Messaging provides a powerful and flexible way to connect to various messaging systems, including Kafka, AMQP (which ActiveMQ Artemis supports), MQTT, and more. It abstracts away the low-level details of message broker interactions, allowing developers to focus on the business logic.
+
+Key concepts include:
+
+*   **Channels:** Logical names for data streams that messages flow through.
+*   **`@Incoming`:** Annotates methods that consume messages from a specific channel.
+*   **`@Outgoing`:** Annotates methods that produce messages to a specific channel.
+*   **`Message<T>`:** A wrapper around the payload `T` that also provides access to metadata and acknowledgment mechanisms.
+*   **`Emitter<T>`:** An injectable component used to programmatically send messages to an `@Outgoing` channel.
+
+== Integrating Reactive Messaging with ActiveMQ Artemis
+
+Quarkus can easily integrate with ActiveMQ Artemis using the `quarkus-smallrye-reactive-messaging-amqp` extension. This extension provides the necessary connectors to send and receive messages over AMQP 1.0, which is the preferred protocol for modern messaging.
+
+To use ActiveMQ Artemis with Quarkus Reactive Messaging, you'll need to add the following dependency to your `pom.xml`:
+
+[source,xml]
+----
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-smallrye-reactive-messaging-amqp</artifactId>
+</dependency>
+----
+
+With this dependency, Quarkus automatically configures an AMQP client connection based on your `application.properties`.
+
+=== Configuring Quarkus for ActiveMQ Artemis Connectivity
+
+Configuration for the AMQP connector is typically done in `src/main/resources/application.properties`. You define named AMQP brokers, and then link your channels to these brokers.
+
+[source,properties]
+----
+# AMQP Broker Configuration
+# Define a named AMQP broker connection
+amqp-brokers.my-artemis.host=localhost
+amqp-brokers.my-artemis.port=5672
+amqp-brokers.my-artemis.username=artemis
+amqp-brokers.my-artemis.password=artemis
+amqp-brokers.my-artemis.tracing-enabled=true # Enable OpenTracing integration if desired
+
+# Outgoing channel configuration
+mp.messaging.outgoing.my-outgoing-channel.connector=smallrye-amqp
+mp.messaging.outgoing.my-outgoing-channel.broker-name=my-artemis # Link to the named broker
+mp.messaging.outgoing.my-outgoing-channel.address=my-queue # Target queue/topic on Artemis
+mp.messaging.outgoing.my-outgoing-channel.durable=true
+mp.messaging.outgoing.my-outgoing-channel.persistent=true
+
+# Incoming channel configuration
+mp.messaging.incoming.my-incoming-channel.connector=smallrye-amqp
+mp.messaging.incoming.my-incoming-channel.broker-name=my-artemis # Link to the named broker
+mp.messaging.incoming.my-incoming-channel.address=my-queue # Source queue/topic on Artemis
+mp.messaging.incoming.my-incoming-channel.durable=true
+mp.messaging.incoming.my-incoming-channel.auto-acknowledgement=false # We'll acknowledge manually
+----
+
+In the above configuration:
+
+*   `amqp-brokers.my-artemis.*`: Defines a named AMQP broker connection `my-artemis`.
+*   `mp.messaging.outgoing.my-outgoing-channel.*`: Configures an outgoing channel named `my-outgoing-channel`. It uses the `smallrye-amqp` connector and targets the `my-queue` address on the `my-artemis` broker.
+*   `mp.messaging.incoming.my-incoming-channel.*`: Configures an incoming channel named `my-incoming-channel`, also connected to `my-queue` on `my-artemis`. `auto-acknowledgement=false` is set for manual acknowledgment.
+
+=== Hands-on Activity: Implementing a Reactive Producer
+
+Let's create a Quarkus service that periodically sends messages to an ActiveMQ Artemis queue using reactive messaging.
+
+.Prerequisites:
+*   A running ActiveMQ Artemis instance (e.g., deployed on OpenShift or locally).
+*   A Quarkus project set up with the `quarkus-smallrye-reactive-messaging-amqp` dependency.
+
+.Steps:
+
+.  **Create a simple Message POJO** (optional, but good practice):
+    [source,java]
+    ----
+    // src/main/java/org/acme/quarkus/artemis/MessageData.java
+    package org.acme.quarkus.artemis;
+
+    public class MessageData {
+        public String content;
+        public long timestamp;
+
+        public MessageData() {
+        }
+
+        public MessageData(String content, long timestamp) {
+            this.content = content;
+            this.timestamp = timestamp;
+        }
+
+        @Override
+        public String toString() {
+            return "MessageData{" +
+                   "content='" + content + '\'' +
+                   ", timestamp=" + timestamp +
+                   '}';
+        }
+    }
+    ----
+
+.  **Implement the Reactive Producer Service:**
+    [source,java]
+    ----
+    // src/main/java/org/acme/quarkus/artemis/ReactiveProducerService.java
+    package org.acme.quarkus.artemis;
+
+    import io.quarkus.runtime.StartupEvent;
+    import io.smallrye.mutiny.Multi;
+    import io.smallrye.reactive.messaging.annotations.Emitter;
+    import io.smallrye.reactive.messaging.annotations.Channel;
+    import jakarta.enterprise.context.ApplicationScoped;
+    import jakarta.enterprise.event.Observes;
+
+    import java.time.Duration;
+    import java.util.Random;
+    import java.util.concurrent.atomic.AtomicInteger;
+
+    @ApplicationScoped
+    public class ReactiveProducerService {
+
+        private static final Random RANDOM = new Random();
+        private AtomicInteger counter = new AtomicInteger();
+
+        // Inject an Emitter for the 'my-outgoing-channel'
+        @Channel("my-outgoing-channel")
+        Emitter<MessageData> messageEmitter; // Emitter for our POJO
+
+        // Or if you prefer to emit raw strings/JSON:
+        // @Channel("my-outgoing-channel")
+        // Emitter<String> stringEmitter;
+
+        void onStart(@Observes StartupEvent ev) {
+            // Schedule sending messages every 5 seconds
+            Multi.interval(Duration.ofSeconds(5))
+                .onItem().transform(tick -> {
+                    int id = counter.incrementAndGet();
+                    String content = "Hello from Quarkus reactive producer #" + id;
+                    long timestamp = System.currentTimeMillis();
+                    MessageData data = new MessageData(content, timestamp);
+                    System.out.println("Producing message: " + data);
+                    return data;
+                })
+                .subscribe().with(messageData -> {
+                    // Send the MessageData object. Quarkus will serialize it to JSON/AMQP message.
+                    messageEmitter.send(messageData);
+                });
+        }
+
+        // Alternative method using @Outgoing annotation for producing
+        // @Outgoing("my-outgoing-channel")
+        // public Multi<MessageData> generateMessages() {
+        //     return Multi.interval(Duration.ofSeconds(5))
+        //         .onItem().transform(tick -> {
+        //             int id = counter.incrementAndGet();
+        //             String content = "Hello from Quarkus reactive producer (via @Outgoing) #" + id;
+        //             long timestamp = System.currentTimeMillis();
+        //             MessageData data = new MessageData(content, timestamp);
+        //             System.out.println("Producing message via @Outgoing: " + data);
+        //             return data;
+        //         });
+        // }
+    }
+    ----
+    In this example, `ReactiveProducerService` uses `@Channel("my-outgoing-channel") Emitter<MessageData> messageEmitter;` to inject an `Emitter`. Upon application startup, it schedules an interval using `Multi.interval` and sends `MessageData` objects to the `my-outgoing-channel`. Quarkus will automatically serialize `MessageData` to a format suitable for AMQP (typically JSON by default).
+
+=== Hands-on Activity: Implementing a Reactive Consumer
+
+Now, let's create a service that consumes messages from the same ActiveMQ Artemis queue reactively.
+
+.Steps:
+
+.  **Implement the Reactive Consumer Service:**
+    [source,java]
+    ----
+    // src/main/java/org/acme/quarkus/artemis/ReactiveConsumerService.java
+    package org.acme.quarkus.artemis;
+
+    import io.smallrye.reactive.messaging.annotations.Channel;
+    import io.smallrye.reactive.messaging.annotations.Incoming;
+    import io.smallrye.reactive.messaging.annotations.Acknowledgment;
+    import jakarta.enterprise.context.ApplicationScoped;
+    import org.eclipse.microprofile.reactive.messaging.Message;
+    import io.smallrye.mutiny.Uni;
+
+    @ApplicationScoped
+    public class ReactiveConsumerService {
+
+        // Method to consume messages from 'my-incoming-channel'
+        // Acknowledgment.Completion is used for manual acknowledgment after processing.
+        @Incoming("my-incoming-channel")
+        @Acknowledgment(Acknowledgment.Strategy.POST_PROCESSING)
+        public Uni<Void> consume(Message<MessageData> message) { // Consume Message<MessageData>
+            MessageData data = message.getPayload();
+            System.out.println("Reactive Consumer received message: " + data.content + " at " + data.timestamp);
+
+            // Simulate some asynchronous processing
+            return Uni.createFrom().item(data)
+                .onItem().delayIt().by(java.time.Duration.ofMillis(RANDOM.nextInt(100) + 50)) // Random delay
+                .onItem().invoke(processedData -> {
+                    System.out.println("Processed message successfully: " + processedData.content);
+                })
+                .onFailure().invoke(failure -> {
+                    System.err.println("Failed to process message: " + data.content + " - " + failure.getMessage());
+                    // NACK the message if processing fails, depends on broker capabilities and connector configuration
+                    // return message.nack(failure); // nack() is available on Message interface for certain connectors
+                })
+                .onItem().ignoreAsUni() // Return Uni<Void> to signal completion
+                .chain(() -> message.ack()); // Acknowledge the message only after successful processing
+        }
+
+        // You can also consume raw payloads directly if you don't need Message metadata
+        // @Incoming("my-incoming-channel")
+        // @Acknowledgment(Acknowledgment.Strategy.POST_PROCESSING)
+        // public Uni<Void> consumePayload(MessageData data) {
+        //     System.out.println("Reactive Consumer received direct payload: " + data.content);
+        //     return Uni.createFrom().item(data)
+        //             .onItem().delayIt().by(java.time.Duration.ofMillis(50))
+        //             .onItem().ignoreAsUni();
+        // }
+    }
+    ----
+
+    In `ReactiveConsumerService`:
+
+    *   The `@Incoming("my-incoming-channel")` annotation indicates that this method consumes messages from the `my-incoming-channel`.
+    *   `@Acknowledgment(Acknowledgment.Strategy.POST_PROCESSING)` specifies that the message should be acknowledged *after* the `consume` method has successfully processed it and the returned `Uni<Void>` completes.
+    *   The method signature `public Uni<Void> consume(Message<MessageData> message)` allows us to receive the full `Message` object, giving access to its payload (`message.getPayload()`) and providing fine-grained control over acknowledgment (`message.ack()` or `message.nack()`).
+    *   The `Uni` return type allows for asynchronous processing of the message payload. We simulate some processing with a delay and then explicitly acknowledge the message with `message.ack()`.
+
+=== Running the Example
+
+1.  Ensure ActiveMQ Artemis is running and accessible at `localhost:5672` (or adjust `application.properties`).
+2.  Compile and run the Quarkus application:
+    [source,bash]
+    ----
+    mvn clean compile quarkus:dev
+    ----
+3.  Observe the console output:
+    *   The `ReactiveProducerService` will log messages it's sending.
+    *   The `ReactiveConsumerService` will log messages it receives and processes.
+
+You should see messages flowing from the producer, through ActiveMQ Artemis, and then consumed by the reactive consumer.
+
+== Advanced Considerations
+
+*   **Backpressure:** SmallRye Reactive Messaging automatically applies backpressure mechanisms to prevent consumers from being overwhelmed by producers. This is handled internally by the reactive streams specification.
+*   **Error Handling:** You can define error handling strategies, such as retries or dead-letter queues, either via connector configurations or by handling exceptions within your `@Incoming` methods. For `Uni<Void>` methods, an unhandled exception would typically lead to a NACK (negative acknowledgment) to the broker, potentially triggering redelivery.
+*   **Message Transformations:** Use intermediate `@Outgoing` and `@Incoming` methods to transform messages between channels before they reach the final consumer or leave the application.
+*   **Concurrency:** Quarkus handles concurrency for `@Incoming` methods. By default, messages are processed sequentially by a single consumer instance per channel, but you can configure worker pools or use `io.smallrye.reactive.messaging.annotations.Blocking` to delegate processing to a separate thread pool for blocking operations.
+*   **Tracing and Metrics:** Quarkus and SmallRye Reactive Messaging integrate well with OpenTelemetry for distributed tracing and Micrometer for metrics, providing deep observability into your messaging flows.
+
+Reactive messaging with Quarkus and ActiveMQ Artemis provides a robust and efficient foundation for building high-performance, resilient, and scalable message-driven microservices. By leveraging the AMQP connector and the power of SmallRye Reactive Messaging, developers can easily integrate with Artemis while benefiting from Quarkus's development velocity and runtime efficiency.

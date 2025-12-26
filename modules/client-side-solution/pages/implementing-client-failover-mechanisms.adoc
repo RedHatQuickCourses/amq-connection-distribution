@@ -1,0 +1,183 @@
+#  Implementing client failover mechanisms
+
+This content covers the implementation of client failover mechanisms, a critical aspect of building resilient messaging applications with ActiveMQ Artemis and OpenShift.
+
+// tag::client-failover[]
+
+= Implementing client failover mechanisms
+
+Resilience in distributed messaging systems isn't solely the responsibility of the broker; clients also play a crucial role in ensuring continuous operation and message delivery even when parts of the system encounter issues. Client failover mechanisms are a cornerstone of building highly available messaging applications.
+
+== Detailed Technical Explanation: Client Failover
+
+Client failover refers to the ability of a messaging client to automatically detect a failure in its current connection to a message broker and transparently reconnect to another available broker instance without manual intervention or application downtime. This mechanism is essential for handling various fault scenarios, including:
+
+*   **Broker Failures:** An individual broker instance crashes, becomes unresponsive, or is shut down unexpectedly.
+*   **Network Disruptions:** Temporary loss of connectivity between the client and the primary broker.
+*   **Planned Maintenance:** When a broker needs to be taken offline for upgrades, patching, or configuration changes.
+*   **Load Balancing:** While primarily for failover, the same connection configuration can often be used to distribute initial connections across multiple brokers.
+
+The core principle behind client failover involves the client being aware of multiple potential broker endpoints. When a connection fails, the client attempts to establish a connection with the next available broker from its configured list. This process often includes:
+
+1.  **Connection URL List:** The client is configured with a list of broker connection URLs (e.g., `tcp://broker1:61616,tcp://broker2:61616`).
+2.  **Failure Detection:** The client's underlying network library or protocol implementation detects a broken connection (e.g., socket closed, timeout, unreachable host).
+3.  **Reconnection Logic:** Upon detecting a failure, the client iterates through its list of known brokers, attempting to establish a new connection to the next available one. This usually involves retry attempts and configurable delays.
+4.  **Session Re-establishment:** Once a new connection is successfully established, the client may need to re-establish sessions, consumers, producers, and potentially re-subscribe to destinations.
+5.  **Message Redelivery (for consumers):** For clients consuming messages, active transactions might be rolled back, and messages that were delivered but not acknowledged before the failover might be redelivered. This requires careful handling in the consumer application to ensure idempotency.
+
+=== ActiveMQ Artemis Client Failover Configuration
+
+ActiveMQ Artemis provides robust client-side failover capabilities, primarily configured through the connection URL itself or properties on the `ConnectionFactory`.
+
+The failover capabilities are activated by specifying multiple broker URLs and setting the `ha` (High Availability) parameter to `true`. The client will then automatically cycle through the provided URLs until a successful connection is established.
+
+The general format for an ActiveMQ Artemis failover connection URL is:
+
+`(`_transport_`://`_host1_`:`_port1_`?,`_transport_`://`_host2_`:`_port2_`?`_param_`= `_value_`...)?ha=true&`_failover_`_param_`=`_value_`...`
+
+Common failover parameters include:
+
+*   `ha=true`: Enables failover. This is crucial.
+*   `initialConnectAttempts`: The number of attempts to connect to the *first* URL in the list before trying the next. Defaults to 1.
+*   `reconnectAttempts`: The total number of times the client will attempt to reconnect to *any* broker after an initial connection has been established and subsequently failed. A value of `-1` means infinite attempts.
+*   `retryInterval`: The time in milliseconds to wait between reconnection attempts.
+*   `retryIntervalMultiplier`: A multiplier applied to `retryInterval` on each successive attempt, allowing for exponential backoff.
+*   `maxRetryInterval`: The maximum interval in milliseconds when `retryIntervalMultiplier` is used.
+*   `callTimeout`: How long a client will wait for an acknowledgement from the server after sending data before assuming the connection is broken.
+
+=== Hands-on Activity: Configuring a JMS Client for Failover
+
+This activity demonstrates how to configure a simple JMS client to connect to an ActiveMQ Artemis cluster with failover enabled. We'll use a plain Java client with the Artemis JMS client library.
+
+**Prerequisites:**
+
+*   A running ActiveMQ Artemis cluster (e.g., deployed on OpenShift as described in previous sections). Assume you have at least two broker instances, `broker-0` and `broker-1`, accessible on specific hosts/ports or through a load balancer. For OpenShift, these might be internal service hostnames or routes.
+
+**Step 1: Add ActiveMQ Artemis Client Dependency**
+
+Ensure your `pom.xml` includes the necessary JMS client dependency:
+
+[source,xml]
+----
+<dependency>
+    <groupId>org.apache.activemq</groupId>
+    <artifactId>artemis-jakarta-client</artifactId>
+    <version>2.31.0</version> <!-- Use a recent version -->
+</dependency>
+<dependency>
+    <groupId>jakarta.jms</groupId>
+    <artifactId>jakarta.jms-api</artifactId>
+    <version>3.1.0</version>
+</dependency>
+----
+
+**Step 2: Implement a Failover-Aware JMS Producer Client**
+
+This example will create a producer that continuously sends messages. If the primary broker fails, it should automatically reconnect to the secondary broker.
+
+[source,java]
+----
+import jakarta.jms.Connection;
+import jakarta.jms.ConnectionFactory;
+import jakarta.jms.Destination;
+import jakarta.jms.JMSException;
+import jakarta.jms.MessageProducer;
+import jakarta.jms.Session;
+import jakarta.jms.TextMessage;
+
+import org.apache.activemq.artemis.jms.client.ActiveMQConnectionFactory;
+
+public class FailoverProducer {
+
+    private static final String BROKER_URL_1 = "tcp://artemis-cluster-headless.artemis-namespace.svc.cluster.local:61616";
+    private static final String BROKER_URL_2 = "tcp://artemis-cluster-0-svc.artemis-namespace.svc.cluster.local:61616"; // Example for a specific pod service
+    private static final String BROKER_URL_3 = "tcp://artemis-cluster-1-svc.artemis-namespace.svc.cluster.local:61616"; // Example for another specific pod service
+
+    // Using a connection URL with multiple brokers and HA enabled
+    private static final String FAILOVER_URL = "(" +
+        BROKER_URL_1 + "," +
+        BROKER_URL_2 + "," +
+        BROKER_URL_3 +
+        ")?ha=true&reconnectAttempts=-1&retryInterval=1000&retryIntervalMultiplier=1.2&maxRetryInterval=60000";
+
+    private static final String QUEUE_NAME = "myFailoverQueue";
+
+    public static void main(String[] args) throws JMSException, InterruptedException {
+        ConnectionFactory connectionFactory = new ActiveMQConnectionFactory(FAILOVER_URL);
+        Connection connection = null;
+        Session session = null;
+        MessageProducer producer = null;
+
+        try {
+            System.out.println("Attempting to connect to ActiveMQ Artemis cluster with failover...");
+            connection = connectionFactory.createConnection();
+            connection.start(); // Start the connection to receive messages (if it were a consumer)
+            System.out.println("Connection established successfully.");
+
+            session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE); // Non-transacted session
+            Destination destination = session.createQueue(QUEUE_NAME);
+            producer = session.createProducer(destination);
+
+            int messageCount = 0;
+            while (true) {
+                String messageText = "Hello from failover producer! Message #" + (++messageCount);
+                TextMessage message = session.createTextMessage(messageText);
+                producer.send(message);
+                System.out.println("Sent message: " + messageText);
+                Thread.sleep(2000); // Send every 2 seconds
+            }
+
+        } catch (JMSException e) {
+            System.err.println("JMS Exception occurred: " + e.getMessage());
+            e.printStackTrace();
+            // In a real application, you might log, clean up, and potentially exit or retry.
+        } finally {
+            if (producer != null) {
+                try { producer.close(); } catch (JMSException e) { e.printStackTrace(); }
+            }
+            if (session != null) {
+                try { session.close(); } catch (JMSException e) { e.printStackTrace(); }
+            }
+            if (connection != null) {
+                try { connection.close(); } catch (JMSException e) { e.printStackTrace(); }
+            }
+            System.out.println("Client shut down.");
+        }
+    }
+}
+----
+
+**Explanation of the Code:**
+
+1.  **`FAILOVER_URL`**: This string is the heart of the failover configuration.
+    *   `(`...`)`: Denotes a list of URLs.
+    *   `tcp://...`: Specifies the transport protocol and endpoint for each broker. In an OpenShift environment, `artemis-cluster-headless.artemis-namespace.svc.cluster.local` refers to the headless service that exposes all broker pods. `artemis-cluster-0-svc` and `artemis-cluster-1-svc` refer to specific services for individual pods, which can be useful for direct testing or if a headless service isn't preferred.
+    *   `ha=true`: Explicitly enables High Availability (failover) mode for the client.
+    *   `reconnectAttempts=-1`: Configures the client to attempt reconnection indefinitely.
+    *   `retryInterval=1000`: Initially waits 1 second between reconnection attempts.
+    *   `retryIntervalMultiplier=1.2`: Increases the retry interval by 20% on each subsequent attempt.
+    *   `maxRetryInterval=60000`: Caps the retry interval at 60 seconds to prevent excessively long waits.
+2.  **`ActiveMQConnectionFactory`**: This is the ActiveMQ Artemis-specific implementation of `ConnectionFactory` that understands the failover URL syntax.
+3.  **`connection.start()`**: While producers don't strictly *need* `start()` (it's mainly for consumers to begin message delivery), it's good practice.
+4.  **`while(true)` loop**: Continuously sends messages, allowing you to observe failover behavior if a broker is stopped or restarted.
+
+**Step 3: Test the Failover Mechanism**
+
+1.  Compile and run the `FailoverProducer` application. You should see messages being sent successfully.
+2.  While the producer is running, intentionally shut down the broker that the client is currently connected to.
+    *   If using OpenShift, you might delete the pod of the active broker instance or scale down the StatefulSet.
+    *   Observe the producer's output. You should see messages indicating a connection loss, followed by attempts to reconnect, and eventually a successful reconnection to another broker in the list. The `JMSException` might be caught, but the `while(true)` loop will likely just encounter a broken pipe and the connection factory will handle the re-establishment internally.
+    *   Once reconnected, message sending should resume.
+3.  Bring the original broker back online, and observe if the client can fail back (it typically won't automatically fail back unless the current connection fails again, it will stick to the reconnected broker).
+
+=== Important Considerations for Client Failover
+
+*   **Idempotency of Consumers:** When a failover occurs, messages that were delivered to a consumer but not yet acknowledged might be redelivered by the new broker. Consumer applications must be designed to handle duplicate messages gracefully (i.e., processing the same message multiple times should not cause incorrect state changes).
+*   **Transaction Management:** If using JMS transactions, an in-flight transaction will be rolled back upon failover. The client application needs to explicitly retry the entire transaction after re-establishing the connection.
+*   **Client-side Load Balancing vs. Failover:** The same connection URL syntax can be used for both. If `ha=true` is used, the primary goal is failover. If `ha=false` (or omitted) and multiple URLs are provided, the client will attempt to connect to the first available broker for load distribution upon initial connection, but will *not* automatically fail over if that connection breaks. For robust systems, `ha=true` is almost always preferred.
+*   **DNS Resolution:** In OpenShift, using headless service names (e.g., `artemis-cluster-headless.artemis-namespace.svc.cluster.local`) in the failover URL is highly recommended. This allows the client to resolve to the current set of available broker pod IPs dynamically, reducing the need to hardcode individual pod service names.
+*   **Connection Pooling:** When using connection pools (e.g., in application servers or frameworks like Spring/Quarkus), ensure that the pooling mechanism correctly integrates with the underlying `ConnectionFactory`'s failover logic. A good connection pool should validate connections before handing them out and replace broken connections with new ones from the failover logic.
+
+By implementing these client-side failover mechanisms, you significantly enhance the overall resilience and availability of your messaging applications, ensuring that they can withstand broker failures and network interruptions with minimal impact on service.
+
+// end::client-failover[]

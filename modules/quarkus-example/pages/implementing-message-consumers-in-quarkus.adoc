@@ -1,0 +1,191 @@
+#  Implementing message consumers in Quarkus
+
+= Implementing Message Consumers in Quarkus
+
+Understanding how to consume messages is crucial for building resilient and reactive microservices. Quarkus provides powerful and efficient mechanisms for implementing message consumers, primarily through its integration with MicroProfile Reactive Messaging. This section details how to create message consumers in Quarkus to process messages from an ActiveMQ Artemis broker, ensuring messages are handled reliably and efficiently.
+
+== Reactive Messaging in Quarkus
+
+Quarkus leverages the MicroProfile Reactive Messaging specification, which simplifies the development of event-driven applications. It allows developers to define message consumers using annotations, abstracting away much of the underlying messaging infrastructure complexities. This approach promotes a non-blocking, asynchronous style of programming, which is ideal for high-throughput messaging scenarios.
+
+=== Core Concepts for Consumers
+
+.   `@Incoming` Annotation:
+    This annotation marks a method as a message consumer. The value specified in the annotation refers to a logical channel name, which is then mapped to an an external messaging broker (like ActiveMQ Artemis queue or topic) via configuration in `application.properties`.
+
+.   Message Payloads:
+    A consumer method can receive the message payload directly (e.g., `String`, `Integer`, a custom POJO), or it can receive a `org.eclipse.microprofile.reactive.messaging.Message` wrapper. The `Message` wrapper provides additional metadata (like headers) and fine-grained control over message acknowledgment.
+
+.   Acknowledgment:
+    Reactive Messaging supports different acknowledgment strategies to ensure message processing guarantees:
+    *   **Automatic Acknowledgment**: By default, if a consumer method returns `void`, `CompletionStage<Void>`, or any non-`Message` type, the message is automatically acknowledged upon successful completion of the method. This is suitable for "fire-and-forget" or simple processing tasks.
+    *   **Manual Acknowledgment**: If a consumer method receives a `Message<T>` object, it can manually acknowledge the message using `message.ack()`. This gives finer control over when a message is considered processed, typically after all business logic and persistence operations are successfully completed.
+
+.   Error Handling:
+    If a consumer method throws an exception, the message is typically *nacked* (negative acknowledgment), and the messaging system's redelivery policies come into play. For ActiveMQ Artemis, this usually means the message is redelivered to the same consumer or another consumer in the group, or routed to a Dead Letter Queue (DLQ) after a configured number of retries. Specific error handling logic can be implemented within the consumer method using `try-catch` blocks, or by configuring error strategies at the channel level.
+
+== Implementing a Simple Message Consumer
+
+Let's walk through an example of implementing a message consumer that listens to a queue on ActiveMQ Artemis and processes incoming messages.
+
+=== Prerequisites
+
+Ensure you have a Quarkus project set up. You will need to add the necessary dependencies for Reactive Messaging and the AMQP connector for ActiveMQ Artemis.
+
+[source,xml]
+.pom.xml dependencies
+----
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-smallrye-reactive-messaging-amqp</artifactId>
+</dependency>
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-arc</artifactId> <!-- CDI for @ApplicationScoped -->
+</dependency>
+----
+
+=== Consumer Class Example
+
+Create a simple CDI bean that will contain our consumer methods. We'll demonstrate both automatic and manual acknowledgment patterns.
+
+[source,java]
+.src/main/java/org/acme/messaging/ArtemisConsumer.java
+----
+package org.acme.messaging;
+
+import jakarta.enterprise.context.ApplicationScoped;
+import org.eclipse.microprofile.reactive.messaging.Incoming;
+import org.eclipse.microprofile.reactive.messaging.Message; // For manual acknowledgment
+import org.eclipse.microprofile.reactive.messaging.Metadata; // For accessing message metadata
+import org.jboss.logging.Logger;
+
+@ApplicationScoped
+public class ArtemisConsumer {
+
+    private static final Logger LOG = Logger.getLogger(ArtemisConsumer.class);
+
+    /**
+     * Consumes messages from the 'price-updates' channel.
+     * Uses automatic acknowledgment as the method returns void.
+     * The payload is directly injected.
+     *
+     * @param price The price value from the message payload.
+     */
+    @Incoming("price-updates")
+    public void consumePriceUpdate(double price) {
+        LOG.infof("Received price update: %.2f", price);
+        // Simulate processing, e.g., storing in a database or performing calculations.
+        // If an exception occurs here, the message will be nacked and potentially redelivered.
+    }
+
+    /**
+     * Consumes messages from the 'order-requests' channel.
+     * Uses manual acknowledgment, demonstrating more control over when a message is acknowledged.
+     * The full Message object is injected, allowing access to payload and metadata.
+     *
+     * @param incomingMessage The incoming Message object containing the order details.
+     */
+    @Incoming("order-requests")
+    public void processOrderRequest(Message<String> incomingMessage) {
+        String orderDetails = incomingMessage.getPayload();
+        // Accessing metadata if available (e.g., from a producer)
+        incomingMessage.getMetadata(Metadata.class)
+                       .ifPresent(metadata -> LOG.debugf("Message metadata: %s", metadata));
+
+        LOG.infof("Processing order request: %s", orderDetails);
+
+        try {
+            // Simulate complex business logic and potential failures
+            if (orderDetails.contains("urgent") && Math.random() < 0.3) {
+                // Simulate a transient error for urgent orders
+                throw new RuntimeException("Simulated transient failure for urgent order: " + orderDetails);
+            }
+
+            // If processing is successful, acknowledge the message
+            incomingMessage.ack().toCompletableFuture().join();
+            LOG.infof("Order request successfully processed and acknowledged: %s", orderDetails);
+
+        } catch (Exception e) {
+            LOG.errorf("Error processing order request '%s': %s. Message will be nacked.", orderDetails, e.getMessage());
+            // If an error occurs, negatively acknowledge the message.
+            // This tells the broker to redeliver or move to DLQ based on broker configuration.
+            incomingMessage.nack(e).toCompletableFuture().join();
+        }
+    }
+
+    /**
+     * Consumes messages from a topic with shared subscription semantics.
+     * This consumer is part of a consumer group 'inventory-group'.
+     * Messages sent to 'inventory-topic' will be distributed among consumers in 'inventory-group'.
+     *
+     * @param itemUpdate The item update details.
+     */
+    @Incoming("inventory-topic")
+    public void handleInventoryUpdate(String itemUpdate) {
+        LOG.infof("Inventory service received item update: %s", itemUpdate);
+        // Process inventory update, e.g., update stock levels.
+    }
+}
+----
+
+=== Configuration for ActiveMQ Artemis
+
+The channels defined in the `@Incoming` annotations need to be mapped to physical queues or topics on your ActiveMQ Artemis broker. This is done in the `src/main/resources/application.properties` file.
+
+[source,properties]
+.src/main/resources/application.properties
+----
+# Quarkus application name
+quarkus.application.name=quarkus-artemis-consumer-app
+
+# ActiveMQ Artemis Broker connection details for the default 'amqp' connector
+# Replace with your Artemis service host and port
+mp.messaging.connector.amqp.host=localhost
+mp.messaging.connector.amqp.port=5672
+mp.messaging.connector.amqp.username=artemis
+mp.messaging.connector.amqp.password=artemis
+mp.messaging.connector.amqp.client-id=quarkus-artemis-consumer-client
+mp.messaging.connector.amqp.connection-reconnect-attempts=-1 # Reconnect indefinitely on connection loss
+mp.messaging.connector.amqp.connection-timeout=30s
+
+# --- Configuration for 'price-updates' channel (Automatic Acknowledgment) ---
+mp.messaging.incoming.price-updates.connector=amqp
+mp.messaging.incoming.price-updates.queue=price-queue
+mp.messaging.incoming.price-updates.durable=true             # Messages are durable by default for queues
+mp.messaging.incoming.price-updates.max-unacked-messages=100 # Max messages in flight before flow control
+mp.messaging.incoming.price-updates.credit-window=100        # Credit window for flow control (AMQP)
+mp.messaging.incoming.price-updates.acknowledgement=post-commit # Default for automatic acknowledgment
+
+# --- Configuration for 'order-requests' channel (Manual Acknowledgment) ---
+mp.messaging.incoming.order-requests.connector=amqp
+mp.messaging.incoming.order-requests.queue=order-queue
+mp.messaging.incoming.order-requests.acknowledgement=manual # Explicitly set to manual
+
+# --- Configuration for 'inventory-topic' channel (Shared Subscription) ---
+mp.messaging.incoming.inventory-topic.connector=amqp
+mp.messaging.incoming.inventory-topic.topic=inventory-topic   # Connect to a topic
+mp.messaging.incoming.inventory-topic.broadcast=false         # Important for shared subscription
+mp.messaging.incoming.inventory-topic.groups=inventory-group  # Define a consumer group for shared subscription
+mp.messaging.incoming.inventory-topic.durable=true            # For durable shared subscriptions
+----
+
+=== Explanation of Configuration Properties
+
+*   `mp.messaging.connector.amqp.*`: These properties define the global connection parameters for the AMQP connector to your ActiveMQ Artemis broker.
+    *   `host`, `port`, `username`, `password`: Essential for broker connectivity.
+    *   `client-id`: A unique identifier for this client, important for durable subscriptions.
+    *   `connection-reconnect-attempts`: Configures the number of reconnection attempts. `-1` means unlimited attempts.
+*   `mp.messaging.incoming.<channel-name>.connector=amqp`: Specifies that the channel uses the AMQP connector configured above.
+*   `mp.messaging.incoming.<channel-name>.queue`: The name of the queue on the ActiveMQ Artemis broker from which messages will be consumed. Use this for point-to-point messaging.
+*   `mp.messaging.incoming.<channel-name>.topic`: The name of the topic on the ActiveMQ Artemis broker from which messages will be consumed. Use this for publish-subscribe messaging.
+*   `mp.messaging.incoming.<channel-name>.durable`: (Optional) Whether the subscription should be durable. For topics, `true` ensures that messages are retained for a consumer even if it's temporarily offline. For queues, messages are durable by nature.
+*   `mp.messaging.incoming.<channel-name>.max-unacked-messages`: (Optional, AMQP specific) The maximum number of unacknowledged messages that the consumer can have outstanding. This helps in flow control, preventing the consumer from being overwhelmed.
+*   `mp.messaging.incoming.<channel-name>.credit-window`: (Optional, AMQP specific) Part of AMQP flow control, determining how many credits the consumer grants to the broker.
+*   `mp.messaging.incoming.<channel-name>.acknowledgement`: Sets the acknowledgment strategy.
+    *   `post-commit`: (Default) Message is acknowledged after the consumer method successfully completes.
+    *   `manual`: Requires explicit `message.ack()` or `message.nack()`.
+*   `mp.messaging.incoming.<channel-name>.broadcast=false`: For topic subscriptions, setting this to `false` (the default for queues) combined with `groups` enables shared subscription semantics.
+*   `mp.messaging.incoming.<channel-name>.groups`: (Optional) Defines a consumer group. When multiple consumers subscribe to the same topic/queue with the same group name, messages are distributed among them (shared subscription), ensuring each message is processed only once by the group. This is crucial for load balancing messages across instances of your consuming application.
+
+By leveraging these configurations and the `@Incoming` annotation, Quarkus developers can efficiently implement robust and scalable message consumers that seamlessly integrate with ActiveMQ Artemis, handling various messaging patterns and ensuring message reliability.
