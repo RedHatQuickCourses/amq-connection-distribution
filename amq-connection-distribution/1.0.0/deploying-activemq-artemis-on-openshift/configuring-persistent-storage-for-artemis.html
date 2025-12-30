@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width,initial-scale=1">
-    <title>Configuring persistent storage for Artemis :: Understanding and Implementing Message Oriented Middleware</title>
+    <title>Configuring persistent storage for Artemis :: ActiveMQ Artemis Clustering and High Availability</title>
     <meta name="generator" content="Antora 3.1.3">
     <link rel="stylesheet" href="../../../_/css/site.css">
     <script>var uiRootPath = '../../../_'</script>
@@ -13,7 +13,7 @@
   <nav class="navbar">
     <div class="navbar-brand">
       <a class="navbar-item" href="https://www.redhat.com" target="_blank"><img src="../../../_/img/redhat-logo.png" height="40px" alt="Red Hat"></a>
-      <a class="navbar-item" style="font-size: 24px; color: white" href="../../..">Understanding and Implementing Message Oriented Middleware</a>
+      <a class="navbar-item" style="font-size: 24px; color: white" href="../../..">ActiveMQ Artemis Clustering and High Availability</a>
       <button class="navbar-burger" data-target="topbar-nav">
         <span></span>
         <span></span>
@@ -33,7 +33,7 @@
     <div class="panels">
 <div class="nav-panel-menu is-active" data-panel="menu">
   <nav class="nav-menu">
-    <h3 class="title"><a href="../index.html">Understanding and Implementing Message Oriented Middleware</a></h3>
+    <h3 class="title"><a href="../index.html">ActiveMQ Artemis Clustering and High Availability</a></h3>
 <ul class="nav-list">
   <li class="nav-item" data-depth="0">
 <ul class="nav-list">
@@ -46,19 +46,22 @@
 <ul class="nav-list">
   <li class="nav-item" data-depth="1">
     <button class="nav-item-toggle"></button>
-    <a class="nav-link" href="../introduction-to-message-oriented-middleware-mom/introduction-to-message-oriented-middleware-mom.html">Introduction to Message Oriented Middleware (MOM)</a>
+    <a class="nav-link" href="../message-oriented-middleware-introduction/message-oriented-middleware-introduction.html">Message Oriented Middleware Introduction</a>
 <ul class="nav-list">
   <li class="nav-item" data-depth="2">
-    <a class="nav-link" href="../introduction-to-message-oriented-middleware-mom/what-is-message-oriented-middleware.html">What is Message Oriented Middleware?</a>
+    <a class="nav-link" href="../message-oriented-middleware-introduction/role-of-mom-in-distributed-systems.html">Role of MOM in distributed systems</a>
   </li>
   <li class="nav-item" data-depth="2">
-    <a class="nav-link" href="../introduction-to-message-oriented-middleware-mom/core-concepts-messages-producers-consumers-brokers.html">Core concepts: Messages, Producers, Consumers, Brokers</a>
+    <a class="nav-link" href="../message-oriented-middleware-introduction/benefits-of-asynchronous-communication.html">Benefits of asynchronous communication</a>
   </li>
   <li class="nav-item" data-depth="2">
-    <a class="nav-link" href="../introduction-to-message-oriented-middleware-mom/benefits-of-mom-in-distributed-systems.html">Benefits of MOM in distributed systems</a>
+    <a class="nav-link" href="../message-oriented-middleware-introduction/ensuring-resilience-and-reliability-with-mom.html">Ensuring resilience and reliability with MOM</a>
   </li>
   <li class="nav-item" data-depth="2">
-    <a class="nav-link" href="../introduction-to-message-oriented-middleware-mom/common-use-cases-for-mom.html">Common use cases for MOM</a>
+    <a class="nav-link" href="../message-oriented-middleware-introduction/introduction-to-activemq-artemis.html">Introduction to ActiveMQ Artemis</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../message-oriented-middleware-introduction/key-features-and-architecture-of-activemq-artemis.html">Key features and architecture of ActiveMQ Artemis</a>
   </li>
 </ul>
   </li>
@@ -68,19 +71,22 @@
 <ul class="nav-list">
   <li class="nav-item" data-depth="1">
     <button class="nav-item-toggle"></button>
-    <a class="nav-link" href="../challenges-in-distributed-systems/challenges-in-distributed-systems.html">Challenges in Distributed Systems</a>
+    <a class="nav-link" href="../challenges-with-clustered-brokers/challenges-with-clustered-brokers.html">Challenges with clustered brokers</a>
 <ul class="nav-list">
   <li class="nav-item" data-depth="2">
-    <a class="nav-link" href="../challenges-in-distributed-systems/issues-with-direct-service-to-service-communication.html">Issues with direct service-to-service communication</a>
+    <a class="nav-link" href="../challenges-with-clustered-brokers/uneven-connection-distribution-across-cluster-nodes.html">Uneven connection distribution across cluster nodes</a>
   </li>
   <li class="nav-item" data-depth="2">
-    <a class="nav-link" href="../challenges-in-distributed-systems/the-need-for-asynchronous-processing.html">The need for asynchronous processing</a>
+    <a class="nav-link" href="../challenges-with-clustered-brokers/bottlenecks-from-single-connection-points.html">Bottlenecks from single connection points</a>
   </li>
   <li class="nav-item" data-depth="2">
-    <a class="nav-link" href="../challenges-in-distributed-systems/problems-with-reliability-and-data-consistency.html">Problems with reliability and data consistency</a>
+    <a class="nav-link" href="../challenges-with-clustered-brokers/overhead-and-impact-of-message-redistribution.html">Overhead and impact of message redistribution</a>
   </li>
   <li class="nav-item" data-depth="2">
-    <a class="nav-link" href="../challenges-in-distributed-systems/scalability-and-coupling-concerns.html">Scalability and coupling concerns</a>
+    <a class="nav-link" href="../challenges-with-clustered-brokers/reduced-cluster-throughput-in-specific-scenarios.html">Reduced cluster throughput in specific scenarios</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../challenges-with-clustered-brokers/disk-paging-issues-for-high-volume-queues.html">Disk paging issues for high-volume queues</a>
   </li>
 </ul>
   </li>
@@ -90,22 +96,28 @@
 <ul class="nav-list">
   <li class="nav-item" data-depth="1">
     <button class="nav-item-toggle"></button>
-    <a class="nav-link" href="../mom-solutions-for-distributed-systems/mom-solutions-for-distributed-systems.html">MOM Solutions for Distributed Systems</a>
+    <a class="nav-link" href="../solutions/solutions.html">Solutions</a>
 <ul class="nav-list">
   <li class="nav-item" data-depth="2">
-    <a class="nav-link" href="../mom-solutions-for-distributed-systems/decoupling-services-with-message-queues.html">Decoupling services with message queues</a>
+    <a class="nav-link" href="../solutions/activemq-artemis-clustering-overview.html">ActiveMQ Artemis clustering overview</a>
   </li>
   <li class="nav-item" data-depth="2">
-    <a class="nav-link" href="../mom-solutions-for-distributed-systems/point-to-point-ptp-messaging-model.html">Point-to-Point (PTP) messaging model</a>
+    <a class="nav-link" href="../solutions/high-availability-ha-and-automatic-failover.html">High Availability (HA) and automatic failover</a>
   </li>
   <li class="nav-item" data-depth="2">
-    <a class="nav-link" href="../mom-solutions-for-distributed-systems/publishsubscribe-pubsub-messaging-model.html">Publish/Subscribe (Pub/Sub) messaging model</a>
+    <a class="nav-link" href="../solutions/server-side-message-load-balancing.html">Server-side message load balancing</a>
   </li>
   <li class="nav-item" data-depth="2">
-    <a class="nav-link" href="../mom-solutions-for-distributed-systems/ensuring-message-delivery-and-reliability.html">Ensuring message delivery and reliability</a>
+    <a class="nav-link" href="../solutions/scaling-with-competing-consumers.html">Scaling with competing consumers</a>
   </li>
   <li class="nav-item" data-depth="2">
-    <a class="nav-link" href="../mom-solutions-for-distributed-systems/message-persistence-and-durability.html">Message persistence and durability</a>
+    <a class="nav-link" href="../solutions/deploying-activemq-artemis-on-openshift.html">Deploying ActiveMQ Artemis on OpenShift</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../solutions/utilizing-the-red-hat-amq-operator.html">Utilizing the Red Hat AMQ Operator</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../solutions/configuring-activemqartemis-custom-resources-for-clustering.html">Configuring ActiveMQArtemis Custom Resources for clustering</a>
   </li>
 </ul>
   </li>
@@ -115,22 +127,19 @@
 <ul class="nav-list">
   <li class="nav-item" data-depth="1">
     <button class="nav-item-toggle"></button>
-    <a class="nav-link" href="../hands-on-lab-implementing-messaging-patterns/hands-on-lab-implementing-messaging-patterns.html">Hands-on Lab: Implementing Messaging Patterns</a>
+    <a class="nav-link" href="../code-examples/code-examples.html">Code Examples</a>
 <ul class="nav-list">
   <li class="nav-item" data-depth="2">
-    <a class="nav-link" href="../hands-on-lab-implementing-messaging-patterns/setting-up-a-basic-message-broker.html">Setting up a basic message broker</a>
+    <a class="nav-link" href="../code-examples/developing-producer-applications-for-activemq-artemis.html">Developing producer applications for ActiveMQ Artemis</a>
   </li>
   <li class="nav-item" data-depth="2">
-    <a class="nav-link" href="../hands-on-lab-implementing-messaging-patterns/developing-a-producer-for-point-to-point-messaging.html">Developing a producer for Point-to-Point messaging</a>
+    <a class="nav-link" href="../code-examples/developing-consumer-applications-for-activemq-artemis.html">Developing consumer applications for ActiveMQ Artemis</a>
   </li>
   <li class="nav-item" data-depth="2">
-    <a class="nav-link" href="../hands-on-lab-implementing-messaging-patterns/developing-a-consumer-for-point-to-point-messaging.html">Developing a consumer for Point-to-Point messaging</a>
+    <a class="nav-link" href="../code-examples/connecting-clients-to-a-clustered-artemis-environment.html">Connecting clients to a clustered Artemis environment</a>
   </li>
   <li class="nav-item" data-depth="2">
-    <a class="nav-link" href="../hands-on-lab-implementing-messaging-patterns/implementing-a-publisher-for-publishsubscribe.html">Implementing a publisher for Publish/Subscribe</a>
-  </li>
-  <li class="nav-item" data-depth="2">
-    <a class="nav-link" href="../hands-on-lab-implementing-messaging-patterns/implementing-a-subscriber-for-publishsubscribe.html">Implementing a subscriber for Publish/Subscribe</a>
+    <a class="nav-link" href="../code-examples/demonstrating-message-publishing-and-consumption-patterns.html">Demonstrating message publishing and consumption patterns</a>
   </li>
 </ul>
   </li>
@@ -141,12 +150,12 @@
 </div>
 <div class="nav-panel-explore" data-panel="explore">
   <div class="context">
-    <span class="title">Understanding and Implementing Message Oriented Middleware</span>
+    <span class="title">ActiveMQ Artemis Clustering and High Availability</span>
     <span class="version">1.0.0</span>
   </div>
   <ul class="components">
     <li class="component is-current">
-      <a class="title" href="../index.html">Understanding and Implementing Message Oriented Middleware</a>
+      <a class="title" href="../index.html">ActiveMQ Artemis Clustering and High Availability</a>
       <ul class="versions">
         <li class="version is-current is-latest">
           <a href="../index.html">1.0.0</a>
@@ -164,7 +173,7 @@
   <a href="../index.html" class="home-link"></a>
 <nav class="breadcrumbs" aria-label="breadcrumbs">
   <ul>
-    <li><a href="../index.html">Understanding and Implementing Message Oriented Middleware</a></li>
+    <li><a href="../index.html">ActiveMQ Artemis Clustering and High Availability</a></li>
     <li><a href="configuring-persistent-storage-for-artemis.html">Configuring persistent storage for Artemis</a></li>
   </ul>
 </nav>

@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Disk paging issues for high-volume queues :: ActiveMQ Artemis Clustering and High Availability</title>
+    <link rel="prev" href="reduced-cluster-throughput-in-specific-scenarios.html">
+    <link rel="next" href="../solutions/solutions.html">
+    <meta name="generator" content="Antora 3.1.3">
+    <link rel="stylesheet" href="../../../_/css/site.css">
+    <script>var uiRootPath = '../../../_'</script>
+  </head>
+  <body class="article">
+<header class="header">
+  <nav class="navbar">
+    <div class="navbar-brand">
+      <a class="navbar-item" href="https://www.redhat.com" target="_blank"><img src="../../../_/img/redhat-logo.png" height="40px" alt="Red Hat"></a>
+      <a class="navbar-item" style="font-size: 24px; color: white" href="../../..">ActiveMQ Artemis Clustering and High Availability</a>
+      <button class="navbar-burger" data-target="topbar-nav">
+        <span></span>
+        <span></span>
+        <span></span>
+      </button>
+    </div>
+    <div id="topbar-nav" class="navbar-menu">
+      <div class="navbar-end">
+        <a class="navbar-item" href="https://github.com/RedHatQuickCourses/REPLACEREPONAME/issues" target="_blank">Report Issues</a>
+      </div>
+    </div>
+  </nav>
+</header>
+<div class="body">
+<div class="nav-container" data-component="amq-connection-distribution" data-version="1.0.0">
+  <aside class="nav">
+    <div class="panels">
+<div class="nav-panel-menu is-active" data-panel="menu">
+  <nav class="nav-menu">
+    <h3 class="title"><a href="../index.html">ActiveMQ Artemis Clustering and High Availability</a></h3>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="../index.html">Home</a>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../message-oriented-middleware-introduction/message-oriented-middleware-introduction.html">Message Oriented Middleware Introduction</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../message-oriented-middleware-introduction/role-of-mom-in-distributed-systems.html">Role of MOM in distributed systems</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../message-oriented-middleware-introduction/benefits-of-asynchronous-communication.html">Benefits of asynchronous communication</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../message-oriented-middleware-introduction/ensuring-resilience-and-reliability-with-mom.html">Ensuring resilience and reliability with MOM</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../message-oriented-middleware-introduction/introduction-to-activemq-artemis.html">Introduction to ActiveMQ Artemis</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../message-oriented-middleware-introduction/key-features-and-architecture-of-activemq-artemis.html">Key features and architecture of ActiveMQ Artemis</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="challenges-with-clustered-brokers.html">Challenges with clustered brokers</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="uneven-connection-distribution-across-cluster-nodes.html">Uneven connection distribution across cluster nodes</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="bottlenecks-from-single-connection-points.html">Bottlenecks from single connection points</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="overhead-and-impact-of-message-redistribution.html">Overhead and impact of message redistribution</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="reduced-cluster-throughput-in-specific-scenarios.html">Reduced cluster throughput in specific scenarios</a>
+  </li>
+  <li class="nav-item is-current-page" data-depth="2">
+    <a class="nav-link" href="disk-paging-issues-for-high-volume-queues.html">Disk paging issues for high-volume queues</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../solutions/solutions.html">Solutions</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../solutions/activemq-artemis-clustering-overview.html">ActiveMQ Artemis clustering overview</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../solutions/high-availability-ha-and-automatic-failover.html">High Availability (HA) and automatic failover</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../solutions/server-side-message-load-balancing.html">Server-side message load balancing</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../solutions/scaling-with-competing-consumers.html">Scaling with competing consumers</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../solutions/deploying-activemq-artemis-on-openshift.html">Deploying ActiveMQ Artemis on OpenShift</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../solutions/utilizing-the-red-hat-amq-operator.html">Utilizing the Red Hat AMQ Operator</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../solutions/configuring-activemqartemis-custom-resources-for-clustering.html">Configuring ActiveMQArtemis Custom Resources for clustering</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../code-examples/code-examples.html">Code Examples</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../code-examples/developing-producer-applications-for-activemq-artemis.html">Developing producer applications for ActiveMQ Artemis</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../code-examples/developing-consumer-applications-for-activemq-artemis.html">Developing consumer applications for ActiveMQ Artemis</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../code-examples/connecting-clients-to-a-clustered-artemis-environment.html">Connecting clients to a clustered Artemis environment</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../code-examples/demonstrating-message-publishing-and-consumption-patterns.html">Demonstrating message publishing and consumption patterns</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+</ul>
+  </nav>
+</div>
+<div class="nav-panel-explore" data-panel="explore">
+  <div class="context">
+    <span class="title">ActiveMQ Artemis Clustering and High Availability</span>
+    <span class="version">1.0.0</span>
+  </div>
+  <ul class="components">
+    <li class="component is-current">
+      <a class="title" href="../index.html">ActiveMQ Artemis Clustering and High Availability</a>
+      <ul class="versions">
+        <li class="version is-current is-latest">
+          <a href="../index.html">1.0.0</a>
+        </li>
+      </ul>
+    </li>
+  </ul>
+</div>
+    </div>
+  </aside>
+</div>
+<main class="article">
+<div class="toolbar" role="navigation">
+<button class="nav-toggle"></button>
+  <a href="../index.html" class="home-link"></a>
+<nav class="breadcrumbs" aria-label="breadcrumbs">
+  <ul>
+    <li><a href="../index.html">ActiveMQ Artemis Clustering and High Availability</a></li>
+    <li><a href="challenges-with-clustered-brokers.html">Challenges with clustered brokers</a></li>
+    <li><a href="disk-paging-issues-for-high-volume-queues.html">Disk paging issues for high-volume queues</a></li>
+  </ul>
+</nav>
+</div>
+  <div class="content">
+<aside class="toc sidebar" data-title="Contents" data-levels="2">
+  <div class="toc-menu"></div>
+</aside>
+<article class="doc">
+<h1 class="page">Disk paging issues for high-volume queues</h1>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-asciidoc hljs" data-lang="asciidoc">= Disk Paging Issues for High-Volume Queues
+
+[[disk-paging-issues]]
+While ActiveMQ Artemis is designed for high-performance messaging, certain scenarios within a clustered environment, especially when dealing with high-volume queues, can lead to significant performance degradation, specifically through *disk paging*. Understanding this mechanism is crucial for designing resilient and performant messaging systems.
+
+== Understanding Disk Paging in ActiveMQ Artemis
+
+In a message-oriented middleware like ActiveMQ Artemis, messages are typically held in memory buffers as they await processing by consumers. This in-memory storage provides the fastest possible access and lowest latency. However, these memory buffers are finite resources.
+
+When a message broker experiences a sustained high influx of messages into a particular queue, and the rate of message production significantly outpaces the rate of consumption, the in-memory buffers allocated for that queue can become exhausted. To prevent memory exhaustion and potential system crashes, ActiveMQ Artemis employs a protective mechanism: it offloads pending messages from memory to persistent storage – typically disk. This process is known as *disk paging*.
+
+=== Causes and Triggers
+
+Disk paging is not an inherent flaw but a vital protective mechanism to maintain broker stability under stress. It is often triggered by a combination of factors, particularly in clustered setups:
+
+*   **High-Volume Queues**: Queues consistently receiving a very large number of messages per second, pushing the limits of the broker's memory.
+*   **Slow or Insufficient Consumers**: Consumers unable to keep pace with the message production rate, leading to an ever-growing backlog of messages in the queue.
+*   **Uneven Connection Distribution Across Cluster Nodes**: As highlighted in the "Challenges with clustered brokers," if a producer connects to one broker (say, Broker A) but the consumers for that specific queue are primarily connected to another broker (Broker B), messages must be *redistributed* from Broker A to Broker B across the cluster.
+    The provided context explicitly states: "Reliance on message redistribution reduces overall cluster throughput and can force high-volume queues to page pending messages to disk." This redistribution process, involving inter-broker communication and internal processing, introduces significant overhead. If this overhead, combined with high message volumes, overwhelms a broker's memory resources, messages will be paged to disk.
+*   **Overhead and Impact of Message Redistribution**: The act of moving messages between nodes consumes network bandwidth, CPU cycles, and memory. When this overhead is significant due to high volumes, it adds to the pressure on memory resources, accelerating the onset of disk paging.
+
+=== Impact of Disk Paging
+
+While disk paging is a necessary evil that prevents out-of-memory errors and broker crashes, it comes at a significant performance cost:
+
+*   **Reduced Cluster Throughput**: Disk I/O operations are orders of magnitude slower than memory access. When messages are paged to disk, the broker's ability to process and deliver messages is severely hampered, leading to a drastic reduction in overall system and cluster throughput.
+*   **Increased Latency**: Messages that are paged to disk will experience much higher end-to-end latency. They need to be written to disk, and then later read back into memory before being delivered to consumers. This directly contradicts the low-latency benefits of asynchronous communication and the "Fire and Forget" pattern, as the actual data processing is significantly delayed.
+*   **Disk I/O Bottlenecks**: Continuous paging can saturate the underlying disk subsystem (SSDs or HDDs), affecting not just ActiveMQ Artemis but potentially other applications or services sharing the same storage resources.
+*   **Resource Consumption**: Paging consumes significant CPU cycles for disk operations and increases wear and tear on storage devices. In virtualized or cloud environments, heavy disk I/O can also lead to "noisy neighbor" issues and increased operational costs.
+
+In essence, disk paging transforms the high-speed, in-memory message processing capability of ActiveMQ Artemis into a much slower, disk-bound operation, severely degrading the performance, responsiveness, and reliability of the entire messaging system. Proactive monitoring and architectural solutions are crucial to mitigate this problem.
+
+== Hands-on Activity: Observing Queue Metrics for High-Volume Scenarios
+
+While we won't intentionally force disk paging in a lab environment (as it's a condition to avoid), understanding how to observe key queue metrics is crucial for identifying potential high-volume scenarios that *could* lead to paging. This activity focuses on diagnostic skills to spot these precursor conditions.
+
+The goal of this activity is to:
+
+*   Learn how to inspect the current state of queues on an ActiveMQ Artemis broker.
+*   Identify key metrics that indicate high message volumes or message accumulation that could lead to disk paging.
+
+[NOTE]
+====
+For this activity, you would typically need a running ActiveMQ Artemis broker (standalone or clustered) and some producer applications actively sending messages to queues. If you don't have a cluster set up yet, you can follow the instructions in the "Deploying ActiveMQ Artemis on OpenShift" section later in this training. For now, we'll use an example output from the context.
+====
+
+=== Step 1: Accessing Broker Management Interface
+
+To get real-time statistics and monitor your queues, you would typically connect to your ActiveMQ Artemis broker's management console (often a web interface) or use JMX tools. For deployments on platforms like OpenShift, this might involve using `oc rsh` into a broker pod and utilizing the `artemis` CLI management commands, or accessing the OpenShift console to view pod logs and metrics exposed through monitoring stacks.
+
+=== Step 2: Inspecting Queue Statistics
+
+Once you have access to the broker's management interface, you can query for queue statistics. Let's look at an example output from a clustered node, similar to what's provided in our context:
+
+[source,text]
+----
+Queue stats on node e779f217-d741-11f0-906c-0a580ad9003a,
+url=tcp://broker-ss-1.broker-hdls-svc.broker.svc.cluster.local:61616
+|NAME  |ADDRESS|CONSUMER|MESSAGE|MESSAGES|DELIVERING|MESSAGES|SCHEDULED|ROUTING|IN
+TERNAL|
+|      |       | COUNT  | COUNT | ADDED  |  COUNT   | ACKED  |  COUNT  |
+TYPE  |        |
+|prices|prices |   2    |   0   |  188   |    0     |  188   |    0
+|ANYCAST| false  |
+----
+
+Let's break down the key columns from this output that are most relevant to identifying high-volume scenarios and potential disk paging risks:
+
+*   `NAME`: The identifier of the queue (e.g., `prices`).
+*   `ADDRESS`: The address the queue is bound to (e.g., `prices`).
+*   `CONSUMER COUNT`: The number of active consumers currently subscribed to this queue (`2` in this example). A low consumer count relative to the incoming message volume is a critical indicator of a potential bottleneck.
+*   `MESSAGE COUNT`: The current number of messages *waiting* in the queue (`0` in this example). A rapidly increasing or consistently high `MESSAGE COUNT` (e.g., thousands or millions) is the primary indicator of message accumulation and memory pressure.
+*   `MESSAGES ADDED`: The total number of messages that have been added to this queue since its creation or last reset (`188`). This metric provides insight into the historical incoming volume.
+
+=== Step 3: Interpreting Metrics for Paging Risk
+
+*   **Consistently High `MESSAGE COUNT`**: If the `MESSAGE COUNT` for a queue starts to climb into thousands, tens of thousands, or even millions and stays high, this queue is a prime candidate for potential disk paging. This indicates that messages are accumulating faster than they are being processed.
+*   **`MESSAGES ADDED` vs. `MESSAGE COUNT` Trend**: In a healthy, well-balanced queue, even with a high `MESSAGES ADDED` rate, the `MESSAGE COUNT` should ideally fluctuate near zero (or a very low number), as consumers quickly process messages. If `MESSAGE COUNT` persistently grows while `MESSAGES ADDED` continues to climb, it's a strong signal that consumers are not keeping pace, leading to a backlog.
+*   **Low `CONSUMER COUNT` relative to Load**: A low number of consumers for a high-volume queue directly contributes to message accumulation. Identifying queues with high `MESSAGE COUNT` and relatively low `CONSUMER COUNT` points to a need for scaling out consumer applications. (This aligns with the "Scaling with competing consumers" objective).
+
+By regularly monitoring these critical metrics, you can proactively identify queues that are under stress and take corrective actions (such as scaling consumer instances, optimizing client connection strategies to achieve server-side message load balancing, or reviewing cluster redistribution configurations) *before* disk paging significantly impacts your system's performance and reliability.</code></pre>
+</div>
+</div>
+<nav class="pagination">
+  <span class="prev"><a href="reduced-cluster-throughput-in-specific-scenarios.html">Reduced cluster throughput in specific scenarios</a></span>
+  <span class="next"><a href="../solutions/solutions.html">Solutions</a></span>
+</nav>
+</article>
+  </div>
+</main>
+</div>
+<footer class="footer">
+  <img src="../../../_/img/rhl-logo-red.png" height="40px" alt="Red Hat"  href="https://redhat.com" >
+</footer><script id="site-script" src="../../../_/js/site.js" data-ui-root-path="../../../_"></script>
+<script async src="../../../_/js/vendor/highlight.js"></script>
+  </body>
+</html>

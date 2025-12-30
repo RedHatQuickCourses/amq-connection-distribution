@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Uneven connection distribution across cluster nodes :: ActiveMQ Artemis Clustering and High Availability</title>
+    <link rel="prev" href="challenges-with-clustered-brokers.html">
+    <link rel="next" href="bottlenecks-from-single-connection-points.html">
+    <meta name="generator" content="Antora 3.1.3">
+    <link rel="stylesheet" href="../../../_/css/site.css">
+    <script>var uiRootPath = '../../../_'</script>
+  </head>
+  <body class="article">
+<header class="header">
+  <nav class="navbar">
+    <div class="navbar-brand">
+      <a class="navbar-item" href="https://www.redhat.com" target="_blank"><img src="../../../_/img/redhat-logo.png" height="40px" alt="Red Hat"></a>
+      <a class="navbar-item" style="font-size: 24px; color: white" href="../../..">ActiveMQ Artemis Clustering and High Availability</a>
+      <button class="navbar-burger" data-target="topbar-nav">
+        <span></span>
+        <span></span>
+        <span></span>
+      </button>
+    </div>
+    <div id="topbar-nav" class="navbar-menu">
+      <div class="navbar-end">
+        <a class="navbar-item" href="https://github.com/RedHatQuickCourses/REPLACEREPONAME/issues" target="_blank">Report Issues</a>
+      </div>
+    </div>
+  </nav>
+</header>
+<div class="body">
+<div class="nav-container" data-component="amq-connection-distribution" data-version="1.0.0">
+  <aside class="nav">
+    <div class="panels">
+<div class="nav-panel-menu is-active" data-panel="menu">
+  <nav class="nav-menu">
+    <h3 class="title"><a href="../index.html">ActiveMQ Artemis Clustering and High Availability</a></h3>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="../index.html">Home</a>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../message-oriented-middleware-introduction/message-oriented-middleware-introduction.html">Message Oriented Middleware Introduction</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../message-oriented-middleware-introduction/role-of-mom-in-distributed-systems.html">Role of MOM in distributed systems</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../message-oriented-middleware-introduction/benefits-of-asynchronous-communication.html">Benefits of asynchronous communication</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../message-oriented-middleware-introduction/ensuring-resilience-and-reliability-with-mom.html">Ensuring resilience and reliability with MOM</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../message-oriented-middleware-introduction/introduction-to-activemq-artemis.html">Introduction to ActiveMQ Artemis</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../message-oriented-middleware-introduction/key-features-and-architecture-of-activemq-artemis.html">Key features and architecture of ActiveMQ Artemis</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="challenges-with-clustered-brokers.html">Challenges with clustered brokers</a>
+<ul class="nav-list">
+  <li class="nav-item is-current-page" data-depth="2">
+    <a class="nav-link" href="uneven-connection-distribution-across-cluster-nodes.html">Uneven connection distribution across cluster nodes</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="bottlenecks-from-single-connection-points.html">Bottlenecks from single connection points</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="overhead-and-impact-of-message-redistribution.html">Overhead and impact of message redistribution</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="reduced-cluster-throughput-in-specific-scenarios.html">Reduced cluster throughput in specific scenarios</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="disk-paging-issues-for-high-volume-queues.html">Disk paging issues for high-volume queues</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../solutions/solutions.html">Solutions</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../solutions/activemq-artemis-clustering-overview.html">ActiveMQ Artemis clustering overview</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../solutions/high-availability-ha-and-automatic-failover.html">High Availability (HA) and automatic failover</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../solutions/server-side-message-load-balancing.html">Server-side message load balancing</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../solutions/scaling-with-competing-consumers.html">Scaling with competing consumers</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../solutions/deploying-activemq-artemis-on-openshift.html">Deploying ActiveMQ Artemis on OpenShift</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../solutions/utilizing-the-red-hat-amq-operator.html">Utilizing the Red Hat AMQ Operator</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../solutions/configuring-activemqartemis-custom-resources-for-clustering.html">Configuring ActiveMQArtemis Custom Resources for clustering</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../code-examples/code-examples.html">Code Examples</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../code-examples/developing-producer-applications-for-activemq-artemis.html">Developing producer applications for ActiveMQ Artemis</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../code-examples/developing-consumer-applications-for-activemq-artemis.html">Developing consumer applications for ActiveMQ Artemis</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../code-examples/connecting-clients-to-a-clustered-artemis-environment.html">Connecting clients to a clustered Artemis environment</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../code-examples/demonstrating-message-publishing-and-consumption-patterns.html">Demonstrating message publishing and consumption patterns</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+</ul>
+  </nav>
+</div>
+<div class="nav-panel-explore" data-panel="explore">
+  <div class="context">
+    <span class="title">ActiveMQ Artemis Clustering and High Availability</span>
+    <span class="version">1.0.0</span>
+  </div>
+  <ul class="components">
+    <li class="component is-current">
+      <a class="title" href="../index.html">ActiveMQ Artemis Clustering and High Availability</a>
+      <ul class="versions">
+        <li class="version is-current is-latest">
+          <a href="../index.html">1.0.0</a>
+        </li>
+      </ul>
+    </li>
+  </ul>
+</div>
+    </div>
+  </aside>
+</div>
+<main class="article">
+<div class="toolbar" role="navigation">
+<button class="nav-toggle"></button>
+  <a href="../index.html" class="home-link"></a>
+<nav class="breadcrumbs" aria-label="breadcrumbs">
+  <ul>
+    <li><a href="../index.html">ActiveMQ Artemis Clustering and High Availability</a></li>
+    <li><a href="challenges-with-clustered-brokers.html">Challenges with clustered brokers</a></li>
+    <li><a href="uneven-connection-distribution-across-cluster-nodes.html">Uneven connection distribution across cluster nodes</a></li>
+  </ul>
+</nav>
+</div>
+  <div class="content">
+<aside class="toc sidebar" data-title="Contents" data-levels="2">
+  <div class="toc-menu"></div>
+</aside>
+<article class="doc">
+<h1 class="page">Uneven connection distribution across cluster nodes</h1>
+<h1 id="_activemq_artemis_clustering_and_high_availability" class="sect0"><a class="anchor" href="#_activemq_artemis_clustering_and_high_availability"></a>ActiveMQ Artemis Clustering and High Availability</h1>
+<div class="sect2">
+<h3 id="_uneven_connection_distribution_across_cluster_nodes"><a class="anchor" href="#_uneven_connection_distribution_across_cluster_nodes"></a>Uneven Connection Distribution Across Cluster Nodes</h3>
+<div class="paragraph">
+<p>When deploying a Message Oriented Middleware (MOM) like ActiveMQ Artemis in a clustered environment, the goal is to achieve high availability, fault tolerance, and scalable message processing. However, a common challenge arises when clients connect to such a cluster: the automatic and even distribution of client connections across all cluster nodes is not inherently guaranteed by standard connection mechanisms. This phenomenon, known as uneven connection distribution, can lead to several performance and operational issues.</p>
+</div>
+<div class="paragraph">
+<p>This section delves into the specifics of this problem, explaining why it occurs and its implications for the overall health and efficiency of your ActiveMQ Artemis cluster.</p>
+</div>
+<div class="sect3">
+<h4 id="_the_problem_why_connections_dont_distribute_evenly"><a class="anchor" href="#_the_problem_why_connections_dont_distribute_evenly"></a>The Problem: Why Connections Don&#8217;t Distribute Evenly</h4>
+<div class="paragraph">
+<p>Modern applications, particularly those built with popular frameworks like Spring Boot or Quarkus, are designed for flexibility and scalability. They often establish and scale connections to external services, including message brokers, on demand. While efficient for individual service interaction, this approach can inadvertently lead to connection disparities in a clustered broker setup.</p>
+</div>
+<div class="paragraph">
+<p>The core reasons for uneven distribution are:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>Lack of Client-Side Load Balancing for Connections:</strong> Standard JMS client APIs or basic connection factories typically establish a connection to a <strong>single</strong> specified broker address (or the first available from a list). They do not inherently implement logic to actively probe and balance connections across multiple active broker nodes in a cluster. Without a sophisticated connection pool or a client-side load-balancing policy, an application will often establish a single connection point to a single broker instance.</p>
+</li>
+<li>
+<p><strong>Independent Broker Handling:</strong> Each ActiveMQ Artemis broker instance within a cluster generally handles its client connections independently. When a client connects, it forms a session with that specific broker. There&#8217;s no automatic internal cluster mechanism that rebalances <strong>active client connections</strong> across nodes once established.</p>
+</li>
+<li>
+<p><strong>On-Demand Connection Scaling:</strong> Application frameworks dynamically create and manage connections based on immediate needs. If an application starts and connects to <code>Broker A</code>, and then scales up by creating more connections, it might continue connecting exclusively to <code>Broker A</code> simply because it was the initial connection point or is perceived as "available." This behavior creates a connection disparity between nodes.</p>
+</li>
+<li>
+<p><strong>Short-Lived or Frequently Disconnecting Consumers:</strong> This problem is exacerbated when consumers are not long-lasting or disconnect frequently. New connection attempts are made, and without a cluster-aware connection strategy, these new connections might continually favor an already more-connected node or randomly pick one, further skewing the distribution.</p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_impact_and_consequences"><a class="anchor" href="#_impact_and_consequences"></a>Impact and Consequences</h4>
+<div class="paragraph">
+<p>The uneven distribution of client connections across cluster nodes has significant negative impacts:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>Resource Bottlenecks:</strong> A single broker node can become overloaded with connections, processing a disproportionately high volume of messages. This leads to increased CPU and memory utilization on that node, potentially causing performance degradation, slower message processing, and even stability issues. Meanwhile, other nodes in the cluster remain underutilized, wasting valuable resources.</p>
+</li>
+<li>
+<p><strong>Consumer Disparity:</strong> Since consumers are typically attached to specific connections, an uneven distribution of connections directly translates to an uneven distribution of consumers. If most producers and consumers connect to <code>Broker A</code>, <code>Broker B</code> might have few to no active consumers. This means messages intended for queues primarily handled by <code>Broker A</code> will be processed quickly, while messages landing on <code>Broker B</code> for the same queue might sit idle, waiting for message redistribution or for a consumer to connect to <code>Broker B</code>.</p>
+</li>
+<li>
+<p><strong>Reduced Cluster Throughput:</strong> While ActiveMQ Artemis clusters offer features like message redistribution (configured via <code>redistributionDelay</code>) to move messages between nodes if consumers are not present on the initial target node, relying heavily on this mechanism introduces significant overhead. The act of moving messages across the network between brokers consumes network bandwidth and CPU cycles, reducing the overall effective throughput of the cluster. It&#8217;s an alleviation, not a solution, for the underlying connection imbalance.</p>
+</li>
+<li>
+<p><strong>Disk Paging Issues:</strong> In scenarios with high-volume queues, if a disproportionate number of messages land on an overloaded broker node (due to producer connections) but consumers are scarce or absent on that node (due to consumer connection disparity), pending messages might accumulate rapidly. This can force the broker to page these messages to disk, significantly degrading performance due to increased I/O operations and latency.</p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_observing_uneven_distribution"><a class="anchor" href="#_observing_uneven_distribution"></a>Observing Uneven Distribution</h4>
+<div class="paragraph">
+<p>To illustrate, consider a two-node ActiveMQ Artemis cluster (<code>broker-ss-0</code> and <code>broker-ss-1</code>). Without a proper client-side connection load balancing strategy, an application might direct all its client connections to <code>broker-ss-0</code>.</p>
+</div>
+<div class="paragraph">
+<p>Let&#8217;s assume the cluster is deployed using the Red Hat AMQ Operator with a configuration similar to this (extract from <code>ActiveMQArtemis</code> custom resource):</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">apiVersion: broker.amq.io/v1beta1
+kind: ActiveMQArtemis
+metadata:
+  name: broker
+  namespace: broker
+spec:
+  # ... other configurations ...
+  deploymentPlan:
+    size: 2 # Creates two broker pods in a cluster
+    # ...</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>After deployment, you might observe queue statistics on one node showing activity, while another node for the same queue might be idle if all clients connect to the former. For example, if all clients connect to <code>broker-ss-1</code>:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-none hljs">&gt;&gt;&gt; Queue stats on node e779f217-d741-11f0-906c-0a580ad9003a,
+url=tcp://broker-ss-1.broker-hdls-svc.broker.svc.cluster.local:61616
+|NAME  |ADDRESS|CONSUMER|MESSAGE|MESSAGES|DELIVERING|MESSAGES|SCHEDULED|ROUTING|INTERNAL|
+|      |       | COUNT  | COUNT | ADDED  |  COUNT   | ACKED  |  COUNT  | TYPE  |        |
+|prices|prices |   2    |   0   |  188   |    0     |  188   |    0    |ANYCAST| false  |</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Here, <code>broker-ss-1</code> shows 2 consumers and 188 messages added to the <code>prices</code> queue. If you were to check <code>broker-ss-0</code>, you might find <code>CONSUMER COUNT</code> and <code>MESSAGES ADDED</code> to be 0 for the same queue, indicating that clients are not connecting to or utilizing <code>broker-ss-0</code> for message processing.</p>
+</div>
+<div class="paragraph">
+<p>This scenario highlights the critical need for strategies that ensure connections are distributed as evenly as possible across all cluster members, preventing bottlenecks and maximizing the efficiency of the entire ActiveMQ Artemis cluster. The following sections will explore solutions to this challenge, including client-side load balancing and server-side message routing mechanisms.</p>
+</div>
+</div>
+</div>
+<nav class="pagination">
+  <span class="prev"><a href="challenges-with-clustered-brokers.html">Challenges with clustered brokers</a></span>
+  <span class="next"><a href="bottlenecks-from-single-connection-points.html">Bottlenecks from single connection points</a></span>
+</nav>
+</article>
+  </div>
+</main>
+</div>
+<footer class="footer">
+  <img src="../../../_/img/rhl-logo-red.png" height="40px" alt="Red Hat"  href="https://redhat.com" >
+</footer><script id="site-script" src="../../../_/js/site.js" data-ui-root-path="../../../_"></script>
+<script async src="../../../_/js/vendor/highlight.js"></script>
+  </body>
+</html>

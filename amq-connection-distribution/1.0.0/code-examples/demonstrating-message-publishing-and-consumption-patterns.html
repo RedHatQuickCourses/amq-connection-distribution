@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Demonstrating message publishing and consumption patterns :: ActiveMQ Artemis Clustering and High Availability</title>
+    <link rel="prev" href="connecting-clients-to-a-clustered-artemis-environment.html">
+    <meta name="generator" content="Antora 3.1.3">
+    <link rel="stylesheet" href="../../../_/css/site.css">
+    <script>var uiRootPath = '../../../_'</script>
+  </head>
+  <body class="article">
+<header class="header">
+  <nav class="navbar">
+    <div class="navbar-brand">
+      <a class="navbar-item" href="https://www.redhat.com" target="_blank"><img src="../../../_/img/redhat-logo.png" height="40px" alt="Red Hat"></a>
+      <a class="navbar-item" style="font-size: 24px; color: white" href="../../..">ActiveMQ Artemis Clustering and High Availability</a>
+      <button class="navbar-burger" data-target="topbar-nav">
+        <span></span>
+        <span></span>
+        <span></span>
+      </button>
+    </div>
+    <div id="topbar-nav" class="navbar-menu">
+      <div class="navbar-end">
+        <a class="navbar-item" href="https://github.com/RedHatQuickCourses/REPLACEREPONAME/issues" target="_blank">Report Issues</a>
+      </div>
+    </div>
+  </nav>
+</header>
+<div class="body">
+<div class="nav-container" data-component="amq-connection-distribution" data-version="1.0.0">
+  <aside class="nav">
+    <div class="panels">
+<div class="nav-panel-menu is-active" data-panel="menu">
+  <nav class="nav-menu">
+    <h3 class="title"><a href="../index.html">ActiveMQ Artemis Clustering and High Availability</a></h3>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="../index.html">Home</a>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../message-oriented-middleware-introduction/message-oriented-middleware-introduction.html">Message Oriented Middleware Introduction</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../message-oriented-middleware-introduction/role-of-mom-in-distributed-systems.html">Role of MOM in distributed systems</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../message-oriented-middleware-introduction/benefits-of-asynchronous-communication.html">Benefits of asynchronous communication</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../message-oriented-middleware-introduction/ensuring-resilience-and-reliability-with-mom.html">Ensuring resilience and reliability with MOM</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../message-oriented-middleware-introduction/introduction-to-activemq-artemis.html">Introduction to ActiveMQ Artemis</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../message-oriented-middleware-introduction/key-features-and-architecture-of-activemq-artemis.html">Key features and architecture of ActiveMQ Artemis</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../challenges-with-clustered-brokers/challenges-with-clustered-brokers.html">Challenges with clustered brokers</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../challenges-with-clustered-brokers/uneven-connection-distribution-across-cluster-nodes.html">Uneven connection distribution across cluster nodes</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../challenges-with-clustered-brokers/bottlenecks-from-single-connection-points.html">Bottlenecks from single connection points</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../challenges-with-clustered-brokers/overhead-and-impact-of-message-redistribution.html">Overhead and impact of message redistribution</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../challenges-with-clustered-brokers/reduced-cluster-throughput-in-specific-scenarios.html">Reduced cluster throughput in specific scenarios</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../challenges-with-clustered-brokers/disk-paging-issues-for-high-volume-queues.html">Disk paging issues for high-volume queues</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../solutions/solutions.html">Solutions</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../solutions/activemq-artemis-clustering-overview.html">ActiveMQ Artemis clustering overview</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../solutions/high-availability-ha-and-automatic-failover.html">High Availability (HA) and automatic failover</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../solutions/server-side-message-load-balancing.html">Server-side message load balancing</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../solutions/scaling-with-competing-consumers.html">Scaling with competing consumers</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../solutions/deploying-activemq-artemis-on-openshift.html">Deploying ActiveMQ Artemis on OpenShift</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../solutions/utilizing-the-red-hat-amq-operator.html">Utilizing the Red Hat AMQ Operator</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../solutions/configuring-activemqartemis-custom-resources-for-clustering.html">Configuring ActiveMQArtemis Custom Resources for clustering</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="code-examples.html">Code Examples</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="developing-producer-applications-for-activemq-artemis.html">Developing producer applications for ActiveMQ Artemis</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="developing-consumer-applications-for-activemq-artemis.html">Developing consumer applications for ActiveMQ Artemis</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="connecting-clients-to-a-clustered-artemis-environment.html">Connecting clients to a clustered Artemis environment</a>
+  </li>
+  <li class="nav-item is-current-page" data-depth="2">
+    <a class="nav-link" href="demonstrating-message-publishing-and-consumption-patterns.html">Demonstrating message publishing and consumption patterns</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+</ul>
+  </nav>
+</div>
+<div class="nav-panel-explore" data-panel="explore">
+  <div class="context">
+    <span class="title">ActiveMQ Artemis Clustering and High Availability</span>
+    <span class="version">1.0.0</span>
+  </div>
+  <ul class="components">
+    <li class="component is-current">
+      <a class="title" href="../index.html">ActiveMQ Artemis Clustering and High Availability</a>
+      <ul class="versions">
+        <li class="version is-current is-latest">
+          <a href="../index.html">1.0.0</a>
+        </li>
+      </ul>
+    </li>
+  </ul>
+</div>
+    </div>
+  </aside>
+</div>
+<main class="article">
+<div class="toolbar" role="navigation">
+<button class="nav-toggle"></button>
+  <a href="../index.html" class="home-link"></a>
+<nav class="breadcrumbs" aria-label="breadcrumbs">
+  <ul>
+    <li><a href="../index.html">ActiveMQ Artemis Clustering and High Availability</a></li>
+    <li><a href="code-examples.html">Code Examples</a></li>
+    <li><a href="demonstrating-message-publishing-and-consumption-patterns.html">Demonstrating message publishing and consumption patterns</a></li>
+  </ul>
+</nav>
+</div>
+  <div class="content">
+<aside class="toc sidebar" data-title="Contents" data-levels="2">
+  <div class="toc-menu"></div>
+</aside>
+<article class="doc">
+<h1 class="page">Demonstrating message publishing and consumption patterns</h1>
+<h1 id="_demonstrating_message_publishing_and_consumption_patterns" class="sect0"><a class="anchor" href="#_demonstrating_message_publishing_and_consumption_patterns"></a>Demonstrating Message Publishing and Consumption Patterns</h1>
+<div class="paragraph">
+<p>This section focuses on the practical implementation of message publishing and consumption within an ActiveMQ Artemis clustered environment. Understanding these patterns is crucial for designing robust, scalable, and highly available distributed systems that leverage Message Oriented Middleware (MOM). We will explore how producer and consumer applications interact with the cluster and how message load balancing is achieved.</p>
+</div>
+<div class="sect1">
+<h2 id="_technical_explanation_publishing_and_consumption_patterns"><a class="anchor" href="#_technical_explanation_publishing_and_consumption_patterns"></a>Technical Explanation: Publishing and Consumption Patterns</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>In a clustered ActiveMQ Artemis setup, clients (producers and consumers) don&#8217;t necessarily connect to a single broker instance. Instead, they are designed to connect to the cluster, allowing for load balancing and high availability.</p>
+</div>
+<div class="sect2">
+<h3 id="_producer_application_pattern"><a class="anchor" href="#_producer_application_pattern"></a>Producer Application Pattern</h3>
+<div class="paragraph">
+<p>A producer application&#8217;s primary role is to create and send messages to a specific destination (queue or topic) within the messaging system. In a clustered environment, producers benefit from the cluster&#8217;s load-balancing capabilities. When a producer connects to the cluster, the connection factory typically uses a list of broker URLs or a discovery mechanism to distribute connections across available broker nodes. This ensures that no single broker becomes a bottleneck for incoming messages.</p>
+</div>
+<div class="paragraph">
+<p>The act of publishing a message involves:
+.  Establishing a connection to the broker.
+.  Creating a session within that connection.
+.  Creating a <code>MessageProducer</code> for a specific destination.
+.  Constructing and sending the message.</p>
+</div>
+<div class="paragraph">
+<p>While the provided context focuses more on the consumer&#8217;s advanced logic, a basic producer would simply send messages. The context implicitly shows a re-publishing step within a consumer&#8217;s <code>onMessage</code> method:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-java hljs" data-lang="java">var connection = producerFactory.createConnection();
+var session = connection.createSession();
+var producer = session.createProducer(session.createQueue("newQ"));
+producer.send(session.createTextMessage(UUID.randomUUID().toString()));
+System.out.println("&gt;&gt; Sent again");</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>This snippet demonstrates sending a new message to a queue named <code>newQ</code>, illustrating the core mechanics of message publishing.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_consumer_application_pattern_and_competing_consumers"><a class="anchor" href="#_consumer_application_pattern_and_competing_consumers"></a>Consumer Application Pattern and Competing Consumers</h3>
+<div class="paragraph">
+<p>Consumer applications retrieve and process messages from destinations. In a clustered environment, the "competing consumer" pattern is fundamental for scaling message processing. Multiple consumer instances can subscribe to the same queue, and messages are distributed among them. This allows for parallel processing and ensures that if one consumer fails, others can pick up the slack.</p>
+</div>
+<div class="paragraph">
+<p>A key aspect of effective load balancing for consumers in a cluster is ensuring that client connections are distributed evenly across the broker nodes. As noted in the context:
+&#8220;Likewise the consumer application will use the consumer specific connection factory. The interesting part in the consumer application is that we&#8217;re creating the same number of consumers as the number of max connections in the consumer connection factory. This way, all the connections (and by association, the consumers) will be created alternately on both brokers.&#8221;</p>
+</div>
+<div class="paragraph">
+<p>This strategy ensures optimal utilization of all cluster nodes and prevents bottlenecks on a single broker. Each consumer instance effectively competes for messages from the shared queue, with the broker intelligently distributing messages to available consumers on different nodes.</p>
+</div>
+<div class="paragraph">
+<p>The provided <code>onMessage</code> method from the context illustrates a typical message processing flow:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-java hljs" data-lang="java">public void onMessage(String message, MessageHeaders headers) throws Exception {
+    System.out.println("Message received :: Total Time Taken: " +
+        (Long.parseLong(Objects.requireNonNull(headers.get("timestamp")).toString()) -
+         Long.parseLong(Objects.requireNonNull(headers.get("jms_timestamp")).toString())));
+    var connection = producerFactory.createConnection();
+    var session = connection.createSession();
+    var producer = session.createProducer(session.createQueue("newQ"));
+    producer.send(session.createTextMessage(UUID.randomUUID().toString()));
+    System.out.println("&gt;&gt; Sent again");
+}</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>This consumer not only processes the incoming message (calculating time taken based on timestamps) but also immediately re-publishes a new, unique message to a different queue (<code>newQ</code>). This pattern is common in scenarios where a message triggers a subsequent task or workflow.</p>
+</div>
+<div class="paragraph">
+<p>The overall consumer application structure, which manages these <code>onMessage</code> handlers, might look something like this (as hinted in the context):</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-java hljs" data-lang="java">import io.quarkus.runtime.ShutdownEvent;
+import io.quarkus.runtime.StartupEvent;
+import io.smallrye.common.annotation.Identifier;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.event.Observes;
+import jakarta.inject.Inject;
+import jakarta.jms.JMSException;
+import jakarta.jms.Session;
+import org.messaginghub.pooled.jms.JmsPoolConnectionFactory;
+
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+
+@ApplicationScoped
+public class Consumer implements Runnable {
+    // ... application logic for setting up JMS listeners ...
+}</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>This <code>Consumer</code> class, likely managed by an application framework like Quarkus, would be responsible for initiating and managing multiple consumer instances, each connecting to the clustered brokers.</p>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_hands_on_activity_verifying_message_distribution"><a class="anchor" href="#_hands_on_activity_verifying_message_distribution"></a>Hands-on Activity: Verifying Message Distribution</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>To truly appreciate the benefits of clustered ActiveMQ Artemis, it&#8217;s essential to observe how messages and consumer connections are distributed across broker nodes. We will use the <code>artemis</code> CLI tool to inspect queue statistics.</p>
+</div>
+<div class="sect2">
+<h3 id="_prerequisites"><a class="anchor" href="#_prerequisites"></a>Prerequisites</h3>
+<div class="ulist">
+<ul>
+<li>
+<p>An ActiveMQ Artemis cluster deployed on OpenShift, managed by the Red Hat AMQ Operator (as per objectives).</p>
+</li>
+<li>
+<p>Producer and consumer applications deployed and actively sending/receiving messages to a queue named <code>prices</code> (or a similar test queue you&#8217;ve configured).</p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_steps"><a class="anchor" href="#_steps"></a>Steps</h3>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p><strong>Ensure Producer and Consumer Applications are Running</strong>:
+Before verifying, make sure your producer application is continuously sending messages to the <code>prices</code> queue and your consumer application instances are actively listening to the <code>prices</code> queue. This will generate traffic and establish connections.</p>
+</li>
+<li>
+<p><strong>Execute the <code>artemis queue stat</code> Command</strong>:
+Open your terminal and execute the following <code>oc exec</code> command. This command connects to one of your broker pods (e.g., <code>broker-ss-0</code>) and runs the <code>artemis queue stat</code> utility to inspect the <code>prices</code> queue. The <code>--clustered</code> flag is crucial as it aggregates statistics across all nodes in the cluster.</p>
+<div class="literalblock">
+<div class="content">
+<pre>[source,bash]
+----
+oc exec broker-ss-0 -- /home/jboss/amq-broker/bin/artemis queue stat \
+  --url tcp://broker-ss-0:61616 \
+  --clustered \
+  --user admin \
+  --password admin \
+  --queueName prices
+----</pre>
+</div>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><code>broker-ss-0</code>: Replace with the name of one of your broker pods if it differs.</p>
+</li>
+<li>
+<p><code>--url tcp://broker-ss-0:61616</code>: Specifies the JMX URL of the broker to connect to for statistics.</p>
+</li>
+<li>
+<p><code>--clustered</code>: Instructs the command to query statistics across all cluster members.</p>
+</li>
+<li>
+<p><code>--user admin --password admin</code>: Provide the credentials for accessing the broker&#8217;s management interface.</p>
+</li>
+<li>
+<p><code>--queueName prices</code>: The name of the queue you wish to inspect.</p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<p><strong>Analyze the Output</strong>:
+The command will return statistics for the specified queue, aggregated from across the cluster. You should observe output similar to the context example:</p>
+<div class="literalblock">
+<div class="content">
+<pre>[source]
+----
+****************************************************
+&gt;&gt;&gt; Queue stats on node e779f217-d741-11f0-906c-0a580ad9003a,
+url=tcp://broker-ss-1.broker-hdls-svc.broker.svc.cluster.local:61616
+|NAME  |ADDRESS|CONSUMER|MESSAGE|MESSAGES|DELIVERING|MESSAGES|SCHEDULED|ROUTING|INTERNAL|
+|      |       | COUNT  | COUNT | ADDED  |  COUNT   | ACKED  |  COUNT  | TYPE  |        |
+|prices|prices |   2    |   0   |  188   |    0     |  188   |    0    |ANYCAST| false  |
+----</pre>
+</div>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>CONSUMER COUNT</strong>: This field is particularly important. In the example output, <code>CONSUMER COUNT</code> is <code>2</code>. If you have multiple broker nodes and your consumer application is configured as described earlier (e.g., creating 2 consumers that distribute connections alternately), you would ideally see an even distribution, perhaps 1 consumer on each node, or a total reflecting all active consumers across the cluster for that queue. The context explicitly mentions: &#8220;To verify the consumer and message distribution, we can run the following command which shows a near equal distribution of messages and connections across both brokers.&#8221;</p>
+</li>
+<li>
+<p><strong>MESSAGE COUNT</strong>: Indicates the number of messages currently held in the queue. Ideally, in an actively consumed queue, this number should be low or zero.</p>
+</li>
+<li>
+<p><strong>MESSAGES ADDED</strong>: The total number of messages that have been enqueued since the broker started or was last reset.</p>
+</li>
+<li>
+<p><strong>MESSAGES ACKED</strong>: The total number of messages that have been successfully acknowledged by consumers.</p>
+<div class="literalblock">
+<div class="content">
+<pre>By repeatedly running this command or checking statistics on different broker pods, you can confirm that connections and messages are indeed being distributed across the cluster, demonstrating the effectiveness of ActiveMQ Artemis's clustering and client-side load balancing mechanisms.</pre>
+</div>
+</div>
+</li>
+</ul>
+</div>
+</li>
+</ol>
+</div>
+<div class="paragraph">
+<p>This hands-on verification confirms that your applications are effectively leveraging the ActiveMQ Artemis cluster for robust message publishing and scalable consumption.</p>
+</div>
+</div>
+</div>
+</div>
+<nav class="pagination">
+  <span class="prev"><a href="connecting-clients-to-a-clustered-artemis-environment.html">Connecting clients to a clustered Artemis environment</a></span>
+</nav>
+</article>
+  </div>
+</main>
+</div>
+<footer class="footer">
+  <img src="../../../_/img/rhl-logo-red.png" height="40px" alt="Red Hat"  href="https://redhat.com" >
+</footer><script id="site-script" src="../../../_/js/site.js" data-ui-root-path="../../../_"></script>
+<script async src="../../../_/js/vendor/highlight.js"></script>
+  </body>
+</html>

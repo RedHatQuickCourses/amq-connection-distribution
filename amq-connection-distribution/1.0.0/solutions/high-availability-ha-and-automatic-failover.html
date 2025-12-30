@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>High Availability (HA) and automatic failover :: ActiveMQ Artemis Clustering and High Availability</title>
+    <link rel="prev" href="activemq-artemis-clustering-overview.html">
+    <link rel="next" href="server-side-message-load-balancing.html">
+    <meta name="generator" content="Antora 3.1.3">
+    <link rel="stylesheet" href="../../../_/css/site.css">
+    <script>var uiRootPath = '../../../_'</script>
+  </head>
+  <body class="article">
+<header class="header">
+  <nav class="navbar">
+    <div class="navbar-brand">
+      <a class="navbar-item" href="https://www.redhat.com" target="_blank"><img src="../../../_/img/redhat-logo.png" height="40px" alt="Red Hat"></a>
+      <a class="navbar-item" style="font-size: 24px; color: white" href="../../..">ActiveMQ Artemis Clustering and High Availability</a>
+      <button class="navbar-burger" data-target="topbar-nav">
+        <span></span>
+        <span></span>
+        <span></span>
+      </button>
+    </div>
+    <div id="topbar-nav" class="navbar-menu">
+      <div class="navbar-end">
+        <a class="navbar-item" href="https://github.com/RedHatQuickCourses/REPLACEREPONAME/issues" target="_blank">Report Issues</a>
+      </div>
+    </div>
+  </nav>
+</header>
+<div class="body">
+<div class="nav-container" data-component="amq-connection-distribution" data-version="1.0.0">
+  <aside class="nav">
+    <div class="panels">
+<div class="nav-panel-menu is-active" data-panel="menu">
+  <nav class="nav-menu">
+    <h3 class="title"><a href="../index.html">ActiveMQ Artemis Clustering and High Availability</a></h3>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="../index.html">Home</a>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../message-oriented-middleware-introduction/message-oriented-middleware-introduction.html">Message Oriented Middleware Introduction</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../message-oriented-middleware-introduction/role-of-mom-in-distributed-systems.html">Role of MOM in distributed systems</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../message-oriented-middleware-introduction/benefits-of-asynchronous-communication.html">Benefits of asynchronous communication</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../message-oriented-middleware-introduction/ensuring-resilience-and-reliability-with-mom.html">Ensuring resilience and reliability with MOM</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../message-oriented-middleware-introduction/introduction-to-activemq-artemis.html">Introduction to ActiveMQ Artemis</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../message-oriented-middleware-introduction/key-features-and-architecture-of-activemq-artemis.html">Key features and architecture of ActiveMQ Artemis</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../challenges-with-clustered-brokers/challenges-with-clustered-brokers.html">Challenges with clustered brokers</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../challenges-with-clustered-brokers/uneven-connection-distribution-across-cluster-nodes.html">Uneven connection distribution across cluster nodes</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../challenges-with-clustered-brokers/bottlenecks-from-single-connection-points.html">Bottlenecks from single connection points</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../challenges-with-clustered-brokers/overhead-and-impact-of-message-redistribution.html">Overhead and impact of message redistribution</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../challenges-with-clustered-brokers/reduced-cluster-throughput-in-specific-scenarios.html">Reduced cluster throughput in specific scenarios</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../challenges-with-clustered-brokers/disk-paging-issues-for-high-volume-queues.html">Disk paging issues for high-volume queues</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="solutions.html">Solutions</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="activemq-artemis-clustering-overview.html">ActiveMQ Artemis clustering overview</a>
+  </li>
+  <li class="nav-item is-current-page" data-depth="2">
+    <a class="nav-link" href="high-availability-ha-and-automatic-failover.html">High Availability (HA) and automatic failover</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="server-side-message-load-balancing.html">Server-side message load balancing</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="scaling-with-competing-consumers.html">Scaling with competing consumers</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="deploying-activemq-artemis-on-openshift.html">Deploying ActiveMQ Artemis on OpenShift</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="utilizing-the-red-hat-amq-operator.html">Utilizing the Red Hat AMQ Operator</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="configuring-activemqartemis-custom-resources-for-clustering.html">Configuring ActiveMQArtemis Custom Resources for clustering</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../code-examples/code-examples.html">Code Examples</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../code-examples/developing-producer-applications-for-activemq-artemis.html">Developing producer applications for ActiveMQ Artemis</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../code-examples/developing-consumer-applications-for-activemq-artemis.html">Developing consumer applications for ActiveMQ Artemis</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../code-examples/connecting-clients-to-a-clustered-artemis-environment.html">Connecting clients to a clustered Artemis environment</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../code-examples/demonstrating-message-publishing-and-consumption-patterns.html">Demonstrating message publishing and consumption patterns</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+</ul>
+  </nav>
+</div>
+<div class="nav-panel-explore" data-panel="explore">
+  <div class="context">
+    <span class="title">ActiveMQ Artemis Clustering and High Availability</span>
+    <span class="version">1.0.0</span>
+  </div>
+  <ul class="components">
+    <li class="component is-current">
+      <a class="title" href="../index.html">ActiveMQ Artemis Clustering and High Availability</a>
+      <ul class="versions">
+        <li class="version is-current is-latest">
+          <a href="../index.html">1.0.0</a>
+        </li>
+      </ul>
+    </li>
+  </ul>
+</div>
+    </div>
+  </aside>
+</div>
+<main class="article">
+<div class="toolbar" role="navigation">
+<button class="nav-toggle"></button>
+  <a href="../index.html" class="home-link"></a>
+<nav class="breadcrumbs" aria-label="breadcrumbs">
+  <ul>
+    <li><a href="../index.html">ActiveMQ Artemis Clustering and High Availability</a></li>
+    <li><a href="solutions.html">Solutions</a></li>
+    <li><a href="high-availability-ha-and-automatic-failover.html">High Availability (HA) and automatic failover</a></li>
+  </ul>
+</nav>
+</div>
+  <div class="content">
+<aside class="toc sidebar" data-title="Contents" data-levels="2">
+  <div class="toc-menu"></div>
+</aside>
+<article class="doc">
+<h1 class="page">High Availability (HA) and automatic failover</h1>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-asciidoc hljs" data-lang="asciidoc">= High Availability (HA) and Automatic Failover
+
+Message-oriented middleware (MOM) plays a critical role in building resilient distributed systems. While clustering helps with load distribution and scalability, _High Availability (HA)_ specifically addresses the challenge of ensuring continuous service operation in the face of broker failures.
+
+== Understanding High Availability in ActiveMQ Artemis
+
+In any enterprise application, a *single point of failure* is unacceptable. If a standalone message broker fails, all message processing halts, leading to potential data loss and significant business disruption. ActiveMQ Artemis mitigates this risk through its robust High Availability (HA) features.
+
+As highlighted in the context, in a clustered ActiveMQ Artemis setup:
+
+[quote, Context]
+____
+if a primary broker fails, a backup broker can immediately take over (Failover), ensuring zero downtime for critical business operations.
+____
+
+This mechanism is often referred to as *automatic failover*.
+
+=== The Primary-Backup Architecture
+
+ActiveMQ Artemis achieves HA through a primary-backup architecture. In this setup:
+
+*   **Primary Broker:** This is the active broker instance that processes messages, manages connections, and stores message data in its journal.
+*   **Backup Broker:** This is a passive instance that constantly synchronizes its state with the primary. It typically doesn't accept client connections or process messages until it becomes active. Its primary role is to be ready to take over if the primary fails.
+
+When the primary broker experiences an unexpected shutdown or failure (e.g., power loss, software crash, network partition):
+
+.  **Failure Detection:** The backup broker detects that the primary is no longer reachable or functioning correctly.
+.  **Automatic Failover:** The backup broker *automatically* becomes the new primary. It takes over the primary's resources (like shared storage, if configured) and starts listening for client connections.
+.  **Client Reconnection:** Connected clients (producers and consumers) are designed to automatically detect the failover and reconnect to the newly activated primary broker. This reconnection is often transparent to the application logic, ensuring that message flow resumes with minimal interruption.
+
+=== Benefits of ActiveMQ Artemis HA
+
+The primary-backup HA model in ActiveMQ Artemis offers several critical benefits:
+
+*   **Zero Downtime for Critical Operations:** By automatically switching to a backup, business-critical message flows continue uninterrupted.
+*   **Data Integrity:** Messages are persisted on shared storage (or replicated) ensuring no message loss during failover. The new primary picks up exactly where the old primary left off.
+*   **Enhanced Reliability:** The system can gracefully recover from broker failures, significantly increasing the overall reliability of your distributed applications.
+*   **Simplified Operations:** The automatic nature of failover reduces the need for manual intervention during outages, streamlining operational tasks.
+
+== Achieving High Availability on OpenShift with the AMQ Operator
+
+Deploying ActiveMQ Artemis on OpenShift using the Red Hat AMQ Operator simplifies the configuration and management of HA clusters. The Operator understands the intricacies of Artemis HA and can provision and manage primary-backup pairs automatically.
+
+For this hands-on activity, we will deploy a two-node ActiveMQ Artemis cluster configured for High Availability using shared storage, simulating the scenario where a backup broker takes over upon primary failure.
+
+=== Prerequisites
+
+Before you begin, ensure you have:
+
+*   An OpenShift cluster (version 4.x or later).
+*   `oc` CLI tool configured to connect to your OpenShift cluster.
+*   The Red Hat AMQ Operator installed in your cluster. (If not, follow the official Red Hat documentation to install it from the OperatorHub).
+*   A `StorageClass` available in your OpenShift cluster, e.g., `standard` or `ocs-storagecluster-cephfs`.
+
+=== Hands-on Activity: Deploying an HA Artemis Cluster and Simulating Failover
+
+==== Step 1: Create a Project and Deploy the HA Broker
+
+First, create a new OpenShift project (namespace) for your broker and then apply a Custom Resource (CR) definition that instructs the AMQ Operator to deploy an ActiveMQ Artemis cluster with HA.
+
+.  **Create a new OpenShift project:**
++
+[source,bash]
+----
+oc new-project broker-ha-demo
+----
+
+.  **Define the `ActiveMQArtemis` Custom Resource for HA:**
+    Create a file named `artemis-ha-cluster.yaml` with the following content. This configuration defines an Artemis cluster with two pods (`deploymentPlan.size: 2`) and enables shared-store HA (`journalType: shared-store`), which means the pods will share a common journal (via a PersistentVolumeClaim) and one will act as primary while the other is backup.
++
+[source,yaml]
+----
+apiVersion: broker.amq.io/v1beta1
+kind: ActiveMQArtemis
+metadata:
+  name: my-ha-broker
+  namespace: broker-ha-demo
+spec:
+  deploymentPlan:
+    size: 2 # Deploy two broker instances for HA
+    journalType: shared-store # Configure shared storage for HA
+    storage:
+      size: 2Gi # Size of the PersistentVolumeClaim for the journal
+      storageClassName: standard # Use your cluster's default or preferred storage class
+  acceptors:
+    - bindToAllInterfaces: true
+      connectionsAllowed: -1
+      expose: true
+      name: broker
+      port: 61617
+      sslEnabled: false # For simplicity in this demo, disable SSL. Use 'true' with 'sslSecret' for production.
+  addressSettings:
+    addressSetting:
+      - match: '#'
+        maxReadPageMessages: 1000
+        pageSyncTimeout: -1
+        maxSizeBytes: 200MB
+        pageSizeBytes: 10MB
+        redeliveryDelay: 0
+        redeliveryMultiplier: 1.0
+        maxRedeliveryDelay: 10000
+        addressFullMessagePolicy: BLOCK
+        slowConsumerThreshold: -1
+        slowConsumerPolicy: KILL
+        autoCreateJmsQueues: true
+        autoCreateJmsTopics: true
+        autoCreateQueues: true
+        autoCreateAddresses: true
+----
++
+[NOTE]
+For production environments, `sslEnabled: true` and a corresponding `sslSecret` are highly recommended for secure communication. Ensure your `storageClassName` is appropriate for your OpenShift cluster.
+
+.  **Apply the Custom Resource:**
++
+[source,bash]
+----
+oc apply -f artemis-ha-cluster.yaml
+----
+
+==== Step 2: Verify the HA Cluster Deployment
+
+The AMQ Operator will now provision the necessary resources, including two broker pods, a `PersistentVolumeClaim` for shared storage, and a `Service` for client connections.
+
+.  **Check the pods:** You should see two pods, one labeled `_AMQ_ARTEMIS_BROKER_PRIMARY` and the other `_AMQ_ARTEMIS_BROKER_BACKUP`.
++
+[source,bash]
+----
+oc get pods -n broker-ha-demo -l broker.amq.io/cluster-name=my-ha-broker
+----
++
+You might see output similar to:
++</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>NAME               READY   STATUS    RESTARTS   AGE
+my-ha-broker-0     1/1     Running   0          2m
+my-ha-broker-1     1/1     Running   0          2m</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-none hljs">+
+.  **Examine the logs to identify primary/backup:** Check the logs of both pods to confirm their roles.
++
+[source,bash]
+----
+oc logs my-ha-broker-0 -n broker-ha-demo | grep "is becoming"
+oc logs my-ha-broker-1 -n broker-ha-demo | grep "is becoming"
+----
++
+One pod will log "ActiveMQ Artemis has started and is becoming *primary*", while the other will log "ActiveMQ Artemis has started and is becoming *backup*". Note down which pod is currently the primary.
+
+==== Step 3: Simulate a Primary Broker Failure
+
+Now, let's simulate a failure of the primary broker to observe the automatic failover.
+
+.  **Identify the current primary broker pod:** From the previous step, you should know which pod is the primary (e.g., `my-ha-broker-0`).
+
+.  **Delete the primary broker pod:** Deleting the pod simulates an unexpected failure.
++
+[source,bash]
+----
+oc delete pod &lt;primary-broker-pod-name&gt; -n broker-ha-demo
+----
++
+For example, if `my-ha-broker-0` was primary:
++
+[source,bash]
+----
+oc delete pod my-ha-broker-0 -n broker-ha-demo
+----
+
+==== Step 4: Observe Automatic Failover and Recovery
+
+Watch how the AMQ Operator and the remaining backup broker handle the failure.
+
+.  **Monitor the pods:** Immediately after deleting the primary, check the pod status.
++
+[source,bash]
+----
+oc get pods -n broker-ha-demo -l broker.amq.io/cluster-name=my-ha-broker --watch
+----
++
+You will observe:
+*   The deleted primary pod will go into a `Terminating` state, and then a new pod with the same name will be created by the OpenShift Deployment/StatefulSet managed by the Operator.
+*   Crucially, the *backup* pod (e.g., `my-ha-broker-1`) will detect the primary's absence and transition to become the new primary.
+
+.  **Check the logs of the former backup pod:**
++
+[source,bash]
+----
+oc logs my-ha-broker-1 -n broker-ha-demo | grep "is becoming"
+----
++
+You should now see log messages indicating that `my-ha-broker-1` (the former backup) has transitioned and "is becoming *primary*".
+
+.  **Verify client connectivity (Conceptual):**
+    If you had producer and consumer clients connected to the broker service *before* the failover, they would automatically attempt to reconnect to the new primary once detected. The `Service` abstraction in OpenShift ensures that the DNS entry for `my-ha-broker-svc` always points to the active primary pod. This transparent reconnection is a key benefit of automatic failover.
+
+This hands-on activity demonstrates how ActiveMQ Artemis, coupled with the Red Hat AMQ Operator on OpenShift, provides robust High Availability and automatic failover, ensuring your messaging infrastructure remains resilient against broker failures.</code></pre>
+</div>
+</div>
+<nav class="pagination">
+  <span class="prev"><a href="activemq-artemis-clustering-overview.html">ActiveMQ Artemis clustering overview</a></span>
+  <span class="next"><a href="server-side-message-load-balancing.html">Server-side message load balancing</a></span>
+</nav>
+</article>
+  </div>
+</main>
+</div>
+<footer class="footer">
+  <img src="../../../_/img/rhl-logo-red.png" height="40px" alt="Red Hat"  href="https://redhat.com" >
+</footer><script id="site-script" src="../../../_/js/site.js" data-ui-root-path="../../../_"></script>
+<script async src="../../../_/js/vendor/highlight.js"></script>
+  </body>
+</html>

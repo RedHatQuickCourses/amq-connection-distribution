@@ -1,0 +1,593 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Developing producer applications for ActiveMQ Artemis :: ActiveMQ Artemis Clustering and High Availability</title>
+    <link rel="prev" href="code-examples.html">
+    <link rel="next" href="developing-consumer-applications-for-activemq-artemis.html">
+    <meta name="generator" content="Antora 3.1.3">
+    <link rel="stylesheet" href="../../../_/css/site.css">
+    <script>var uiRootPath = '../../../_'</script>
+  </head>
+  <body class="article">
+<header class="header">
+  <nav class="navbar">
+    <div class="navbar-brand">
+      <a class="navbar-item" href="https://www.redhat.com" target="_blank"><img src="../../../_/img/redhat-logo.png" height="40px" alt="Red Hat"></a>
+      <a class="navbar-item" style="font-size: 24px; color: white" href="../../..">ActiveMQ Artemis Clustering and High Availability</a>
+      <button class="navbar-burger" data-target="topbar-nav">
+        <span></span>
+        <span></span>
+        <span></span>
+      </button>
+    </div>
+    <div id="topbar-nav" class="navbar-menu">
+      <div class="navbar-end">
+        <a class="navbar-item" href="https://github.com/RedHatQuickCourses/REPLACEREPONAME/issues" target="_blank">Report Issues</a>
+      </div>
+    </div>
+  </nav>
+</header>
+<div class="body">
+<div class="nav-container" data-component="amq-connection-distribution" data-version="1.0.0">
+  <aside class="nav">
+    <div class="panels">
+<div class="nav-panel-menu is-active" data-panel="menu">
+  <nav class="nav-menu">
+    <h3 class="title"><a href="../index.html">ActiveMQ Artemis Clustering and High Availability</a></h3>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="../index.html">Home</a>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../message-oriented-middleware-introduction/message-oriented-middleware-introduction.html">Message Oriented Middleware Introduction</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../message-oriented-middleware-introduction/role-of-mom-in-distributed-systems.html">Role of MOM in distributed systems</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../message-oriented-middleware-introduction/benefits-of-asynchronous-communication.html">Benefits of asynchronous communication</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../message-oriented-middleware-introduction/ensuring-resilience-and-reliability-with-mom.html">Ensuring resilience and reliability with MOM</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../message-oriented-middleware-introduction/introduction-to-activemq-artemis.html">Introduction to ActiveMQ Artemis</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../message-oriented-middleware-introduction/key-features-and-architecture-of-activemq-artemis.html">Key features and architecture of ActiveMQ Artemis</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../challenges-with-clustered-brokers/challenges-with-clustered-brokers.html">Challenges with clustered brokers</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../challenges-with-clustered-brokers/uneven-connection-distribution-across-cluster-nodes.html">Uneven connection distribution across cluster nodes</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../challenges-with-clustered-brokers/bottlenecks-from-single-connection-points.html">Bottlenecks from single connection points</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../challenges-with-clustered-brokers/overhead-and-impact-of-message-redistribution.html">Overhead and impact of message redistribution</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../challenges-with-clustered-brokers/reduced-cluster-throughput-in-specific-scenarios.html">Reduced cluster throughput in specific scenarios</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../challenges-with-clustered-brokers/disk-paging-issues-for-high-volume-queues.html">Disk paging issues for high-volume queues</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../solutions/solutions.html">Solutions</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../solutions/activemq-artemis-clustering-overview.html">ActiveMQ Artemis clustering overview</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../solutions/high-availability-ha-and-automatic-failover.html">High Availability (HA) and automatic failover</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../solutions/server-side-message-load-balancing.html">Server-side message load balancing</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../solutions/scaling-with-competing-consumers.html">Scaling with competing consumers</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../solutions/deploying-activemq-artemis-on-openshift.html">Deploying ActiveMQ Artemis on OpenShift</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../solutions/utilizing-the-red-hat-amq-operator.html">Utilizing the Red Hat AMQ Operator</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../solutions/configuring-activemqartemis-custom-resources-for-clustering.html">Configuring ActiveMQArtemis Custom Resources for clustering</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="code-examples.html">Code Examples</a>
+<ul class="nav-list">
+  <li class="nav-item is-current-page" data-depth="2">
+    <a class="nav-link" href="developing-producer-applications-for-activemq-artemis.html">Developing producer applications for ActiveMQ Artemis</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="developing-consumer-applications-for-activemq-artemis.html">Developing consumer applications for ActiveMQ Artemis</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="connecting-clients-to-a-clustered-artemis-environment.html">Connecting clients to a clustered Artemis environment</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="demonstrating-message-publishing-and-consumption-patterns.html">Demonstrating message publishing and consumption patterns</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+</ul>
+  </nav>
+</div>
+<div class="nav-panel-explore" data-panel="explore">
+  <div class="context">
+    <span class="title">ActiveMQ Artemis Clustering and High Availability</span>
+    <span class="version">1.0.0</span>
+  </div>
+  <ul class="components">
+    <li class="component is-current">
+      <a class="title" href="../index.html">ActiveMQ Artemis Clustering and High Availability</a>
+      <ul class="versions">
+        <li class="version is-current is-latest">
+          <a href="../index.html">1.0.0</a>
+        </li>
+      </ul>
+    </li>
+  </ul>
+</div>
+    </div>
+  </aside>
+</div>
+<main class="article">
+<div class="toolbar" role="navigation">
+<button class="nav-toggle"></button>
+  <a href="../index.html" class="home-link"></a>
+<nav class="breadcrumbs" aria-label="breadcrumbs">
+  <ul>
+    <li><a href="../index.html">ActiveMQ Artemis Clustering and High Availability</a></li>
+    <li><a href="code-examples.html">Code Examples</a></li>
+    <li><a href="developing-producer-applications-for-activemq-artemis.html">Developing producer applications for ActiveMQ Artemis</a></li>
+  </ul>
+</nav>
+</div>
+  <div class="content">
+<aside class="toc sidebar" data-title="Contents" data-levels="2">
+  <div class="toc-menu"></div>
+</aside>
+<article class="doc">
+<h1 class="page">Developing producer applications for ActiveMQ Artemis</h1>
+<h1 id="_developing_producer_applications_for_activemq_artemis" class="sect0"><a class="anchor" href="#_developing_producer_applications_for_activemq_artemis"></a>Developing Producer Applications for ActiveMQ Artemis</h1>
+<div class="paragraph">
+<p>Understanding the role of a producer in a Message Oriented Middleware (MOM) system like ActiveMQ Artemis is crucial for building robust and scalable distributed applications. Producers are the engines that initiate communication, sending messages that drive business processes without needing to wait for immediate processing.</p>
+</div>
+<div class="sect1">
+<h2 id="_the_producers_role_in_mom"><a class="anchor" href="#_the_producers_role_in_mom"></a>The Producer&#8217;s Role in MOM</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>In the architecture of Message Oriented Middleware (MOM), a <strong>producer</strong> is an application component responsible for creating and sending messages to a messaging broker (in our case, ActiveMQ Artemis). As outlined in the provided context, the core value proposition of Artemis lies in <strong>decoupling the Producer from the Consumer</strong>. This decoupling offers significant benefits for distributed systems:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>Asynchronous Communication</strong>: Producers don&#8217;t wait for consumers to process messages. They embody the "Fire and Forget" pattern, sending the message to the queue and immediately returning a success response to the end user. This dramatically reduces latency for the end user and allows the producer application to continue with other tasks without blocking, enhancing overall system responsiveness.</p>
+</li>
+<li>
+<p><strong>Resilience and Reliability</strong>: One of MOM&#8217;s key advantages is ensuring resilience. If a consumer service is temporarily unavailable or crashes, the message is not lost. Instead, it is persisted safely within the ActiveMQ Artemis queue until the service recovers, guaranteeing eventual consistency and high reliability. The producer remains unaffected and can continue sending messages.</p>
+</li>
+<li>
+<p><strong>Traffic Smoothing and Scalability</strong>: Producers can send messages at their own pace, even if consumers are slower or experience sudden spikes in load (e.g., during peak events like Black Friday sales). The broker&#8217;s queues act as a "shock absorber" or buffer, absorbing bursts of messages. This "traffic smoothing" mechanism allows consumers to process the backlog at a sustainable pace without crashing the system, enabling dynamic scaling with competing consumers. ActiveMQ Artemis will automatically load-balance messages across scaled-up consumer instances, increasing throughput linearly without producer code changes.</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>The "Fire and Forget" pattern is a cornerstone of this asynchronous model, where the producer&#8217;s concern ends once the message is successfully handed over to the broker, thereby reducing latency and improving the user experience.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_connecting_to_activemq_artemis_from_a_producer"><a class="anchor" href="#_connecting_to_activemq_artemis_from_a_producer"></a>Connecting to ActiveMQ Artemis from a Producer</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>To send messages, a producer application needs to establish a connection to an ActiveMQ Artemis broker. ActiveMQ Artemis is designed to be protocol-agnostic, supporting a variety of open protocols including AMQP, MQTT, STOMP, and OpenWire. This versatility allows clients written in different languages and using various frameworks to connect seamlessly.</p>
+</div>
+<div class="paragraph">
+<p>For Java applications, the standard Java Message Service (JMS) API is commonly used. JMS clients typically connect to Artemis using either the OpenWire or AMQP protocol.</p>
+</div>
+<div class="paragraph">
+<p>When producers connect to an ActiveMQ Artemis cluster, the process is largely transparent from the producer&#8217;s perspective, especially if a connection load-balancing policy or a list of broker URLs is provided. The cluster&#8217;s built-in intelligence, including server-side message load balancing and high availability (HA) features, handles the distribution and failover of messages. If a producer connects to a broker node that does not have a matching consumer for a specific message, the cluster can intelligently route that message to another node where a consumer is available. In case of a primary broker failure, backup brokers can immediately take over (failover), ensuring zero downtime for critical business operations and uninterrupted message flow from producers.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_hands_on_activity_developing_a_simple_jms_producer"><a class="anchor" href="#_hands_on_activity_developing_a_simple_jms_producer"></a>Hands-on Activity: Developing a Simple JMS Producer</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>In this activity, you will create a simple Java application that acts as a producer, sending text messages to an ActiveMQ Artemis queue using the JMS API.</p>
+</div>
+<div class="sect2">
+<h3 id="_prerequisites"><a class="anchor" href="#_prerequisites"></a>Prerequisites</h3>
+<div class="ulist">
+<ul>
+<li>
+<p>Java Development Kit (JDK) 11 or higher installed.</p>
+</li>
+<li>
+<p>Maven installed (version 3.6 or higher).</p>
+</li>
+<li>
+<p>An ActiveMQ Artemis instance running and accessible. For this lab, we&#8217;ll assume a standalone broker running on <code>localhost</code> with the default OpenWire port <code>61616</code>. If you&#8217;re using an OpenShift deployed cluster, you would connect to the exposed service route or headless service. Refer to the 'Deploying ActiveMQ Artemis on OpenShift' section for cluster deployment instructions.</p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_steps"><a class="anchor" href="#_steps"></a>Steps</h3>
+<div class="sect3">
+<h4 id="_1_set_up_your_maven_project"><a class="anchor" href="#_1_set_up_your_maven_project"></a>1. Set up your Maven Project</h4>
+<div class="paragraph">
+<p>First, create a new Maven project or add the necessary dependencies to an existing one.</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p><code>pom.xml</code></p>
+</li>
+</ol>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-xml hljs" data-lang="xml">&lt;?xml version="1.0" encoding="UTF-8"?&gt;
+&lt;project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd"&gt;
+    &lt;modelVersion&gt;4.0.0&lt;/modelVersion&gt;
+    &lt;groupId&gt;com.example.artemis&lt;/groupId&gt;
+    &lt;artifactId&gt;artemis-producer&lt;/artifactId&gt;
+    &lt;version&gt;1.0-SNAPSHOT&lt;/version&gt;
+
+    &lt;properties&gt;
+        &lt;maven.compiler.source&gt;11&lt;/maven.compiler.source&gt;
+        &lt;maven.compiler.target&gt;11&lt;/maven.compiler.target&gt;
+        &lt;project.build.sourceEncoding&gt;UTF-8&lt;/project.build.sourceEncoding&gt;
+        &lt;artemis.version&gt;2.29.0&lt;/artemis.version&gt; &lt;!-- Use a recent stable version --&gt;
+        &lt;slf4j.version&gt;1.7.36&lt;/slf4j.version&gt;
+    &lt;/properties&gt;
+
+    &lt;dependencies&gt;
+        &lt;!-- ActiveMQ Artemis JMS Client --&gt;
+        &lt;dependency&gt;
+            &lt;groupId&gt;org.apache.activemq&lt;/groupId&gt;
+            &lt;artifactId&gt;artemis-jms-client&lt;/artifactId&gt;
+            &lt;version&gt;${artemis.version}&lt;/version&gt;
+        &lt;/dependency&gt;
+        &lt;!-- SLF4J for logging (optional but good practice) --&gt;
+        &lt;dependency&gt;
+            &lt;groupId&gt;org.slf4j&lt;/groupId&gt;
+            &lt;artifactId&gt;slf4j-simple&lt;/artifactId&gt;
+            &lt;version&gt;${slf4j.version}&lt;/version&gt;
+        &lt;/dependency&gt;
+    &lt;/dependencies&gt;
+
+    &lt;build&gt;
+        &lt;plugins&gt;
+            &lt;plugin&gt;
+                &lt;groupId&gt;org.apache.maven.plugins&lt;/groupId&gt;
+                &lt;artifactId&gt;maven-compiler-plugin&lt;/artifactId&gt;
+                &lt;version&gt;3.8.1&lt;/version&gt;
+                &lt;configuration&gt;
+                    &lt;source&gt;${maven.compiler.source}&lt;/source&gt;
+                    &lt;target&gt;${maven.compiler.target}&lt;/target&gt;
+                &lt;/configuration&gt;
+            &lt;/plugin&gt;
+            &lt;plugin&gt;
+                &lt;groupId&gt;org.codehaus.mojo&lt;/groupId&gt;
+                &lt;artifactId&gt;exec-maven-plugin&lt;/artifactId&gt;
+                &lt;version&gt;3.0.0&lt;/version&gt;
+                &lt;configuration&gt;
+                    &lt;mainClass&gt;com.example.artemis.producer.SimpleProducer&lt;/mainClass&gt;
+                &lt;/configuration&gt;
+            &lt;/plugin&gt;
+        &lt;/plugins&gt;
+    &lt;/build&gt;
+&lt;/project&gt;</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p><strong>Explanation:</strong>
+The <code>artemis-jms-client</code> dependency provides the necessary classes to interact with ActiveMQ Artemis using the Java Message Service (JMS) API. We include <code>slf4j-simple</code> for basic console logging, which is helpful for observing the application&#8217;s behavior. The <code>exec-maven-plugin</code> is configured to allow direct execution of our producer application from the Maven command line.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_2_create_the_producer_application_code"><a class="anchor" href="#_2_create_the_producer_application_code"></a>2. Create the Producer Application Code</h4>
+<div class="paragraph">
+<p>Create a new Java class named <code>SimpleProducer.java</code> inside the <code>src/main/java/com/example/artemis/producer/</code> directory.</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p><code>SimpleProducer.java</code></p>
+</li>
+</ol>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-java hljs" data-lang="java">package com.example.artemis.producer;
+
+import org.apache.activemq.artemis.jms.client.ActiveMQConnectionFactory;
+
+import javax.jms.Connection;
+import javax.jms.ConnectionFactory;
+import javax.jms.DeliveryMode;
+import javax.jms.Destination;
+import javax.jms.MessageProducer;
+import javax.jms.Session;
+import javax.jms.TextMessage;
+
+/**
+ * A simple JMS producer application for ActiveMQ Artemis.
+ * This producer sends five text messages to a specified queue.
+ */
+public class SimpleProducer {
+
+    // The URL for connecting to the ActiveMQ Artemis broker
+    private static final String BROKER_URL = "tcp://localhost:61616"; // Default Artemis OpenWire port
+    // The name of the queue to which messages will be sent
+    private static final String QUEUE_NAME = "myQueue";
+
+    public static void main(String[] args) throws Exception {
+        Connection connection = null;
+        Session session = null;
+        try {
+            // 1. Create a ConnectionFactory
+            // ActiveMQConnectionFactory is used to create connections to the broker.
+            // For a basic setup, this is sufficient. For clustered environments or advanced features,
+            // you might use JNDI lookups or a pooled connection factory.
+            ConnectionFactory connectionFactory = new ActiveMQConnectionFactory(BROKER_URL);
+
+            // 2. Create a Connection
+            // This establishes the physical network connection to the ActiveMQ Artemis broker.
+            connection = connectionFactory.createConnection();
+            connection.start(); // Connections must be started to allow message flow
+
+            // 3. Create a Session
+            // A session is a single-threaded context for producing and consuming messages.
+            // Parameters:
+            //   - false: Indicates the session is not transacted.
+            //   - Session.AUTO_ACKNOWLEDGE: Messages are automatically acknowledged by the broker upon delivery.
+            session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
+
+            // 4. Create a Destination (Queue or Topic)
+            // Here, we define a queue named 'myQueue'. If this queue does not exist
+            // on the broker, ActiveMQ Artemis will typically create it dynamically upon first use.
+            Destination destination = session.createQueue(QUEUE_NAME);
+
+            // 5. Create a MessageProducer
+            // This object is responsible for sending messages to the specified destination.
+            MessageProducer producer = session.createProducer(destination);
+
+            // Set delivery mode to PERSISTENT.
+            // PERSISTENT ensures that messages survive broker restarts and network failures
+            // until they are successfully consumed. For non-critical, temporary messages,
+            // DeliveryMode.NON_PERSISTENT can be used for higher throughput.
+            producer.setDeliveryMode(DeliveryMode.PERSISTENT);
+
+            // 6. Create and Send Messages
+            System.out.println("Starting to send messages to queue: " + QUEUE_NAME);
+            for (int i = 0; i &lt; 5; i++) {
+                String text = "Hello Artemis from Producer! Message " + (i + 1);
+                TextMessage message = session.createTextMessage(text);
+                producer.send(message); // Send the message
+                System.out.println("  Sent: \"" + text + "\"");
+            }
+
+            System.out.println("All messages sent successfully.");
+
+        } finally {
+            // 7. Close Resources
+            // It is critical to close JMS sessions and connections in a 'finally' block
+            // to ensure resources are released even if errors occur, preventing resource leaks.
+            if (session != null) {
+                try {
+                    session.close();
+                    System.out.println("JMS Session closed.");
+                } catch (javax.jms.JMSException e) {
+                    System.err.println("Error closing session: " + e.getMessage());
+                }
+            }
+            if (connection != null) {
+                try {
+                    connection.close();
+                    System.out.println("JMS Connection closed.");
+                } catch (javax.jms.JMSException e) {
+                    System.err.println("Error closing connection: " + e.getMessage());
+                }
+            }
+            System.out.println("Producer application gracefully shut down.");
+        }
+    }
+}</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p><strong>Explanation:</strong>
+The <code>SimpleProducer</code> code demonstrates the fundamental JMS pattern for sending messages:</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p><strong>ConnectionFactory</strong>: An <code>ActiveMQConnectionFactory</code> is instantiated with the broker&#8217;s connection URL (<code>tcp://localhost:61616</code>). This factory is responsible for creating <code>Connection</code> objects.</p>
+</li>
+<li>
+<p><strong>Connection</strong>: A <code>Connection</code> object is created from the factory and then started. This establishes the physical link to the Artemis broker.</p>
+</li>
+<li>
+<p><strong>Session</strong>: A <code>Session</code> provides a single-threaded context for sending and receiving messages. We create a non-transacted session with <code>AUTO_ACKNOWLEDGE</code> mode for simplicity, meaning messages are automatically acknowledged by the broker upon successful delivery.</p>
+</li>
+<li>
+<p><strong>Destination</strong>: A <code>Destination</code> object represents where messages are sent or received. Here, we specify a <code>Queue</code> named <code>myQueue</code>.</p>
+</li>
+<li>
+<p><strong>MessageProducer</strong>: The <code>MessageProducer</code> is created from the session and associated with the <code>Destination</code>. We explicitly set the <code>DeliveryMode</code> to <code>PERSISTENT</code> to ensure that messages are stored durably by Artemis, surviving broker restarts.</p>
+</li>
+<li>
+<p><strong>Message Creation and Sending</strong>: A loop creates <code>TextMessage</code> objects (a simple message type for strings) and sends them using <code>producer.send(message)</code>. This embodies the "Fire and Forget" pattern.</p>
+</li>
+<li>
+<p><strong>Resource Closure</strong>: In the <code>finally</code> block, both the <code>Session</code> and <code>Connection</code> are meticulously closed. This is crucial for releasing system resources and preventing leaks, ensuring proper application shutdown.</p>
+</li>
+</ol>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_3_run_the_producer_application"><a class="anchor" href="#_3_run_the_producer_application"></a>3. Run the Producer Application</h4>
+<div class="paragraph">
+<p>Open your terminal, navigate to the root directory of your Maven project (<code>artemis-producer</code>), and execute the following command:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">mvn clean install exec:java</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>You should observe output similar to this, indicating the messages have been sent:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-text hljs" data-lang="text">[INFO] Scanning for projects for project com.example.artemis:artemis-producer:jar:1.0-SNAPSHOT
+...
+[INFO] --- exec-maven-plugin:3.0.0:java (default-cli) @ artemis-producer ---
+Starting to send messages to queue: myQueue
+  Sent: "Hello Artemis from Producer! Message 1"
+  Sent: "Hello Artemis from Producer! Message 2"
+  Sent: "Hello Artemis from Producer! Message 3"
+  Sent: "Hello Artemis from Producer! Message 4"
+  Sent: "Hello Artemis from Producer! Message 5"
+All messages sent successfully.
+JMS Session closed.
+JMS Connection closed.
+Producer application gracefully shut down.
+[INFO] ------------------------------------------------------------------------
+[INFO] BUILD SUCCESS
+[INFO] ------------------------------------------------------------------------</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p><strong>Verification:</strong>
+If you have access to the ActiveMQ Artemis management console (typically available at <code><a href="http://localhost:8161/console" class="bare">http://localhost:8161/console</a></code> for a standalone broker) or other management tools, you can verify that:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>A queue named <code>myQueue</code> has been created (if it didn&#8217;t exist).</p>
+</li>
+<li>
+<p>The queue now contains 5 messages.</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>This confirms that your producer application successfully connected to ActiveMQ Artemis and delivered the messages.</p>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_troubleshooting_tips_for_producers"><a class="anchor" href="#_troubleshooting_tips_for_producers"></a>Troubleshooting Tips for Producers</h2>
+<div class="sectionbody">
+<div class="ulist">
+<ul>
+<li>
+<p><strong>Connection Refused</strong>:</p>
+</li>
+<li>
+<p>Ensure your ActiveMQ Artemis broker is running and accessible at the specified <code>BROKER_URL</code> (<code>tcp://localhost:61616</code> or your specific cluster address/port).</p>
+</li>
+<li>
+<p>Check firewall rules if connecting from a different machine or network.</p>
+</li>
+<li>
+<p>Verify the broker&#8217;s acceptor port (default OpenWire is 61616) is correctly configured and listening.</p>
+</li>
+<li>
+<p><strong>JMS Exceptions</strong>:</p>
+</li>
+<li>
+<p>Carefully review the stack trace for specific error messages. Common issues include incorrect broker URL, security credentials (if authentication is enabled), or non-existent destinations (though Artemis often auto-creates queues).</p>
+</li>
+<li>
+<p>Ensure the <code>artemis-jms-client</code> dependency version is compatible with your Artemis broker version.</p>
+</li>
+<li>
+<p><strong>Messages Not Appearing in Queue</strong>:</p>
+</li>
+<li>
+<p>Confirm the <code>QUEUE_NAME</code> in your producer code exactly matches the queue name expected on the broker.</p>
+</li>
+<li>
+<p>If connecting to a clustered setup, ensure producers are configured to connect to an active broker within the cluster.</p>
+</li>
+<li>
+<p>Check the ActiveMQ Artemis broker logs for any errors related to message reception, authentication failures, or resource limits.</p>
+</li>
+<li>
+<p><strong>Performance Issues</strong>:</p>
+</li>
+<li>
+<p>For high-throughput scenarios, consider connection pooling (e.g., using a <code>JmsPoolConnectionFactory</code>) to reuse connections and sessions efficiently.</p>
+</li>
+<li>
+<p>Adjust <code>DeliveryMode</code> to <code>NON_PERSISTENT</code> if message durability is not strictly required, as persistent messages incur disk I/O overhead.</p>
+</li>
+<li>
+<p>Batching messages (sending multiple messages within a single transaction if transacted sessions are used) can also improve throughput.</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<nav class="pagination">
+  <span class="prev"><a href="code-examples.html">Code Examples</a></span>
+  <span class="next"><a href="developing-consumer-applications-for-activemq-artemis.html">Developing consumer applications for ActiveMQ Artemis</a></span>
+</nav>
+</article>
+  </div>
+</main>
+</div>
+<footer class="footer">
+  <img src="../../../_/img/rhl-logo-red.png" height="40px" alt="Red Hat"  href="https://redhat.com" >
+</footer><script id="site-script" src="../../../_/js/site.js" data-ui-root-path="../../../_"></script>
+<script async src="../../../_/js/vendor/highlight.js"></script>
+  </body>
+</html>

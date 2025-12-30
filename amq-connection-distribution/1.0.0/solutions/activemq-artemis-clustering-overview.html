@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>ActiveMQ Artemis clustering overview :: ActiveMQ Artemis Clustering and High Availability</title>
+    <link rel="prev" href="solutions.html">
+    <link rel="next" href="high-availability-ha-and-automatic-failover.html">
+    <meta name="generator" content="Antora 3.1.3">
+    <link rel="stylesheet" href="../../../_/css/site.css">
+    <script>var uiRootPath = '../../../_'</script>
+  </head>
+  <body class="article">
+<header class="header">
+  <nav class="navbar">
+    <div class="navbar-brand">
+      <a class="navbar-item" href="https://www.redhat.com" target="_blank"><img src="../../../_/img/redhat-logo.png" height="40px" alt="Red Hat"></a>
+      <a class="navbar-item" style="font-size: 24px; color: white" href="../../..">ActiveMQ Artemis Clustering and High Availability</a>
+      <button class="navbar-burger" data-target="topbar-nav">
+        <span></span>
+        <span></span>
+        <span></span>
+      </button>
+    </div>
+    <div id="topbar-nav" class="navbar-menu">
+      <div class="navbar-end">
+        <a class="navbar-item" href="https://github.com/RedHatQuickCourses/REPLACEREPONAME/issues" target="_blank">Report Issues</a>
+      </div>
+    </div>
+  </nav>
+</header>
+<div class="body">
+<div class="nav-container" data-component="amq-connection-distribution" data-version="1.0.0">
+  <aside class="nav">
+    <div class="panels">
+<div class="nav-panel-menu is-active" data-panel="menu">
+  <nav class="nav-menu">
+    <h3 class="title"><a href="../index.html">ActiveMQ Artemis Clustering and High Availability</a></h3>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="../index.html">Home</a>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../message-oriented-middleware-introduction/message-oriented-middleware-introduction.html">Message Oriented Middleware Introduction</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../message-oriented-middleware-introduction/role-of-mom-in-distributed-systems.html">Role of MOM in distributed systems</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../message-oriented-middleware-introduction/benefits-of-asynchronous-communication.html">Benefits of asynchronous communication</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../message-oriented-middleware-introduction/ensuring-resilience-and-reliability-with-mom.html">Ensuring resilience and reliability with MOM</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../message-oriented-middleware-introduction/introduction-to-activemq-artemis.html">Introduction to ActiveMQ Artemis</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../message-oriented-middleware-introduction/key-features-and-architecture-of-activemq-artemis.html">Key features and architecture of ActiveMQ Artemis</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../challenges-with-clustered-brokers/challenges-with-clustered-brokers.html">Challenges with clustered brokers</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../challenges-with-clustered-brokers/uneven-connection-distribution-across-cluster-nodes.html">Uneven connection distribution across cluster nodes</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../challenges-with-clustered-brokers/bottlenecks-from-single-connection-points.html">Bottlenecks from single connection points</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../challenges-with-clustered-brokers/overhead-and-impact-of-message-redistribution.html">Overhead and impact of message redistribution</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../challenges-with-clustered-brokers/reduced-cluster-throughput-in-specific-scenarios.html">Reduced cluster throughput in specific scenarios</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../challenges-with-clustered-brokers/disk-paging-issues-for-high-volume-queues.html">Disk paging issues for high-volume queues</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="solutions.html">Solutions</a>
+<ul class="nav-list">
+  <li class="nav-item is-current-page" data-depth="2">
+    <a class="nav-link" href="activemq-artemis-clustering-overview.html">ActiveMQ Artemis clustering overview</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="high-availability-ha-and-automatic-failover.html">High Availability (HA) and automatic failover</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="server-side-message-load-balancing.html">Server-side message load balancing</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="scaling-with-competing-consumers.html">Scaling with competing consumers</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="deploying-activemq-artemis-on-openshift.html">Deploying ActiveMQ Artemis on OpenShift</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="utilizing-the-red-hat-amq-operator.html">Utilizing the Red Hat AMQ Operator</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="configuring-activemqartemis-custom-resources-for-clustering.html">Configuring ActiveMQArtemis Custom Resources for clustering</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../code-examples/code-examples.html">Code Examples</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../code-examples/developing-producer-applications-for-activemq-artemis.html">Developing producer applications for ActiveMQ Artemis</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../code-examples/developing-consumer-applications-for-activemq-artemis.html">Developing consumer applications for ActiveMQ Artemis</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../code-examples/connecting-clients-to-a-clustered-artemis-environment.html">Connecting clients to a clustered Artemis environment</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../code-examples/demonstrating-message-publishing-and-consumption-patterns.html">Demonstrating message publishing and consumption patterns</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+</ul>
+  </nav>
+</div>
+<div class="nav-panel-explore" data-panel="explore">
+  <div class="context">
+    <span class="title">ActiveMQ Artemis Clustering and High Availability</span>
+    <span class="version">1.0.0</span>
+  </div>
+  <ul class="components">
+    <li class="component is-current">
+      <a class="title" href="../index.html">ActiveMQ Artemis Clustering and High Availability</a>
+      <ul class="versions">
+        <li class="version is-current is-latest">
+          <a href="../index.html">1.0.0</a>
+        </li>
+      </ul>
+    </li>
+  </ul>
+</div>
+    </div>
+  </aside>
+</div>
+<main class="article">
+<div class="toolbar" role="navigation">
+<button class="nav-toggle"></button>
+  <a href="../index.html" class="home-link"></a>
+<nav class="breadcrumbs" aria-label="breadcrumbs">
+  <ul>
+    <li><a href="../index.html">ActiveMQ Artemis Clustering and High Availability</a></li>
+    <li><a href="solutions.html">Solutions</a></li>
+    <li><a href="activemq-artemis-clustering-overview.html">ActiveMQ Artemis clustering overview</a></li>
+  </ul>
+</nav>
+</div>
+  <div class="content">
+<aside class="toc sidebar" data-title="Contents" data-levels="2">
+  <div class="toc-menu"></div>
+</aside>
+<article class="doc">
+<h1 class="page">ActiveMQ Artemis clustering overview</h1>
+<h1 id="_activemq_artemis_clustering_overview" class="sect0"><a class="anchor" href="#_activemq_artemis_clustering_overview"></a>ActiveMQ Artemis Clustering Overview</h1>
+<div class="paragraph">
+<p>In modern distributed systems, resilience and scalability are paramount. Message Oriented Middleware (MOM) plays a critical role in achieving these goals by decoupling services and enabling asynchronous communication. ActiveMQ Artemis, as a high-performance, next-generation messaging broker, extends these capabilities through its robust clustering features.</p>
+</div>
+<div class="sect1">
+<h2 id="_why_activemq_artemis_clustering"><a class="anchor" href="#_why_activemq_artemis_clustering"></a>Why ActiveMQ Artemis Clustering?</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>In enterprise environments, a <a href="#message-oriented-middleware-introduction.adoc#_role_of_mom_in_distributed_systems" class="xref unresolved">single broker instance represents a single point of failure</a>. If that broker goes offline, critical business operations that rely on message exchange would halt, leading to service disruption and potential data loss. ActiveMQ Artemis directly addresses this challenge through its powerful clustering capabilities.</p>
+</div>
+<div class="paragraph">
+<p>Clustering transforms a collection of independent broker instances into a cohesive, highly available, and scalable messaging system. It allows you to distribute the messaging load across multiple nodes and ensures that your messaging infrastructure can withstand failures without interrupting service.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_key_features_of_activemq_artemis_clustering"><a class="anchor" href="#_key_features_of_activemq_artemis_clustering"></a>Key Features of ActiveMQ Artemis Clustering</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>ActiveMQ Artemis clustering provides several core features that ensure high availability, load distribution, and fault tolerance:</p>
+</div>
+<div class="sect2">
+<h3 id="_high_availability_ha_and_automatic_failover"><a class="anchor" href="#_high_availability_ha_and_automatic_failover"></a>High Availability (HA) and Automatic Failover</h3>
+<div class="paragraph">
+<p>High Availability is a cornerstone of ActiveMQ Artemis clustering. It ensures that messaging services remain continuously operational, even if a broker node fails.</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>Primary-Backup Architecture</strong>: Within a cluster, brokers can be configured in primary-backup pairs. A primary broker actively processes messages, while its backup stands by, mirroring the primary&#8217;s state.</p>
+</li>
+<li>
+<p><strong>Automatic Failover</strong>: If a primary broker fails due to hardware issues, software crashes, or network partitioning, the backup broker immediately and automatically takes over (failover). This process is designed to be seamless, ensuring zero downtime for critical business operations. Clients connected to the failed primary are automatically reconnected to the new primary, often without application-level intervention.</p>
+</li>
+<li>
+<p><strong>Shared Storage or Replication</strong>: HA can be achieved using shared storage (where primary and backup share the same persistent store) or by replicating data between nodes, ensuring that the backup always has the most up-to-date state.</p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_server_side_message_load_balancing"><a class="anchor" href="#_server_side_message_load_balancing"></a>Server-Side Message Load Balancing</h3>
+<div class="paragraph">
+<p>Efficient distribution of message load across cluster members is vital for performance and preventing bottlenecks. ActiveMQ Artemis implements intelligent server-side load balancing.</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>Broker Awareness</strong>: Brokers within an Artemis cluster are aware of each other&#8217;s state and the consumers connected to them.</p>
+</li>
+<li>
+<p><strong>Intelligent Message Routing</strong>: If a producer connects to a broker node that does not have a matching consumer for the messages it&#8217;s sending, the cluster can intelligently route those messages to another node that <strong>does</strong> have one or more active consumers. This prevents messages from accumulating unnecessarily on an underutilized broker while other brokers are actively processing.</p>
+</li>
+<li>
+<p><strong>Reduced Redistribution Overhead</strong>: While message redistribution between nodes is possible (configured via <code>redistribution-delay</code>), intelligent routing minimizes the need for it. Excessive redistribution can introduce significant overhead and reduce overall cluster throughput, potentially forcing high-volume queues to page pending messages to disk. Server-side load balancing helps avoid these scenarios.</p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_scaling_with_competing_consumers"><a class="anchor" href="#_scaling_with_competing_consumers"></a>Scaling with Competing Consumers</h3>
+<div class="paragraph">
+<p>To handle increasing message volumes and processing demands, ActiveMQ Artemis clustering supports the concept of competing consumers.</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>Dynamic Scalability</strong>: You can dynamically scale up the number of consumer instances for a specific queue. As new consumers come online, Artemis automatically detects them.</p>
+</li>
+<li>
+<p><strong>Automatic Message Distribution</strong>: Messages from the queue are then load-balanced across all available consumer instances. This ensures that the message processing throughput increases linearly with the number of consumers.</p>
+</li>
+<li>
+<p><strong>No Producer Code Changes</strong>: Critically, this scaling can be achieved without requiring any changes to the producer application&#8217;s code, simplifying application development and maintenance.</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_conceptual_hands_on_declaring_an_activemq_artemis_cluster"><a class="anchor" href="#_conceptual_hands_on_declaring_an_activemq_artemis_cluster"></a>Conceptual Hands-On: Declaring an ActiveMQ Artemis Cluster</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>While a full deployment involves numerous steps, understanding how an ActiveMQ Artemis cluster is <strong>declared</strong> is fundamental. When deploying on platforms like OpenShift or Kubernetes, the Red Hat AMQ Operator simplifies this process by allowing you to define your cluster configuration using an <code>ActiveMQArtemis</code> Custom Resource (CR).</p>
+</div>
+<div class="paragraph">
+<p>Let&#8217;s look at a simplified example of how you might declare a broker instance that will be part of a cluster using a Custom Resource Definition (CRD). This CRD defines the desired state of your broker, and the Operator takes care of provisioning and managing it.</p>
+</div>
+<div class="listingblock">
+<div class="title">Defining a Basic ActiveMQ Artemis Broker Instance for Clustering</div>
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">apiVersion: broker.amq.io/v1beta1
+kind: ActiveMQArtemis
+metadata:
+  name: broker-cluster-node-1 # Unique name for this broker instance
+  namespace: broker           # Namespace where the broker will be deployed
+spec:
+  # Acceptor configuration defines how clients connect to this broker
+  acceptors:
+    - bindToAllInterfaces: true
+      connectionsAllowed: -1 # Allow unlimited connections
+      expose: true           # Expose this acceptor outside the cluster
+      name: broker           # Name of the acceptor
+      port: 61617            # The port for client connections (e.g., AMQP, OpenWire)
+      sslEnabled: true       # Enable SSL for secure connections
+      sslSecret: tls         # Reference to a Kubernetes Secret containing TLS certificates
+
+  # Address settings define how messages are handled for specific addresses/queues
+  addressSettings:
+    addressSetting:
+      - match: '#' # Apply these settings to all addresses
+        # Further settings for message expiry, delivery, etc. can be added here
+
+  # Clustering specific configuration would be added here
+  # For instance, defining other cluster members, or discovery mechanisms.
+  # The Operator often handles much of the peer discovery and clustering setup automatically
+  # when multiple ActiveMQArtemis CRs are deployed in the same namespace.</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>In this example:</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>We define an <code>ActiveMQArtemis</code> custom resource with a unique <code>name</code>.</p>
+</li>
+<li>
+<p>The <code>spec</code> section details the broker&#8217;s configuration, including <code>acceptors</code> (how clients connect) and <code>addressSettings</code> (message routing rules).</p>
+</li>
+<li>
+<p>When multiple such <code>ActiveMQArtemis</code> resources are deployed within the same namespace, the Red Hat AMQ Operator orchestrates them into a cluster, managing the underlying network configuration and broker-to-broker communication necessary for features like server-side load balancing and high availability.</p>
+</li>
+</ol>
+</div>
+<div class="paragraph">
+<p>By utilizing the Operator and Custom Resources, the complexities of setting up and managing a multi-node ActiveMQ Artemis cluster are significantly reduced, allowing you to focus on application logic rather than infrastructure management.</p>
+</div>
+</div>
+</div>
+<nav class="pagination">
+  <span class="prev"><a href="solutions.html">Solutions</a></span>
+  <span class="next"><a href="high-availability-ha-and-automatic-failover.html">High Availability (HA) and automatic failover</a></span>
+</nav>
+</article>
+  </div>
+</main>
+</div>
+<footer class="footer">
+  <img src="../../../_/img/rhl-logo-red.png" height="40px" alt="Red Hat"  href="https://redhat.com" >
+</footer><script id="site-script" src="../../../_/js/site.js" data-ui-root-path="../../../_"></script>
+<script async src="../../../_/js/vendor/highlight.js"></script>
+  </body>
+</html>

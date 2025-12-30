@@ -1,0 +1,646 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Connecting clients to a clustered Artemis environment :: ActiveMQ Artemis Clustering and High Availability</title>
+    <link rel="prev" href="developing-consumer-applications-for-activemq-artemis.html">
+    <link rel="next" href="demonstrating-message-publishing-and-consumption-patterns.html">
+    <meta name="generator" content="Antora 3.1.3">
+    <link rel="stylesheet" href="../../../_/css/site.css">
+    <script>var uiRootPath = '../../../_'</script>
+  </head>
+  <body class="article">
+<header class="header">
+  <nav class="navbar">
+    <div class="navbar-brand">
+      <a class="navbar-item" href="https://www.redhat.com" target="_blank"><img src="../../../_/img/redhat-logo.png" height="40px" alt="Red Hat"></a>
+      <a class="navbar-item" style="font-size: 24px; color: white" href="../../..">ActiveMQ Artemis Clustering and High Availability</a>
+      <button class="navbar-burger" data-target="topbar-nav">
+        <span></span>
+        <span></span>
+        <span></span>
+      </button>
+    </div>
+    <div id="topbar-nav" class="navbar-menu">
+      <div class="navbar-end">
+        <a class="navbar-item" href="https://github.com/RedHatQuickCourses/REPLACEREPONAME/issues" target="_blank">Report Issues</a>
+      </div>
+    </div>
+  </nav>
+</header>
+<div class="body">
+<div class="nav-container" data-component="amq-connection-distribution" data-version="1.0.0">
+  <aside class="nav">
+    <div class="panels">
+<div class="nav-panel-menu is-active" data-panel="menu">
+  <nav class="nav-menu">
+    <h3 class="title"><a href="../index.html">ActiveMQ Artemis Clustering and High Availability</a></h3>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="../index.html">Home</a>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../message-oriented-middleware-introduction/message-oriented-middleware-introduction.html">Message Oriented Middleware Introduction</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../message-oriented-middleware-introduction/role-of-mom-in-distributed-systems.html">Role of MOM in distributed systems</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../message-oriented-middleware-introduction/benefits-of-asynchronous-communication.html">Benefits of asynchronous communication</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../message-oriented-middleware-introduction/ensuring-resilience-and-reliability-with-mom.html">Ensuring resilience and reliability with MOM</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../message-oriented-middleware-introduction/introduction-to-activemq-artemis.html">Introduction to ActiveMQ Artemis</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../message-oriented-middleware-introduction/key-features-and-architecture-of-activemq-artemis.html">Key features and architecture of ActiveMQ Artemis</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../challenges-with-clustered-brokers/challenges-with-clustered-brokers.html">Challenges with clustered brokers</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../challenges-with-clustered-brokers/uneven-connection-distribution-across-cluster-nodes.html">Uneven connection distribution across cluster nodes</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../challenges-with-clustered-brokers/bottlenecks-from-single-connection-points.html">Bottlenecks from single connection points</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../challenges-with-clustered-brokers/overhead-and-impact-of-message-redistribution.html">Overhead and impact of message redistribution</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../challenges-with-clustered-brokers/reduced-cluster-throughput-in-specific-scenarios.html">Reduced cluster throughput in specific scenarios</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../challenges-with-clustered-brokers/disk-paging-issues-for-high-volume-queues.html">Disk paging issues for high-volume queues</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../solutions/solutions.html">Solutions</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../solutions/activemq-artemis-clustering-overview.html">ActiveMQ Artemis clustering overview</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../solutions/high-availability-ha-and-automatic-failover.html">High Availability (HA) and automatic failover</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../solutions/server-side-message-load-balancing.html">Server-side message load balancing</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../solutions/scaling-with-competing-consumers.html">Scaling with competing consumers</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../solutions/deploying-activemq-artemis-on-openshift.html">Deploying ActiveMQ Artemis on OpenShift</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../solutions/utilizing-the-red-hat-amq-operator.html">Utilizing the Red Hat AMQ Operator</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../solutions/configuring-activemqartemis-custom-resources-for-clustering.html">Configuring ActiveMQArtemis Custom Resources for clustering</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="code-examples.html">Code Examples</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="developing-producer-applications-for-activemq-artemis.html">Developing producer applications for ActiveMQ Artemis</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="developing-consumer-applications-for-activemq-artemis.html">Developing consumer applications for ActiveMQ Artemis</a>
+  </li>
+  <li class="nav-item is-current-page" data-depth="2">
+    <a class="nav-link" href="connecting-clients-to-a-clustered-artemis-environment.html">Connecting clients to a clustered Artemis environment</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="demonstrating-message-publishing-and-consumption-patterns.html">Demonstrating message publishing and consumption patterns</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+</ul>
+  </nav>
+</div>
+<div class="nav-panel-explore" data-panel="explore">
+  <div class="context">
+    <span class="title">ActiveMQ Artemis Clustering and High Availability</span>
+    <span class="version">1.0.0</span>
+  </div>
+  <ul class="components">
+    <li class="component is-current">
+      <a class="title" href="../index.html">ActiveMQ Artemis Clustering and High Availability</a>
+      <ul class="versions">
+        <li class="version is-current is-latest">
+          <a href="../index.html">1.0.0</a>
+        </li>
+      </ul>
+    </li>
+  </ul>
+</div>
+    </div>
+  </aside>
+</div>
+<main class="article">
+<div class="toolbar" role="navigation">
+<button class="nav-toggle"></button>
+  <a href="../index.html" class="home-link"></a>
+<nav class="breadcrumbs" aria-label="breadcrumbs">
+  <ul>
+    <li><a href="../index.html">ActiveMQ Artemis Clustering and High Availability</a></li>
+    <li><a href="code-examples.html">Code Examples</a></li>
+    <li><a href="connecting-clients-to-a-clustered-artemis-environment.html">Connecting clients to a clustered Artemis environment</a></li>
+  </ul>
+</nav>
+</div>
+  <div class="content">
+<aside class="toc sidebar" data-title="Contents" data-levels="2">
+  <div class="toc-menu"></div>
+</aside>
+<article class="doc">
+<h1 class="page">Connecting clients to a clustered Artemis environment</h1>
+<h1 id="_connecting_clients_to_a_clustered_artemis_environment" class="sect0"><a class="anchor" href="#_connecting_clients_to_a_clustered_artemis_environment"></a>Connecting clients to a clustered Artemis environment</h1>
+<div class="paragraph">
+<p>In a standalone ActiveMQ Artemis setup, client applications typically establish a single connection to a single broker instance. While simple, this approach introduces a <a href="#challenge-single-connection-bottleneck">single point of failure</a> and can create a bottleneck if that broker becomes overwhelmed. To truly harness the power of an ActiveMQ Artemis cluster – achieving high availability, fault tolerance, and efficient message distribution – clients need a more intelligent connection strategy.</p>
+</div>
+<div class="sect1">
+<h2 id="_understanding_client_connectivity_in_a_clustered_environment"><a class="anchor" href="#_understanding_client_connectivity_in_a_clustered_environment"></a>Understanding Client Connectivity in a Clustered Environment</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>The primary goal when connecting a client to an ActiveMQ Artemis cluster is to ensure that the client can leverage the distributed nature of the brokers. This means achieving:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>High Availability (HA) and Automatic Failover:</strong> If one broker node in the cluster fails, the client should automatically and transparently reconnect to another active broker without manual intervention, ensuring zero downtime for critical business operations. As the <a href="#context-ha-failover">context</a> states, "if a primary broker fails, a backup broker can immediately take over (Failover), ensuring zero downtime."</p>
+</li>
+<li>
+<p><strong>Client-Side Load Balancing:</strong> Ideally, new client connections should be distributed across multiple active brokers in the cluster. This prevents a single broker from becoming a <strong>single connection point</strong> and bottleneck, thereby ensuring more <a href="#context-evenly-distribute">even connection distribution</a> and higher overall cluster throughput. While <a href="#context-server-side-lb">server-side message load balancing</a> handles routing messages <strong>between</strong> brokers if a consumer isn&#8217;t present, client-side load balancing distributes the <strong>initial connections</strong> and subsequent message flow more effectively.</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>Connecting to a clustered environment primarily involves configuring the client&#8217;s connection URI (Uniform Resource Identifier) to include the addresses of multiple brokers within the cluster. This allows the client library to manage failover and connection attempts across the available nodes.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_connection_uri_for_clustered_environments"><a class="anchor" href="#_connection_uri_for_clustered_environments"></a>Connection URI for Clustered Environments</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>To connect to a clustered ActiveMQ Artemis environment, clients provide a connection string that lists multiple broker endpoints. The client library then uses this list to attempt connections and handle failover.</p>
+</div>
+<div class="paragraph">
+<p>A typical clustered connection URI might look like this:</p>
+</div>
+<div class="paragraph">
+<p><code>tcp://host1:port1,tcp://host2:port2,tcp://host3:port3?option1=value1&amp;option2=value2</code></p>
+</div>
+<div class="paragraph">
+<p>Let&#8217;s break down the components:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><code>tcp://</code>: Specifies the communication protocol (e.g., TCP for core protocol, AMQP, OpenWire).</p>
+</li>
+<li>
+<p><code>hostN:portN</code>: Each comma-separated entry represents the hostname or IP address and port of an ActiveMQ Artemis broker instance within your cluster.</p>
+</li>
+<li>
+<p><code>?options</code>: Various options can be appended to the URI to control client behavior, such as failover settings, retry intervals, and load balancing policies.</p>
+</li>
+</ul>
+</div>
+<div class="sect2">
+<h3 id="_key_connection_options"><a class="anchor" href="#_key_connection_options"></a>Key Connection Options</h3>
+<div class="paragraph">
+<p>When connecting clients to a cluster, some critical options enhance reliability and performance:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong><code>ha=true</code></strong>: This is essential for enabling high availability and failover logic on the client side. When set to <code>true</code>, the client library will attempt to reconnect to other brokers in the provided list if the initial connection fails or is lost.</p>
+</li>
+<li>
+<p><strong><code>retryInterval=MILLISECONDS</code></strong>: Specifies the delay (in milliseconds) before the client attempts to reconnect to a broker after a connection failure.</p>
+</li>
+<li>
+<p><strong><code>retryIntervalMultiplier=DECIMAL</code></strong>: A multiplier applied to the <code>retryInterval</code> after each failed reconnection attempt, often used to implement an exponential backoff strategy.</p>
+</li>
+<li>
+<p><strong><code>reconnectAttempts=NUMBER</code></strong>: The maximum number of times the client will attempt to reconnect to the brokers in the list before giving up.</p>
+</li>
+<li>
+<p><strong><code>connectionLoadBalancingPolicy=POLICY</code></strong>: Defines how the client distributes new connections across the available brokers. Common policies include <code>ROUND_ROBIN</code> (default) or <code>RANDOM</code>.</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>By providing multiple broker addresses in the connection URI and configuring <code>ha=true</code>, the client actively participates in maintaining high availability. If the broker it&#8217;s connected to goes down, it will try to reconnect to the next available broker in the list, providing seamless failover. This prevents the <strong>bottlenecks from single connection points</strong> and reduces the reliance on <strong>message redistribution overhead</strong> that can impact overall cluster throughput, as discussed in the <a href="#challenge-redistribution-overhead">challenges with clustered brokers</a>.</p>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_hands_on_activity_connecting_a_client_to_a_clustered_artemis_environment"><a class="anchor" href="#_hands_on_activity_connecting_a_client_to_a_clustered_artemis_environment"></a>Hands-on Activity: Connecting a Client to a Clustered Artemis Environment</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>In this activity, you will develop a simple producer application that connects to a two-node ActiveMQ Artemis cluster. This will demonstrate how to configure the client&#8217;s connection URI to leverage the cluster&#8217;s high availability and allow for client-side load balancing.</p>
+</div>
+<div class="sect2">
+<h3 id="_prerequisites"><a class="anchor" href="#_prerequisites"></a>Prerequisites</h3>
+<div class="paragraph">
+<p>Before starting, ensure you have:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>A running two-node ActiveMQ Artemis cluster. For example, you might have deployed this using the <a href="#solution-amq-operator">Red Hat AMQ Operator</a> on OpenShift by configuring an <code>ActiveMQArtemis</code> <a href="#solution-custom-resources">Custom Resource</a> for clustering, as mentioned in the solutions. Let&#8217;s assume your brokers are accessible at <code>broker-0-svc-headless.broker.svc.cluster.local:61616</code> and <code>broker-1-svc-headless.broker.svc.cluster.local:61616</code>.</p>
+</li>
+<li>
+<p>A Java Development Kit (JDK) installed.</p>
+</li>
+<li>
+<p>Apache Maven for project management.</p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_step_1_create_a_maven_project"><a class="anchor" href="#_step_1_create_a_maven_project"></a>Step 1: Create a Maven Project</h3>
+<div class="paragraph">
+<p>Create a new Maven project for your client application.</p>
+</div>
+<div class="listingblock">
+<div class="title">Create a new directory for your project:</div>
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">mkdir artemis-cluster-client
+cd artemis-cluster-client</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">Create a <code>pom.xml</code> file with the following content:</div>
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-xml hljs" data-lang="xml">&lt;?xml version="1.0" encoding="UTF-8"?&gt;
+&lt;project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd"&gt;
+    &lt;modelVersion&gt;4.0.0&lt;/modelVersion&gt;
+
+    &lt;groupId&gt;com.example.artemis&lt;/groupId&gt;
+    &lt;artifactId&gt;artemis-cluster-client&lt;/artifactId&gt;
+    &lt;version&gt;1.0-SNAPSHOT&lt;/version&gt;
+
+    &lt;properties&gt;
+        &lt;maven.compiler.source&gt;11&lt;/maven.compiler.source&gt;
+        &lt;maven.compiler.target&gt;11&lt;/maven.compiler.target&gt;
+        &lt;project.build.sourceEncoding&gt;UTF-8&lt;/project.build.sourceEncoding&gt;
+        &lt;artemis.version&gt;2.29.0&lt;/artemis.version&gt; &lt;!-- Use a version compatible with your broker --&gt;
+    &lt;/properties&gt;
+
+    &lt;dependencies&gt;
+        &lt;!-- ActiveMQ Artemis JMS Client --&gt;
+        &lt;dependency&gt;
+            &lt;groupId&gt;org.apache.activemq&lt;/groupId&gt;
+            &lt;artifactId&gt;artemis-jms-client&lt;/artifactId&gt;
+            &lt;version&gt;${artemis.version}&lt;/version&gt;
+        &lt;/dependency&gt;
+        &lt;!-- Logging (optional, but good practice) --&gt;
+        &lt;dependency&gt;
+            &lt;groupId&gt;org.slf4j&lt;/groupId&gt;
+            &lt;artifactId&gt;slf4j-simple&lt;/artifactId&gt;
+            &lt;version&gt;1.7.36&lt;/version&gt;
+        &lt;/dependency&gt;
+    &lt;/dependencies&gt;
+
+    &lt;build&gt;
+        &lt;plugins&gt;
+            &lt;plugin&gt;
+                &lt;groupId&gt;org.apache.maven.plugins&lt;/groupId&gt;
+                &lt;artifactId&gt;maven-compiler-plugin&lt;/artifactId&gt;
+                &lt;version&gt;3.8.1&lt;/version&gt;
+                &lt;configuration&gt;
+                    &lt;source&gt;${maven.compiler.source}&lt;/source&gt;
+                    &lt;target&gt;${maven.compiler.target}&lt;/target&gt;
+                &lt;/configuration&gt;
+            &lt;/plugin&gt;
+            &lt;plugin&gt;
+                &lt;groupId&gt;org.codehaus.mojo&lt;/groupId&gt;
+                &lt;artifactId&gt;exec-maven-plugin&lt;/artifactId&gt;
+                &lt;version&gt;3.0.0&lt;/version&gt;
+                &lt;executions&gt;
+                    &lt;execution&gt;
+                        &lt;goals&gt;
+                            &lt;goal&gt;java&lt;/goal&gt;
+                        &lt;/goals&gt;
+                    &lt;/execution&gt;
+                &lt;/executions&gt;
+                &lt;configuration&gt;
+                    &lt;mainClass&gt;com.example.artemis.ClusteredProducer&lt;/mainClass&gt;
+                &lt;/configuration&gt;
+            &lt;/plugin&gt;
+        &lt;/plugins&gt;
+    &lt;/build&gt;
+&lt;/project&gt;</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_step_2_develop_the_clustered_producer_application"><a class="anchor" href="#_step_2_develop_the_clustered_producer_application"></a>Step 2: Develop the Clustered Producer Application</h3>
+<div class="paragraph">
+<p>Create a Java file named <code>ClusteredProducer.java</code> in <code>src/main/java/com/example/artemis/</code> with the following content. This application will connect to the cluster using a URI that lists both broker endpoints and enable HA.</p>
+</div>
+<div class="listingblock">
+<div class="title">Create the producer application:</div>
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-java hljs" data-lang="java">package com.example.artemis;
+
+import org.apache.activemq.artemis.jms.client.ActiveMQConnectionFactory;
+
+import javax.jms.*;
+import java.util.logging.Logger;
+
+public class ClusteredProducer {
+
+    private static final Logger logger = Logger.getLogger(ClusteredProducer.class.getName());
+    // Define the connection URI with multiple broker endpoints and HA enabled
+    // Replace with your actual cluster service hostnames/IPs and ports
+    private static final String BROKER_URL = "tcp://broker-0-svc-headless.broker.svc.cluster.local:61616," +
+                                             "tcp://broker-1-svc-headless.broker.svc.cluster.local:61616" +
+                                             "?ha=true&amp;retryInterval=1000&amp;reconnectAttempts=-1"; // -1 for infinite retries
+
+    private static final String QUEUE_NAME = "myClusteredQueue";
+
+    public static void main(String[] args) throws JMSException {
+        Connection connection = null;
+        Session session = null;
+        MessageProducer producer = null;
+
+        try {
+            // 1. Create an ActiveMQConnectionFactory with the clustered URI
+            ActiveMQConnectionFactory connectionFactory = new ActiveMQConnectionFactory(BROKER_URL);
+            logger.info("Attempting to connect to Artemis cluster: " + BROKER_URL);
+
+            // 2. Create a connection to the broker
+            connection = connectionFactory.createConnection();
+            connection.start(); // Start the connection to allow message flow
+            logger.info("Successfully connected to Artemis cluster.");
+
+            // 3. Create a session (false for not transacted, AUTO_ACKNOWLEDGE for automatic acknowledgment)
+            session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
+
+            // 4. Create a queue destination
+            Destination destination = session.createQueue(QUEUE_NAME);
+            logger.info("Using queue: " + QUEUE_NAME);
+
+            // 5. Create a message producer
+            producer = session.createProducer(destination);
+            producer.setDeliveryMode(DeliveryMode.PERSISTENT); // Ensure message persistence
+
+            // 6. Send messages
+            for (int i = 0; i &lt; 10; i++) {
+                String text = "Hello from clustered producer! Message #" + (i + 1);
+                TextMessage message = session.createTextMessage(text);
+                producer.send(message);
+                logger.info("Sent message: " + text);
+                try {
+                    Thread.sleep(100); // Small delay
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                }
+            }
+            logger.info("Finished sending messages.");
+
+        } catch (JMSException e) {
+            logger.severe("JMS Exception occurred: " + e.getMessage());
+            e.printStackTrace();
+        } finally {
+            // 7. Close resources in reverse order of creation
+            if (producer != null) {
+                try {
+                    producer.close();
+                } catch (JMSException e) {
+                    logger.warning("Error closing producer: " + e.getMessage());
+                }
+            }
+            if (session != null) {
+                try {
+                    session.close();
+                } catch (JMSException e) {
+                    logger.warning("Error closing session: " + e.getMessage());
+                }
+            }
+            if (connection != null) {
+                try {
+                    connection.close();
+                } catch (JMSException e) {
+                    logger.warning("Error closing connection: " + e.getMessage());
+                }
+            }
+            logger.info("Resources closed.");
+        }
+    }
+}</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_step_3_develop_the_clustered_consumer_application"><a class="anchor" href="#_step_3_develop_the_clustered_consumer_application"></a>Step 3: Develop the Clustered Consumer Application</h3>
+<div class="paragraph">
+<p>Now, create a Java file named <code>ClusteredConsumer.java</code> in the same directory (<code>src/main/java/com/example/artemis/</code>) to act as a consumer. This consumer will also connect to the cluster using the same multi-host URI, demonstrating how multiple clients can connect for load balancing and HA.</p>
+</div>
+<div class="listingblock">
+<div class="title">Create the consumer application:</div>
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-java hljs" data-lang="java">package com.example.artemis;
+
+import org.apache.activemq.artemis.jms.client.ActiveMQConnectionFactory;
+
+import javax.jms.*;
+import java.util.logging.Logger;
+
+public class ClusteredConsumer {
+
+    private static final Logger logger = Logger.getLogger(ClusteredConsumer.class.getName());
+    // Define the connection URI with multiple broker endpoints and HA enabled
+    // Replace with your actual cluster service hostnames/IPs and ports
+    private static final String BROKER_URL = "tcp://broker-0-svc-headless.broker.svc.cluster.local:61616," +
+                                             "tcp://broker-1-svc-headless.broker.svc.cluster.local:61616" +
+                                             "?ha=true&amp;retryInterval=1000&amp;reconnectAttempts=-1"; // -1 for infinite retries
+
+    private static final String QUEUE_NAME = "myClusteredQueue";
+
+    public static void main(String[] args) throws JMSException {
+        Connection connection = null;
+        Session session = null;
+        MessageConsumer consumer = null;
+
+        try {
+            // 1. Create an ActiveMQConnectionFactory with the clustered URI
+            ActiveMQConnectionFactory connectionFactory = new ActiveMQConnectionFactory(BROKER_URL);
+            logger.info("Attempting to connect to Artemis cluster: " + BROKER_URL);
+
+            // 2. Create a connection to the broker
+            connection = connectionFactory.createConnection();
+            connection.start(); // Start the connection to allow message flow
+            logger.info("Successfully connected to Artemis cluster.");
+
+            // 3. Create a session
+            session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
+
+            // 4. Create a queue destination
+            Destination destination = session.createQueue(QUEUE_NAME);
+            logger.info("Listening on queue: " + QUEUE_NAME);
+
+            // 5. Create a message consumer
+            consumer = session.createConsumer(destination);
+
+            // 6. Set up a message listener to process incoming messages asynchronously
+            consumer.setMessageListener(message -&gt; {
+                if (message instanceof TextMessage) {
+                    TextMessage textMessage = (TextMessage) message;
+                    try {
+                        logger.info("Received message: " + textMessage.getText());
+                    } catch (JMSException e) {
+                        logger.severe("Error processing message: " + e.getMessage());
+                    }
+                } else {
+                    logger.info("Received non-text message: " + message.toString());
+                }
+            });
+
+            logger.info("Consumer started. Waiting for messages. Press Ctrl+C to exit.");
+            // Keep the main thread alive to allow the message listener to run
+            Thread.currentThread().join();
+
+        } catch (JMSException e) {
+            logger.severe("JMS Exception occurred: " + e.getMessage());
+            e.printStackTrace();
+        } catch (InterruptedException e) {
+            logger.warning("Consumer interrupted.");
+            Thread.currentThread().interrupt();
+        } finally {
+            // 7. Close resources
+            if (consumer != null) {
+                try {
+                    consumer.close();
+                } catch (JMSException e) {
+                    logger.warning("Error closing consumer: " + e.getMessage());
+                }
+            }
+            if (session != null) {
+                try {
+                    session.close();
+                } catch (JMSException e) {
+                    logger.warning("Error closing session: " + e.getMessage());
+                }
+            }
+            if (connection != null) {
+                try {
+                    connection.close();
+                } catch (JMSException e) {
+                    logger.warning("Error closing connection: " + e.getMessage());
+                }
+            }
+            logger.info("Resources closed.");
+        }
+    }
+}</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_step_4_run_the_applications"><a class="anchor" href="#_step_4_run_the_applications"></a>Step 4: Run the Applications</h3>
+<div class="listingblock">
+<div class="title">Compile the applications:</div>
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">mvn clean compile</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">Run the <code>ClusteredConsumer</code> first in one terminal:</div>
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">mvn exec:java -Dexec.mainClass="com.example.artemis.ClusteredConsumer"</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>You should see output indicating the consumer connected to one of the brokers and is waiting for messages.</p>
+</div>
+<div class="listingblock">
+<div class="title">Run the <code>ClusteredProducer</code> in a separate terminal:</div>
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">mvn exec:java -Dexec.mainClass="com.example.artemis.ClusteredProducer"</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The producer will connect to one of the brokers (potentially the same or a different one than the consumer, depending on the client&#8217;s load balancing policy) and send 10 messages. You should see these messages being received by the consumer.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_step_5_observe_failover_optional"><a class="anchor" href="#_step_5_observe_failover_optional"></a>Step 5: Observe Failover (Optional)</h3>
+<div class="paragraph">
+<p>To observe automatic failover:</p>
+</div>
+<div class="ulist">
+<div class="title">Observe the client logs:</div>
+<ul>
+<li>
+<p>The producer and consumer should detect the connection loss.</p>
+</li>
+<li>
+<p>They will then attempt to reconnect to the <strong>other</strong> available broker in the connection URI list.</p>
+</li>
+<li>
+<p>Once reconnected, message flow should resume, demonstrating the <code>High Availability (HA) and automatic failover</code> capability mentioned in the <a href="#context-ha-failover">context</a>.</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>This hands-on exercise illustrates how simply configuring the connection URI to include multiple broker endpoints enables your client applications to be cluster-aware, robust, and highly available, leveraging the core features of ActiveMQ Artemis clustering.</p>
+</div>
+</div>
+</div>
+</div>
+<nav class="pagination">
+  <span class="prev"><a href="developing-consumer-applications-for-activemq-artemis.html">Developing consumer applications for ActiveMQ Artemis</a></span>
+  <span class="next"><a href="demonstrating-message-publishing-and-consumption-patterns.html">Demonstrating message publishing and consumption patterns</a></span>
+</nav>
+</article>
+  </div>
+</main>
+</div>
+<footer class="footer">
+  <img src="../../../_/img/rhl-logo-red.png" height="40px" alt="Red Hat"  href="https://redhat.com" >
+</footer><script id="site-script" src="../../../_/js/site.js" data-ui-root-path="../../../_"></script>
+<script async src="../../../_/js/vendor/highlight.js"></script>
+  </body>
+</html>
