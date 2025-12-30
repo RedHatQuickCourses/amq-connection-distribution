@@ -1,0 +1,5 @@
+* xref:introduction-to-message-oriented-middleware-mom.adoc[]
+** xref:what-is-message-oriented-middleware.adoc[]
+** xref:core-concepts-messages-producers-consumers-brokers.adoc[]
+** xref:benefits-of-mom-in-distributed-systems.adoc[]
+** xref:common-use-cases-for-mom.adoc[]

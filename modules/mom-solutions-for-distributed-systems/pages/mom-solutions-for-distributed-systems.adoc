@@ -1,0 +1,11 @@
+#  MOM Solutions for Distributed Systems
+
+=== MOM Solutions for Distributed Systems
+
+Message Oriented Middleware (MOM) provides robust solutions for common challenges in distributed systems.
+
+*   **Decoupling Services with Message Queues**: MOM uses message queues to allow services to communicate without direct dependencies. Producers send messages to a queue, and consumers retrieve them, enabling independent operation and scaling.
+*   **Point-to-Point (PTP) Messaging Model**: In PTP, a message is delivered to only one consumer from a queue. This is ideal for task processing where each message needs a single handler.
+*   **Publish/Subscribe (Pub/Sub) Messaging Model**: In Pub/Sub, a message published to a topic is delivered to all interested subscribers. This pattern is suitable for broadcasting events or notifications to multiple consumers simultaneously.
+*   **Ensuring Message Delivery and Reliability**: MOM brokers guarantee message delivery, even if consumers are offline, by holding messages until they can be processed successfully.
+*   **Message Persistence and Durability**: Messages can be stored persistently on disk, ensuring they survive broker restarts and preventing data loss.

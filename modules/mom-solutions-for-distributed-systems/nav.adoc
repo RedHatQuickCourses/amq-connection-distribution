@@ -1,0 +1,6 @@
+* xref:mom-solutions-for-distributed-systems.adoc[]
+** xref:decoupling-services-with-message-queues.adoc[]
+** xref:point-to-point-ptp-messaging-model.adoc[]
+** xref:publishsubscribe-pubsub-messaging-model.adoc[]
+** xref:ensuring-message-delivery-and-reliability.adoc[]
+** xref:message-persistence-and-durability.adoc[]

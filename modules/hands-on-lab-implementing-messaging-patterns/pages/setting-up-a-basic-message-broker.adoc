@@ -1,0 +1,94 @@
+#  Setting up a basic message broker
+
+= Setting up a Basic Message Broker
+
+In distributed systems, the message broker acts as the central hub for message exchange, enabling seamless communication between disparate services. Before we dive into implementing specific messaging patterns like Point-to-Point or Publish/Subscribe, we need to establish this foundational component. This section will guide you through setting up a basic message broker, which will serve as the backbone for our subsequent hands-on activities.
+
+A message broker is a specialized server that mediates communication by receiving, storing, and forwarding messages. It abstracts away the complexities of network communication, ensuring messages are reliably delivered to their intended recipients, even if those recipients are temporarily offline or if there are fluctuations in network availability.
+
+For our hands-on lab, we will use **RabbitMQ** as our message broker. RabbitMQ is a popular open-source message broker that implements the Advanced Message Queuing Protocol (AMQP). It's robust, widely used, and relatively straightforward to set up, especially using containerization technologies like Docker. Using Docker allows us to quickly deploy RabbitMQ in an isolated environment without interfering with your host system, making it an ideal choice for a lab environment.
+
+== Hands-on Lab: Setting up RabbitMQ with Docker
+
+This lab activity will walk you through the process of deploying a RabbitMQ instance using Docker. This setup will include the RabbitMQ server itself and its management plugin, which provides a user-friendly web interface for monitoring and managing the broker.
+
+=== Prerequisites
+
+Before you begin, ensure you have the following installed on your system:
+
+*   **Docker Desktop (or Docker Engine):** Docker is essential for running our RabbitMQ container. You can download and install it from the official Docker website (https://www.docker.com/products/docker-desktop).
+
+Once Docker is installed, open your terminal or command prompt.
+
+=== Activity: Deploying the RabbitMQ Message Broker
+
+Follow these steps to get your RabbitMQ message broker up and running.
+
+==== Step 1: Pull the RabbitMQ Docker Image
+
+First, we need to download the official RabbitMQ Docker image. We'll specifically pull the image that includes the management plugin, as this will provide a convenient web interface for inspection.
+
+.Command to pull RabbitMQ image
+[source,bash]
+----
+docker pull rabbitmq:3-management
+----
+
+This command instructs Docker to fetch the `rabbitmq:3-management` image from Docker Hub. The `3-management` tag indicates RabbitMQ version 3, bundled with its web-based management plugin. This process might take a few moments depending on your internet connection.
+
+==== Step 2: Run the RabbitMQ Docker Container
+
+After the image is downloaded, you can run a new container based on that image. We'll configure port mappings to access the RabbitMQ core service and its management interface from your host machine.
+
+.Command to run RabbitMQ container
+[source,bash]
+----
+docker run -d --hostname my-rabbit --name some-rabbit -p 5672:5672 -p 15672:15672 rabbitmq:3-management
+----
+
+Let's break down this command:
+
+*   `-d`: Runs the container in "detached" mode, meaning it runs in the background.
+*   `--hostname my-rabbit`: Sets the hostname inside the container to `my-rabbit`. This can be useful for internal network configuration within Docker.
+*   `--name some-rabbit`: Assigns a human-readable name `some-rabbit` to your container. This makes it easier to refer to the container later (e.g., when stopping or restarting).
+*   `-p 5672:5672`: Maps port `5672` on your host machine to port `5672` inside the container. Port `5672` is the default port for AMQP client connections to RabbitMQ.
+*   `-p 15672:15672`: Maps port `15672` on your host machine to port `15672` inside the container. Port `15672` is the default port for the RabbitMQ Management UI.
+*   `rabbitmq:3-management`: Specifies the Docker image to use for creating the container.
+
+Upon successful execution, Docker will output a long string, which is the container ID, confirming that your RabbitMQ container has started.
+
+.Tip
+By default, RabbitMQ's management UI uses `guest` as both the username and password. This is convenient for development and lab environments but should *never* be used in production for security reasons.
+
+==== Step 3: Verify the RabbitMQ Setup
+
+To ensure your RabbitMQ broker is running correctly, you can perform two quick checks:
+
+===== Check 3.1: Verify Docker Container Status
+
+You can check if your Docker container is running using the `docker ps` command:
+
+.Command to list running containers
+[source,bash]
+----
+docker ps
+----
+
+You should see an entry for `some-rabbit` (or whatever name you gave it) with `rabbitmq:3-management` as its image, and its status should be `Up ...`.
+
+===== Check 3.2: Access the RabbitMQ Management UI
+
+Open your web browser and navigate to `http://localhost:15672`.
+
+You should be greeted by the RabbitMQ Management login page. Enter `guest` for both the username and password.
+
+image::./images/rabbitmq-login.png[RabbitMQ Management Login, 500]
+
+After logging in, you will see the RabbitMQ Management Dashboard, which displays an overview of your broker's status, queues, channels, and connections. This dashboard is an invaluable tool for observing message flow and troubleshooting.
+
+image::./images/rabbitmq-dashboard.png[RabbitMQ Management Dashboard, 800]
+
+Congratulations! You have successfully set up a basic RabbitMQ message broker. This instance is now ready to receive messages from producers and deliver them to consumers, which we will explore in the upcoming lab activities.
+
+[NOTE]
+If you encounter issues accessing `localhost:15672`, ensure no other service on your host machine is already using port `15672`. You can try re-running the `docker run` command with a different host port (e.g., `-p 15673:15672`) if a conflict exists. Also, ensure your Docker Desktop application is fully running and healthy.

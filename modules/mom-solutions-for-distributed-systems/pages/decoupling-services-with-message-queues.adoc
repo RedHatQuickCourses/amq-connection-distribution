@@ -1,0 +1,35 @@
+#  Decoupling services with message queues
+
+Here is the training content covering the topic "Decoupling services with message queues" in Antora AsciiDoc format.
+
+```asciidoc
+== MOM Solutions for Distributed Systems
+
+=== Decoupling services with message queues
+
+In modern distributed systems, services often need to communicate with each other to fulfill business processes. While direct service-to-service communication via synchronous API calls (e.g., REST over HTTP) is common, it introduces tight coupling. This coupling can lead to several challenges, including reduced fault tolerance, scalability issues, and difficulties in independent service evolution. Message queues offer a powerful solution to these problems by enabling services to communicate in a decoupled, asynchronous manner.
+
+A *message queue* acts as an intermediary buffer for messages. Instead of one service (the producer) directly calling another service (the consumer), the producer sends a message to the queue. The queue then durably stores this message until a consumer is ready to process it. This fundamental shift from direct invocation to indirect messaging fundamentally changes how services interact.
+
+Let's break down how message queues achieve decoupling:
+
+.   **Breaking Direct Dependencies**:
+    When Service A needs to communicate with Service B, instead of making a direct API call to Service B, Service A sends a message to a designated message queue. Service B, on the other hand, listens to and consumes messages from this queue. Neither service needs to know the network location or operational status of the other at the time of sending/receiving. Their only dependency is on the message queue itself. This breaks the compile-time and runtime dependency that direct API calls impose.
+
+.   **Asynchronous Communication**:
+    With message queues, the producer service does not have to wait for the consumer service to process the message immediately. Once the message is successfully published to the queue, the producer can continue its work without blocking. This is particularly beneficial for long-running operations or when the producer doesn't need an immediate response from the consumer. The consumer can process the message at its own pace, enabling asynchronous workflows.
+
+.   **Improved Fault Tolerance and Resilience**:
+    If a consumer service experiences an outage or becomes temporarily unavailable, the producer can continue sending messages to the queue. The messages will be persisted in the queue until the consumer recovers and is ready to process them. This prevents message loss and ensures that the system as a whole can tolerate transient failures in individual services without cascading failures. Similarly, if the producer experiences an issue after sending a message, the message is already safely stored.
+
+.   **Enhanced Scalability**:
+    Message queues facilitate horizontal scaling for consumer services. Multiple instances of a consumer service can listen to the same message queue. When a new message arrives, one of the available consumer instances will pick it up for processing. This allows you to scale up or down your consumer services independently based on the message load, without affecting the producers. The queue effectively acts as a load balancer, distributing work among available consumers.
+
+.   **Load Leveling (Throttling)**:
+    Message queues can absorb bursts of activity. If a producer generates messages much faster than a consumer can process them, the queue can buffer these messages. This prevents the consumer from becoming overwhelmed and crashing, allowing it to process messages at its maximum sustainable rate. This "load leveling" effect smooths out the workload and improves overall system stability.
+
+.   **Independent Service Evolution**:
+    Because services are decoupled, changes to one service have less impact on others. For example, if Service B needs to be refactored or replaced, Service A doesn't necessarily need to change, as long as the message format (the contract) remains consistent. This allows development teams to work on and deploy services independently, accelerating development cycles and reducing release risks.
+
+In summary, decoupling services with message queues transforms a tightly integrated, synchronous architecture into a more flexible, resilient, and scalable asynchronous system. It shifts the communication paradigm from direct requests to event-driven interactions, where services react to messages published into shared queues. This pattern is a cornerstone of robust microservices architectures and distributed systems.
+```

@@ -1,0 +1,10 @@
+#  Challenges in Distributed Systems
+
+=== Challenges in Distributed Systems
+
+Distributed systems face several challenges due to their inherent complexity:
+
+*   **Direct Communication Issues:** Synchronous, direct service-to-service calls can lead to tight coupling, bottlenecks, and cascading failures.
+*   **Asynchronous Processing Need:** Many operations don't require immediate responses, making synchronous communication inefficient and resource-intensive.
+*   **Reliability and Data Consistency:** Ensuring messages are delivered, processed exactly once, and data remains consistent across multiple services is difficult.
+*   **Scalability and Coupling:** Tightly coupled services hinder independent scaling and make systems brittle when changes occur.

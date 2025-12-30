@@ -1,0 +1,11 @@
+#  Hands-on Lab: Implementing Messaging Patterns
+
+=== Hands-on Lab: Implementing Messaging Patterns
+
+This lab provides practical experience in implementing core messaging patterns using a message broker.
+
+It covers:
+
+*   Setting up a basic message broker.
+*   Developing producers and consumers for Point-to-Point (PTP) messaging.
+*   Implementing publishers and subscribers for Publish/Subscribe (Pub/Sub) messaging.

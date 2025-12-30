@@ -1,0 +1,5 @@
+* xref:challenges-in-distributed-systems.adoc[]
+** xref:issues-with-direct-service-to-service-communication.adoc[]
+** xref:the-need-for-asynchronous-processing.adoc[]
+** xref:problems-with-reliability-and-data-consistency.adoc[]
+** xref:scalability-and-coupling-concerns.adoc[]

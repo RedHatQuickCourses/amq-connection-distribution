@@ -1,0 +1,6 @@
+* xref:hands-on-lab-implementing-messaging-patterns.adoc[]
+** xref:setting-up-a-basic-message-broker.adoc[]
+** xref:developing-a-producer-for-point-to-point-messaging.adoc[]
+** xref:developing-a-consumer-for-point-to-point-messaging.adoc[]
+** xref:implementing-a-publisher-for-publishsubscribe.adoc[]
+** xref:implementing-a-subscriber-for-publishsubscribe.adoc[]

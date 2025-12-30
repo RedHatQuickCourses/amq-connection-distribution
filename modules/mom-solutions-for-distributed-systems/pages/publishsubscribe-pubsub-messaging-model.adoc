@@ -1,0 +1,58 @@
+#  Publish/Subscribe (Pub/Sub) messaging model
+
+[[pub-sub-messaging-model]]
+=== Publish/Subscribe (Pub/Sub) Messaging Model
+
+The Publish/Subscribe (Pub/Sub) messaging model is a powerful and flexible communication pattern within Message Oriented Middleware (MOM) that enables one-to-many message distribution. Unlike the Point-to-Point (PTP) model, where a message is consumed by a single recipient, Pub/Sub allows a single message to be broadcast to multiple interested parties simultaneously. This model is crucial for scenarios requiring efficient dissemination of information to a broad audience without direct knowledge of the recipients.
+
+[[pub-sub-core-concepts]]
+==== Core Concepts of Pub/Sub
+
+At the heart of the Pub/Sub model are three primary entities that facilitate decoupled communication:
+
+*   *Publishers*: These are services or applications that generate and send messages. A publisher doesn't know who will receive the message; its sole responsibility is to publish the message to a specific *topic*. This complete lack of awareness of consumers is fundamental to the decoupling provided by Pub/Sub.
+*   *Subscribers*: These are services or applications that express interest in receiving messages from one or more *topics*. Once subscribed, they register their intent with the message broker and subsequently receive all messages published to those specific topics.
+*   *Topics*: These are named logical channels, categories, or streams to which messages are published. Topics act as a central hub where publishers send messages and from which subscribers receive them. Subscribers register their interest in specific topics, and the message broker ensures that messages published to a topic are delivered to all its active subscribers.
+
+[[how-publish-subscribe-works]]
+==== How Publish/Subscribe Works
+
+The workflow in a Pub/Sub system, facilitated by a message broker, typically involves the following steps:
+
+.  A *Publisher* generates a message containing relevant data and sends it to the message broker, explicitly specifying the *topic* to which the message belongs. The publisher simply "publishes" without needing to know if anyone is listening.
+.  The *Message Broker* receives the message. Unlike PTP, where it routes to a single queue for a specific consumer, the broker inspects the message's designated topic.
+.  The broker then identifies *all* active *Subscribers* that have an ongoing subscription to that particular topic.
+.  The message is then *fan-out* by the broker, meaning it is delivered to each identified subscriber. Each subscriber receives its own independent copy of the message, allowing them to process it without affecting other subscribers.
+
+This mechanism ensures that publishers and subscribers are completely decoupled. Publishers do not need to know about the existence, number, or location of subscribers, and vice versa. They only need to agree on the common topics for communication.
+
+[[benefits-of-pub-sub-in-distributed-systems]]
+==== Benefits in Distributed Systems
+
+The Pub/Sub model offers several significant advantages, making it an indispensable pattern in complex distributed environments:
+
+*   *Decoupling*: Publishers and subscribers operate entirely independently. They don't need to know about each other's existence, network addresses, or even their availability. This simplifies system architecture, reduces dependencies, and makes systems more resilient to changes.
+*   *Scalability*: New subscribers can be added or removed dynamically without requiring any changes to publishers or existing subscribers. This allows the system to scale effectively to accommodate a growing number of consumers interested in specific data streams or events.
+*   *Real-time Communication*: Pub/Sub is inherently designed for broadcasting real-time updates, notifications, and events to multiple interested parties simultaneously, making it ideal for live data feeds and event-driven architectures.
+*   *Flexibility*: A single message published to a topic can be consumed by many different applications for various purposes (e.g., one service archives the message, another updates a dashboard, a third triggers an alert). This promotes flexible integration and extensibility of system functionalities.
+
+[[common-pub-sub-use-cases]]
+==== Common Use Cases for Publish/Subscribe
+
+The Pub/Sub model is widely adopted across various domains due to its inherent benefits:
+
+*   *News and Article Feeds*: A content management system publishes new articles to a "news.sports" topic, and all website frontends, mobile apps, and RSS feed readers subscribed to sports news automatically receive the updates.
+*   *Stock Market Tickers*: Real-time stock price updates are published to various stock symbol topics (e.g., "stock.AAPL", "stock.GOOGL"), and all trading applications, analytics engines, and display widgets subscribed to those symbols receive instantaneous data.
+*   *IoT Data Streaming*: Sensors in an industrial setting publish data (e.g., temperature, humidity, machine status) to specific topics. Monitoring dashboards, anomaly detection systems, and control systems subscribe to these topics to react to live data.
+*   *Event Notifications*: A user registration service publishes a "user_registered" event whenever a new user signs up. Multiple downstream services (e.g., an email service to send a welcome email, an analytics service to update user counts, a profile service to create an initial profile) can subscribe to this event to perform their respective actions.
+*   *Chat Applications*: Messages sent in a chat room are published to a topic representing the room. All members currently subscribed to that room topic receive the messages, enabling real-time group communication.
+
+[[hands-on-pub-sub]]
+==== Hands-on Lab: Implementing Publish/Subscribe
+
+To solidify your understanding of the Pub/Sub messaging model, we will engage in a practical lab exercise as part of the overall messaging patterns implementation. This hands-on experience will allow you to see the one-to-many communication in action:
+
+*   xref:hands-on-lab-implementing-messaging-patterns.adoc#implementing-publisher-for-pub-sub[Implementing a Publisher for Publish/Subscribe]: You will develop a simple application that connects to our basic message broker and sends messages to a designated topic.
+*   xref:hands-on-lab-implementing-messaging-patterns.adoc#implementing-subscriber-for-pub-sub[Implementing a Subscriber for Publish/Subscribe]: You will create an application that connects to the same message broker, subscribes to a specific topic, and actively listens for and processes incoming messages published to that topic.
+
+This lab will demonstrate how messages are broadcast to multiple subscribers and how the critical decoupling between publishers and subscribers works in practice, highlighting the flexibility and scalability of the Pub/Sub model.

@@ -1,0 +1,86 @@
+#  The need for asynchronous processing
+
+ifndef::root_attributes[]
+:root_attributes:
+endif::[]
+
+= The Need for Asynchronous Processing
+
+In the intricate landscape of distributed systems, services often need to communicate with one another to perform complex operations. While direct, synchronous communication might seem straightforward initially, it introduces significant challenges that can degrade system performance, reliability, and scalability. This section delves into the critical need for asynchronous processing to overcome these inherent difficulties.
+
+== Understanding Synchronous vs. Asynchronous Communication
+
+Before diving into the "why," let's clarify the two primary modes of communication:
+
+*   *Synchronous Communication*: When service A calls service B synchronously, service A *pauses* its execution and waits for service B to complete its operation and return a response. Only after receiving the response can service A continue its work. It's like calling someone and staying on the line until they provide a full answer before you can do anything else.
+
+*   *Asynchronous Communication*: In an asynchronous exchange, service A sends a message or request to service B and then *immediately continues* its own operations without waiting for a response. Service B processes the request independently, and if a response is needed, it typically sends it back via a separate asynchronous mechanism. This is akin to sending an email or a text message: you send it and continue with your day, expecting a reply later.
+
+== Challenges with Synchronous Processing in Distributed Systems
+
+While synchronous communication has its place, especially in tightly coupled, low-latency scenarios, its drawbacks become pronounced in distributed environments:
+
+=== 1. Blocking Operations and Latency Impact
+
+In a synchronous setup, the calling service is blocked until the called service responds. If the called service is slow, busy, or experiencing network latency, the calling service remains idle. In a chain of synchronous calls (e.g., Service A calls B, B calls C, C calls D), the total response time accumulates, directly impacting the user experience and application responsiveness.
+
+image::mom-sync-problem.png[Synchronous Communication Blocking, 700, 400]
+.Synchronous Communication: Service A waits for B, and B waits for C, causing cumulative delays.
+====
+[caption="Figure 1. Synchronous Communication Blocking"]
+....
+sequenceDiagram
+    participant User
+    participant ServiceA
+    participant ServiceB
+    participant ServiceC
+
+    User->>ServiceA: Request (Synchronous)
+    activate ServiceA
+    ServiceA->>ServiceB: Call (Synchronous)
+    activate ServiceB
+    ServiceB->>ServiceC: Call (Synchronous)
+    activate ServiceC
+    Note over ServiceC: Process request
+    deactivate ServiceC
+    ServiceC-->>ServiceB: Response
+    deactivate ServiceB
+    ServiceB-->>ServiceA: Response
+    deactivate ServiceA
+    ServiceA-->>User: Final Response
+....
+====
+
+=== 2. Resource Exhaustion
+
+Each blocked synchronous call often ties up system resources, such as threads or connections, on the calling service. If a service experiences a high volume of synchronous requests, and downstream services are slow, it can quickly exhaust its available resources, leading to:
+
+*   **Thread Pool Exhaustion**: Applications might run out of threads to process new incoming requests.
+*   **Connection Pool Exhaustion**: Database or external API connections might become saturated.
+
+This resource scarcity can cause the calling service itself to become unresponsive or crash, even if the underlying issue is with a dependency.
+
+=== 3. Cascading Failures
+
+One of the most critical issues with synchronous communication is its susceptibility to cascading failures. If a called service (Service B) fails or becomes unresponsive, all services synchronously calling it (Service A) will also fail or block indefinitely. This failure can then propagate upstream, potentially bringing down large parts of the distributed system, creating a single point of failure.
+
+=== 4. Reduced Scalability and Tight Coupling
+
+Synchronous communication fosters tight coupling between services. Each service needs to know the network location (IP address, port) of its dependencies and be aware of their operational status. This makes it harder to:
+
+*   **Scale Independently**: If Service B needs to scale, Service A must be able to adapt to new instances.
+*   **Maintain Services**: Changes or deployments in Service B directly impact Service A, requiring coordinated maintenance windows.
+*   **Handle Spikes**: A sudden surge in requests to Service A can overwhelm Service B if it cannot scale quickly enough to handle the increased synchronous load.
+
+This tight coupling contradicts the very principles of microservices and distributed architectures, which aim for autonomy and resilience.
+
+== The Asynchronous Solution
+
+The fundamental objective of asynchronous processing is to decouple the sender from the receiver, allowing services to operate independently without waiting for immediate responses. This pattern inherently addresses the challenges of synchronous communication:
+
+*   **Non-Blocking Operations**: The calling service sends a message and can immediately proceed with other tasks, significantly improving responsiveness and throughput.
+*   **Efficient Resource Utilization**: Resources (threads, connections) are not tied up waiting for responses, leading to better resource management and higher system capacity.
+*   **Enhanced Fault Tolerance**: If a receiving service is temporarily unavailable, the message can be queued and delivered later when the service recovers. The sending service remains unaffected. This prevents cascading failures.
+*   **Increased Scalability and Decoupling**: Services no longer need direct knowledge of each other's availability or location. They communicate through an intermediary (like a message broker), allowing them to scale independently and evolve without tightly coupled dependencies.
+
+This need for asynchronous processing is precisely where Message Oriented Middleware (MOM) steps in, providing the infrastructure and patterns to facilitate robust, decoupled, and scalable communication in distributed systems.

@@ -1,0 +1,169 @@
+#  Implementing a publisher for Publish/Subscribe
+
+= Implementing a Publisher for Publish/Subscribe
+
+In distributed systems, the Publish/Subscribe (Pub/Sub) messaging model is a powerful pattern for achieving loose coupling and enabling real-time data distribution. Unlike Point-to-Point (PTP) messaging, where a message is consumed by only one worker, Pub/Sub allows a single message to be delivered to multiple interested consumers simultaneously.
+
+== Understanding the Publisher's Role in Pub/Sub
+
+In the Pub/Sub model, the *publisher* is the entity responsible for creating and sending messages to a specific *topic* or *exchange* on the message broker. The publisher's primary characteristic is its complete unawareness of who (or if anyone) is consuming its messages. It simply broadcasts messages to the designated topic or exchange, relying on the message broker to route these messages to all registered *subscribers*.
+
+Key aspects of a publisher:
+
+*   *Decoupling*: Publishers are fully decoupled from subscribers. They don't need to know how many subscribers there are, their addresses, or if they are even active. This promotes modularity and independent evolution of services.
+*   *Broadcasting*: When a publisher sends a message, the message broker ensures that all subscribers currently interested in that specific topic or exchange receive a copy of the message. This is often referred to as "fanout."
+*   *Simplicity*: The publisher's logic is straightforward: connect to the broker, declare an exchange (if necessary), and send messages to it. It doesn't manage queues or consumer acknowledgements directly related to delivery to specific consumers.
+
+image::publisher-pubsub.png[Publisher in Pub/Sub Model, 800, 450]
+_Figure: A publisher sends messages to an exchange, which then fans them out to multiple queues, each consumed by a subscriber._
+
+For a pure Pub/Sub pattern, message brokers often employ an entity known as an *exchange* (in RabbitMQ terms) or a *topic* (in Kafka or JMS terms). A `fanout` type exchange is particularly suited for this model, as it simply broadcasts all messages it receives to all queues that are bound to it, ignoring any routing keys.
+
+== Hands-on Lab: Implementing a Publisher for Publish/Subscribe
+
+This lab will guide you through creating a simple publisher using Python and the `pika` library to interact with a RabbitMQ message broker. We'll implement a publisher that sends "news updates" to a `fanout` exchange, ensuring all interested subscribers receive them.
+
+[.experimental]
+NOTE: This lab assumes you have a basic message broker (like RabbitMQ) already set up and running, as covered in the "Setting up a basic message broker" objective. If you haven't done so, please refer back to that section.
+
+=== Prerequisites
+
+*   Python 3.x installed
+*   `pika` library installed:
+    [source,bash]
+    ----
+    pip install pika
+    ----
+*   A running RabbitMQ instance (e.g., via Docker: `docker run -it --rm --name rabbitmq -p 5672:5672 -p 15672:15672 rabbitmq:3-management`)
+
+=== Lab Steps
+
+==== Step 1: Create the Publisher Script
+
+Create a new Python file named `news_publisher.py`. This script will connect to RabbitMQ, declare a `fanout` exchange, and periodically send messages to it.
+
+[source,python,role=primary]
+.news_publisher.py
+----
+import pika
+import time
+import sys
+
+# --- Configuration ---
+RABBITMQ_HOST = 'localhost'
+EXCHANGE_NAME = 'news_updates'
+EXCHANGE_TYPE = 'fanout' # Perfect for Pub/Sub: broadcasts to all bound queues
+
+def main():
+    connection = None
+    try:
+        # 1. Establish a connection to RabbitMQ
+        print(f"Connecting to RabbitMQ on host: {RABBITMQ_HOST}...")
+        connection = pika.BlockingConnection(pika.ConnectionParameters(host=RABBITMQ_HOST))
+        channel = connection.channel()
+        print("Connection established successfully.")
+
+        # 2. Declare the exchange
+        # A 'fanout' exchange sends all messages to all queues bound to it.
+        # 'durable=True' means the exchange will survive a broker restart.
+        print(f"Declaring '{EXCHANGE_NAME}' exchange of type '{EXCHANGE_TYPE}'...")
+        channel.exchange_declare(exchange=EXCHANGE_NAME, exchange_type=EXCHANGE_TYPE, durable=True)
+        print(f"Exchange '{EXCHANGE_NAME}' declared.")
+
+        # 3. Publish messages
+        message_id = 0
+        while True:
+            message_id += 1
+            news_headline = f"Breaking News Update {message_id}: AI achieves sentience in a toaster!"
+            
+            # Publish the message to the exchange.
+            # For a 'fanout' exchange, the 'routing_key' is ignored.
+            channel.basic_publish(
+                exchange=EXCHANGE_NAME,
+                routing_key='', # Empty routing key for fanout exchange
+                body=news_headline.encode('utf-8'),
+                properties=pika.BasicProperties(
+                    delivery_mode=pika.spec.PERSISTENT # Make message persistent
+                )
+            )
+            print(f" [x] Sent '{news_headline}'")
+            time.sleep(2) # Send a message every 2 seconds
+
+    except pika.exceptions.AMQPConnectionError as e:
+        print(f"Error connecting to RabbitMQ: {e}")
+        print("Please ensure RabbitMQ is running and accessible at the configured host.")
+        sys.exit(1)
+    except KeyboardInterrupt:
+        print("\nPublisher stopped by user.")
+    finally:
+        # 4. Close the connection
+        if connection and not connection.is_closed:
+            print("Closing RabbitMQ connection.")
+            connection.close()
+            print("Connection closed.")
+
+if __name__ == '__main__':
+    main()
+----
+
+==== Step 2: Understand the Code
+
+Let's break down the key parts of the publisher script:
+
+1.  **`pika.BlockingConnection(pika.ConnectionParameters(host=RABBITMQ_HOST))`**:
+    This line establishes a connection to your RabbitMQ broker. We're using `BlockingConnection` for simplicity in this example. Replace `localhost` with your broker's IP if it's running elsewhere.
+
+2.  **`channel = connection.channel()`**:
+    Once connected, we create a `channel`. Channels are where most of the API operations for sending and receiving messages happen. A single connection can have multiple channels.
+
+3.  **`channel.exchange_declare(exchange=EXCHANGE_NAME, exchange_type=EXCHANGE_TYPE, durable=True)`**:
+    This is a crucial step for Pub/Sub. We declare an *exchange* named `news_updates` of type `fanout`.
+    *   `exchange`: The name of the exchange.
+    *   `exchange_type='fanout'`: Specifies that messages sent to this exchange should be broadcast to all queues bound to it.
+    *   `durable=True`: Ensures that the exchange will survive a RabbitMQ server restart. If not durable, the exchange would be lost, and any clients trying to publish to it would fail.
+
+4.  **`channel.basic_publish(...)`**:
+    This method sends the message.
+    *   `exchange=EXCHANGE_NAME`: Specifies that the message should be sent to our `news_updates` exchange.
+    *   `routing_key=''`: For `fanout` exchanges, the `routing_key` is ignored, so we can leave it empty. If this were a `direct` or `topic` exchange, the routing key would be vital for message routing.
+    *   `body=news_headline.encode('utf-8')`: The actual message content. It must be bytes, so we encode the string.
+    *   `properties=pika.BasicProperties(delivery_mode=pika.spec.PERSISTENT)`: This makes the message *persistent*. This means if RabbitMQ crashes or restarts *after* receiving the message but *before* delivering it to a consumer, the message will still be there when the broker comes back online.
+
+5.  **`connection.close()`**:
+    It's good practice to close the connection when the publisher is done sending messages. In our continuous loop, this will only happen on a `KeyboardInterrupt`.
+
+==== Step 3: Run the Publisher
+
+Open your terminal, navigate to the directory where you saved `news_publisher.py`, and run the script:
+
+[source,bash]
+----
+python news_publisher.py
+----
+
+You should see output similar to this, indicating that messages are being sent:
+
+```
+Connecting to RabbitMQ on host: localhost...
+Connection established successfully.
+Declaring 'news_updates' exchange of type 'fanout'...
+Exchange 'news_updates' declared.
+ [x] Sent 'Breaking News Update 1: AI achieves sentience in a toaster!'
+ [x] Sent 'Breaking News Update 2: AI achieves sentience in a toaster!'
+ [x] Sent 'Breaking News Update 3: AI achieves sentience in a toaster!'
+...
+```
+
+At this point, the publisher is sending messages to the `news_updates` exchange. Without any subscribers, these messages will be received by the exchange but won't be delivered to any queues, and thus won't be consumed. They will effectively be "discarded" by the exchange if no queues are bound. The next steps in our hands-on will involve creating subscribers to receive these messages.
+
+Press `Ctrl+C` to stop the publisher when you are done.
+
+=== Troubleshooting Tips
+
+*   **`pika.exceptions.AMQPConnectionError`**: This almost always means your RabbitMQ server is not running or is not accessible at `localhost:5672`.
+    *   Check your Docker container if using: `docker ps`.
+    *   Verify the port mapping: `5672` is the default AMQP port.
+*   **No output after running**: Double-check your `RABBITMQ_HOST` configuration in the Python script.
+*   **Messages not appearing in RabbitMQ UI**: If you have the RabbitMQ Management Plugin (usually on port 15672), you can log in (default guest/guest) and navigate to the "Exchanges" tab to see if `news_updates` exchange has been created. If messages are being sent but no queues are bound to the exchange, they won't appear in any queue. This is expected until we create subscribers.
+
+This completes the implementation of a publisher for the Publish/Subscribe pattern. The publisher successfully broadcasts messages to an exchange, completely decoupled from any consumers. In subsequent labs, you will implement subscribers that bind to this exchange to receive these news updates.

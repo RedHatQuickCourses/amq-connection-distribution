@@ -1,5 +1,5 @@
 site:
-  title:  Building Resilient Messaging Applications with ActiveMQ Artemis and OpenShift
+  title:  Understanding and Implementing Message Oriented Middleware
   start_page: amq-connection-distribution::index.adoc
 
 content:
