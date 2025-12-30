@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>The need for asynchronous processing :: Understanding and Implementing Message Oriented Middleware</title>
+    <link rel="prev" href="issues-with-direct-service-to-service-communication.html">
+    <link rel="next" href="problems-with-reliability-and-data-consistency.html">
+    <meta name="generator" content="Antora 3.1.3">
+    <link rel="stylesheet" href="../../../_/css/site.css">
+    <script>var uiRootPath = '../../../_'</script>
+  </head>
+  <body class="article">
+<header class="header">
+  <nav class="navbar">
+    <div class="navbar-brand">
+      <a class="navbar-item" href="https://www.redhat.com" target="_blank"><img src="../../../_/img/redhat-logo.png" height="40px" alt="Red Hat"></a>
+      <a class="navbar-item" style="font-size: 24px; color: white" href="../../..">Understanding and Implementing Message Oriented Middleware</a>
+      <button class="navbar-burger" data-target="topbar-nav">
+        <span></span>
+        <span></span>
+        <span></span>
+      </button>
+    </div>
+    <div id="topbar-nav" class="navbar-menu">
+      <div class="navbar-end">
+        <a class="navbar-item" href="https://github.com/RedHatQuickCourses/REPLACEREPONAME/issues" target="_blank">Report Issues</a>
+      </div>
+    </div>
+  </nav>
+</header>
+<div class="body">
+<div class="nav-container" data-component="amq-connection-distribution" data-version="1.0.0">
+  <aside class="nav">
+    <div class="panels">
+<div class="nav-panel-menu is-active" data-panel="menu">
+  <nav class="nav-menu">
+    <h3 class="title"><a href="../index.html">Understanding and Implementing Message Oriented Middleware</a></h3>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="../index.html">Home</a>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../introduction-to-message-oriented-middleware-mom/introduction-to-message-oriented-middleware-mom.html">Introduction to Message Oriented Middleware (MOM)</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../introduction-to-message-oriented-middleware-mom/what-is-message-oriented-middleware.html">What is Message Oriented Middleware?</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../introduction-to-message-oriented-middleware-mom/core-concepts-messages-producers-consumers-brokers.html">Core concepts: Messages, Producers, Consumers, Brokers</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../introduction-to-message-oriented-middleware-mom/benefits-of-mom-in-distributed-systems.html">Benefits of MOM in distributed systems</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../introduction-to-message-oriented-middleware-mom/common-use-cases-for-mom.html">Common use cases for MOM</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="challenges-in-distributed-systems.html">Challenges in Distributed Systems</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="issues-with-direct-service-to-service-communication.html">Issues with direct service-to-service communication</a>
+  </li>
+  <li class="nav-item is-current-page" data-depth="2">
+    <a class="nav-link" href="the-need-for-asynchronous-processing.html">The need for asynchronous processing</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="problems-with-reliability-and-data-consistency.html">Problems with reliability and data consistency</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="scalability-and-coupling-concerns.html">Scalability and coupling concerns</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../mom-solutions-for-distributed-systems/mom-solutions-for-distributed-systems.html">MOM Solutions for Distributed Systems</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../mom-solutions-for-distributed-systems/decoupling-services-with-message-queues.html">Decoupling services with message queues</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../mom-solutions-for-distributed-systems/point-to-point-ptp-messaging-model.html">Point-to-Point (PTP) messaging model</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../mom-solutions-for-distributed-systems/publishsubscribe-pubsub-messaging-model.html">Publish/Subscribe (Pub/Sub) messaging model</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../mom-solutions-for-distributed-systems/ensuring-message-delivery-and-reliability.html">Ensuring message delivery and reliability</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../mom-solutions-for-distributed-systems/message-persistence-and-durability.html">Message persistence and durability</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../hands-on-lab-implementing-messaging-patterns/hands-on-lab-implementing-messaging-patterns.html">Hands-on Lab: Implementing Messaging Patterns</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../hands-on-lab-implementing-messaging-patterns/setting-up-a-basic-message-broker.html">Setting up a basic message broker</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../hands-on-lab-implementing-messaging-patterns/developing-a-producer-for-point-to-point-messaging.html">Developing a producer for Point-to-Point messaging</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../hands-on-lab-implementing-messaging-patterns/developing-a-consumer-for-point-to-point-messaging.html">Developing a consumer for Point-to-Point messaging</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../hands-on-lab-implementing-messaging-patterns/implementing-a-publisher-for-publishsubscribe.html">Implementing a publisher for Publish/Subscribe</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../hands-on-lab-implementing-messaging-patterns/implementing-a-subscriber-for-publishsubscribe.html">Implementing a subscriber for Publish/Subscribe</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+</ul>
+  </nav>
+</div>
+<div class="nav-panel-explore" data-panel="explore">
+  <div class="context">
+    <span class="title">Understanding and Implementing Message Oriented Middleware</span>
+    <span class="version">1.0.0</span>
+  </div>
+  <ul class="components">
+    <li class="component is-current">
+      <a class="title" href="../index.html">Understanding and Implementing Message Oriented Middleware</a>
+      <ul class="versions">
+        <li class="version is-current is-latest">
+          <a href="../index.html">1.0.0</a>
+        </li>
+      </ul>
+    </li>
+  </ul>
+</div>
+    </div>
+  </aside>
+</div>
+<main class="article">
+<div class="toolbar" role="navigation">
+<button class="nav-toggle"></button>
+  <a href="../index.html" class="home-link"></a>
+<nav class="breadcrumbs" aria-label="breadcrumbs">
+  <ul>
+    <li><a href="../index.html">Understanding and Implementing Message Oriented Middleware</a></li>
+    <li><a href="challenges-in-distributed-systems.html">Challenges in Distributed Systems</a></li>
+    <li><a href="the-need-for-asynchronous-processing.html">The need for asynchronous processing</a></li>
+  </ul>
+</nav>
+</div>
+  <div class="content">
+<aside class="toc sidebar" data-title="Contents" data-levels="2">
+  <div class="toc-menu"></div>
+</aside>
+<article class="doc">
+<h1 class="page">The need for asynchronous processing</h1>
+<h1 id="_the_need_for_asynchronous_processing" class="sect0"><a class="anchor" href="#_the_need_for_asynchronous_processing"></a>The Need for Asynchronous Processing</h1>
+<div class="paragraph">
+<p>In the intricate landscape of distributed systems, services often need to communicate with one another to perform complex operations. While direct, synchronous communication might seem straightforward initially, it introduces significant challenges that can degrade system performance, reliability, and scalability. This section delves into the critical need for asynchronous processing to overcome these inherent difficulties.</p>
+</div>
+<div class="sect1">
+<h2 id="_understanding_synchronous_vs_asynchronous_communication"><a class="anchor" href="#_understanding_synchronous_vs_asynchronous_communication"></a>Understanding Synchronous vs. Asynchronous Communication</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Before diving into the "why," let&#8217;s clarify the two primary modes of communication:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>Synchronous Communication</strong>: When service A calls service B synchronously, service A <strong>pauses</strong> its execution and waits for service B to complete its operation and return a response. Only after receiving the response can service A continue its work. It&#8217;s like calling someone and staying on the line until they provide a full answer before you can do anything else.</p>
+</li>
+<li>
+<p><strong>Asynchronous Communication</strong>: In an asynchronous exchange, service A sends a message or request to service B and then <strong>immediately continues</strong> its own operations without waiting for a response. Service B processes the request independently, and if a response is needed, it typically sends it back via a separate asynchronous mechanism. This is akin to sending an email or a text message: you send it and continue with your day, expecting a reply later.</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_challenges_with_synchronous_processing_in_distributed_systems"><a class="anchor" href="#_challenges_with_synchronous_processing_in_distributed_systems"></a>Challenges with Synchronous Processing in Distributed Systems</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>While synchronous communication has its place, especially in tightly coupled, low-latency scenarios, its drawbacks become pronounced in distributed environments:</p>
+</div>
+<div class="sect2">
+<h3 id="_1_blocking_operations_and_latency_impact"><a class="anchor" href="#_1_blocking_operations_and_latency_impact"></a>1. Blocking Operations and Latency Impact</h3>
+<div class="paragraph">
+<p>In a synchronous setup, the calling service is blocked until the called service responds. If the called service is slow, busy, or experiencing network latency, the calling service remains idle. In a chain of synchronous calls (e.g., Service A calls B, B calls C, C calls D), the total response time accumulates, directly impacting the user experience and application responsiveness.</p>
+</div>
+<div class="imageblock unresolved">
+<div class="content">
+<img src="mom-sync-problem.png" alt="Synchronous Communication Blocking" width="700" height="400">
+</div>
+</div>
+<div class="exampleblock">
+<div class="title">Example 1. Synchronous Communication: Service A waits for B, and B waits for C, causing cumulative delays.</div>
+<div class="content">
+<div class="literalblock">
+<div class="content">
+<pre>sequenceDiagram
+    participant User
+    participant ServiceA
+    participant ServiceB
+    participant ServiceC
+
+    User-&gt;&gt;ServiceA: Request (Synchronous)
+    activate ServiceA
+    ServiceA-&gt;&gt;ServiceB: Call (Synchronous)
+    activate ServiceB
+    ServiceB-&gt;&gt;ServiceC: Call (Synchronous)
+    activate ServiceC
+    Note over ServiceC: Process request
+    deactivate ServiceC
+    ServiceC--&gt;&gt;ServiceB: Response
+    deactivate ServiceB
+    ServiceB--&gt;&gt;ServiceA: Response
+    deactivate ServiceA
+    ServiceA--&gt;&gt;User: Final Response</pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_2_resource_exhaustion"><a class="anchor" href="#_2_resource_exhaustion"></a>2. Resource Exhaustion</h3>
+<div class="paragraph">
+<p>Each blocked synchronous call often ties up system resources, such as threads or connections, on the calling service. If a service experiences a high volume of synchronous requests, and downstream services are slow, it can quickly exhaust its available resources, leading to:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>Thread Pool Exhaustion</strong>: Applications might run out of threads to process new incoming requests.</p>
+</li>
+<li>
+<p><strong>Connection Pool Exhaustion</strong>: Database or external API connections might become saturated.</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>This resource scarcity can cause the calling service itself to become unresponsive or crash, even if the underlying issue is with a dependency.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_3_cascading_failures"><a class="anchor" href="#_3_cascading_failures"></a>3. Cascading Failures</h3>
+<div class="paragraph">
+<p>One of the most critical issues with synchronous communication is its susceptibility to cascading failures. If a called service (Service B) fails or becomes unresponsive, all services synchronously calling it (Service A) will also fail or block indefinitely. This failure can then propagate upstream, potentially bringing down large parts of the distributed system, creating a single point of failure.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_4_reduced_scalability_and_tight_coupling"><a class="anchor" href="#_4_reduced_scalability_and_tight_coupling"></a>4. Reduced Scalability and Tight Coupling</h3>
+<div class="paragraph">
+<p>Synchronous communication fosters tight coupling between services. Each service needs to know the network location (IP address, port) of its dependencies and be aware of their operational status. This makes it harder to:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>Scale Independently</strong>: If Service B needs to scale, Service A must be able to adapt to new instances.</p>
+</li>
+<li>
+<p><strong>Maintain Services</strong>: Changes or deployments in Service B directly impact Service A, requiring coordinated maintenance windows.</p>
+</li>
+<li>
+<p><strong>Handle Spikes</strong>: A sudden surge in requests to Service A can overwhelm Service B if it cannot scale quickly enough to handle the increased synchronous load.</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>This tight coupling contradicts the very principles of microservices and distributed architectures, which aim for autonomy and resilience.</p>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_the_asynchronous_solution"><a class="anchor" href="#_the_asynchronous_solution"></a>The Asynchronous Solution</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>The fundamental objective of asynchronous processing is to decouple the sender from the receiver, allowing services to operate independently without waiting for immediate responses. This pattern inherently addresses the challenges of synchronous communication:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>Non-Blocking Operations</strong>: The calling service sends a message and can immediately proceed with other tasks, significantly improving responsiveness and throughput.</p>
+</li>
+<li>
+<p><strong>Efficient Resource Utilization</strong>: Resources (threads, connections) are not tied up waiting for responses, leading to better resource management and higher system capacity.</p>
+</li>
+<li>
+<p><strong>Enhanced Fault Tolerance</strong>: If a receiving service is temporarily unavailable, the message can be queued and delivered later when the service recovers. The sending service remains unaffected. This prevents cascading failures.</p>
+</li>
+<li>
+<p><strong>Increased Scalability and Decoupling</strong>: Services no longer need direct knowledge of each other&#8217;s availability or location. They communicate through an intermediary (like a message broker), allowing them to scale independently and evolve without tightly coupled dependencies.</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>This need for asynchronous processing is precisely where Message Oriented Middleware (MOM) steps in, providing the infrastructure and patterns to facilitate robust, decoupled, and scalable communication in distributed systems.</p>
+</div>
+</div>
+</div>
+<nav class="pagination">
+  <span class="prev"><a href="issues-with-direct-service-to-service-communication.html">Issues with direct service-to-service communication</a></span>
+  <span class="next"><a href="problems-with-reliability-and-data-consistency.html">Problems with reliability and data consistency</a></span>
+</nav>
+</article>
+  </div>
+</main>
+</div>
+<footer class="footer">
+  <img src="../../../_/img/rhl-logo-red.png" height="40px" alt="Red Hat"  href="https://redhat.com" >
+</footer><script id="site-script" src="../../../_/js/site.js" data-ui-root-path="../../../_"></script>
+<script async src="../../../_/js/vendor/highlight.js"></script>
+  </body>
+</html>

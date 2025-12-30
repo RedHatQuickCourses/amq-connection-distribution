@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Publish/Subscribe (Pub/Sub) messaging model :: Understanding and Implementing Message Oriented Middleware</title>
+    <link rel="prev" href="point-to-point-ptp-messaging-model.html">
+    <link rel="next" href="ensuring-message-delivery-and-reliability.html">
+    <meta name="generator" content="Antora 3.1.3">
+    <link rel="stylesheet" href="../../../_/css/site.css">
+    <script>var uiRootPath = '../../../_'</script>
+  </head>
+  <body class="article">
+<header class="header">
+  <nav class="navbar">
+    <div class="navbar-brand">
+      <a class="navbar-item" href="https://www.redhat.com" target="_blank"><img src="../../../_/img/redhat-logo.png" height="40px" alt="Red Hat"></a>
+      <a class="navbar-item" style="font-size: 24px; color: white" href="../../..">Understanding and Implementing Message Oriented Middleware</a>
+      <button class="navbar-burger" data-target="topbar-nav">
+        <span></span>
+        <span></span>
+        <span></span>
+      </button>
+    </div>
+    <div id="topbar-nav" class="navbar-menu">
+      <div class="navbar-end">
+        <a class="navbar-item" href="https://github.com/RedHatQuickCourses/REPLACEREPONAME/issues" target="_blank">Report Issues</a>
+      </div>
+    </div>
+  </nav>
+</header>
+<div class="body">
+<div class="nav-container" data-component="amq-connection-distribution" data-version="1.0.0">
+  <aside class="nav">
+    <div class="panels">
+<div class="nav-panel-menu is-active" data-panel="menu">
+  <nav class="nav-menu">
+    <h3 class="title"><a href="../index.html">Understanding and Implementing Message Oriented Middleware</a></h3>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="../index.html">Home</a>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../introduction-to-message-oriented-middleware-mom/introduction-to-message-oriented-middleware-mom.html">Introduction to Message Oriented Middleware (MOM)</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../introduction-to-message-oriented-middleware-mom/what-is-message-oriented-middleware.html">What is Message Oriented Middleware?</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../introduction-to-message-oriented-middleware-mom/core-concepts-messages-producers-consumers-brokers.html">Core concepts: Messages, Producers, Consumers, Brokers</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../introduction-to-message-oriented-middleware-mom/benefits-of-mom-in-distributed-systems.html">Benefits of MOM in distributed systems</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../introduction-to-message-oriented-middleware-mom/common-use-cases-for-mom.html">Common use cases for MOM</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../challenges-in-distributed-systems/challenges-in-distributed-systems.html">Challenges in Distributed Systems</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../challenges-in-distributed-systems/issues-with-direct-service-to-service-communication.html">Issues with direct service-to-service communication</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../challenges-in-distributed-systems/the-need-for-asynchronous-processing.html">The need for asynchronous processing</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../challenges-in-distributed-systems/problems-with-reliability-and-data-consistency.html">Problems with reliability and data consistency</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../challenges-in-distributed-systems/scalability-and-coupling-concerns.html">Scalability and coupling concerns</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="mom-solutions-for-distributed-systems.html">MOM Solutions for Distributed Systems</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="decoupling-services-with-message-queues.html">Decoupling services with message queues</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="point-to-point-ptp-messaging-model.html">Point-to-Point (PTP) messaging model</a>
+  </li>
+  <li class="nav-item is-current-page" data-depth="2">
+    <a class="nav-link" href="publishsubscribe-pubsub-messaging-model.html">Publish/Subscribe (Pub/Sub) messaging model</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="ensuring-message-delivery-and-reliability.html">Ensuring message delivery and reliability</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="message-persistence-and-durability.html">Message persistence and durability</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../hands-on-lab-implementing-messaging-patterns/hands-on-lab-implementing-messaging-patterns.html">Hands-on Lab: Implementing Messaging Patterns</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../hands-on-lab-implementing-messaging-patterns/setting-up-a-basic-message-broker.html">Setting up a basic message broker</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../hands-on-lab-implementing-messaging-patterns/developing-a-producer-for-point-to-point-messaging.html">Developing a producer for Point-to-Point messaging</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../hands-on-lab-implementing-messaging-patterns/developing-a-consumer-for-point-to-point-messaging.html">Developing a consumer for Point-to-Point messaging</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../hands-on-lab-implementing-messaging-patterns/implementing-a-publisher-for-publishsubscribe.html">Implementing a publisher for Publish/Subscribe</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../hands-on-lab-implementing-messaging-patterns/implementing-a-subscriber-for-publishsubscribe.html">Implementing a subscriber for Publish/Subscribe</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+</ul>
+  </nav>
+</div>
+<div class="nav-panel-explore" data-panel="explore">
+  <div class="context">
+    <span class="title">Understanding and Implementing Message Oriented Middleware</span>
+    <span class="version">1.0.0</span>
+  </div>
+  <ul class="components">
+    <li class="component is-current">
+      <a class="title" href="../index.html">Understanding and Implementing Message Oriented Middleware</a>
+      <ul class="versions">
+        <li class="version is-current is-latest">
+          <a href="../index.html">1.0.0</a>
+        </li>
+      </ul>
+    </li>
+  </ul>
+</div>
+    </div>
+  </aside>
+</div>
+<main class="article">
+<div class="toolbar" role="navigation">
+<button class="nav-toggle"></button>
+  <a href="../index.html" class="home-link"></a>
+<nav class="breadcrumbs" aria-label="breadcrumbs">
+  <ul>
+    <li><a href="../index.html">Understanding and Implementing Message Oriented Middleware</a></li>
+    <li><a href="mom-solutions-for-distributed-systems.html">MOM Solutions for Distributed Systems</a></li>
+    <li><a href="publishsubscribe-pubsub-messaging-model.html">Publish/Subscribe (Pub/Sub) messaging model</a></li>
+  </ul>
+</nav>
+</div>
+  <div class="content">
+<aside class="toc sidebar" data-title="Contents" data-levels="2">
+  <div class="toc-menu"></div>
+</aside>
+<article class="doc">
+<h1 class="page">Publish/Subscribe (Pub/Sub) messaging model</h1>
+<div class="sect2">
+<h3 id="pub-sub-messaging-model"><a class="anchor" href="#pub-sub-messaging-model"></a>Publish/Subscribe (Pub/Sub) Messaging Model</h3>
+<div class="paragraph">
+<p>The Publish/Subscribe (Pub/Sub) messaging model is a powerful and flexible communication pattern within Message Oriented Middleware (MOM) that enables one-to-many message distribution. Unlike the Point-to-Point (PTP) model, where a message is consumed by a single recipient, Pub/Sub allows a single message to be broadcast to multiple interested parties simultaneously. This model is crucial for scenarios requiring efficient dissemination of information to a broad audience without direct knowledge of the recipients.</p>
+</div>
+<div class="sect3">
+<h4 id="pub-sub-core-concepts"><a class="anchor" href="#pub-sub-core-concepts"></a>Core Concepts of Pub/Sub</h4>
+<div class="paragraph">
+<p>At the heart of the Pub/Sub model are three primary entities that facilitate decoupled communication:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>Publishers</strong>: These are services or applications that generate and send messages. A publisher doesn&#8217;t know who will receive the message; its sole responsibility is to publish the message to a specific <strong>topic</strong>. This complete lack of awareness of consumers is fundamental to the decoupling provided by Pub/Sub.</p>
+</li>
+<li>
+<p><strong>Subscribers</strong>: These are services or applications that express interest in receiving messages from one or more <strong>topics</strong>. Once subscribed, they register their intent with the message broker and subsequently receive all messages published to those specific topics.</p>
+</li>
+<li>
+<p><strong>Topics</strong>: These are named logical channels, categories, or streams to which messages are published. Topics act as a central hub where publishers send messages and from which subscribers receive them. Subscribers register their interest in specific topics, and the message broker ensures that messages published to a topic are delivered to all its active subscribers.</p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect3">
+<h4 id="how-publish-subscribe-works"><a class="anchor" href="#how-publish-subscribe-works"></a>How Publish/Subscribe Works</h4>
+<div class="paragraph">
+<p>The workflow in a Pub/Sub system, facilitated by a message broker, typically involves the following steps:</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>A <strong>Publisher</strong> generates a message containing relevant data and sends it to the message broker, explicitly specifying the <strong>topic</strong> to which the message belongs. The publisher simply "publishes" without needing to know if anyone is listening.</p>
+</li>
+<li>
+<p>The <strong>Message Broker</strong> receives the message. Unlike PTP, where it routes to a single queue for a specific consumer, the broker inspects the message&#8217;s designated topic.</p>
+</li>
+<li>
+<p>The broker then identifies <strong>all</strong> active <strong>Subscribers</strong> that have an ongoing subscription to that particular topic.</p>
+</li>
+<li>
+<p>The message is then <strong>fan-out</strong> by the broker, meaning it is delivered to each identified subscriber. Each subscriber receives its own independent copy of the message, allowing them to process it without affecting other subscribers.</p>
+</li>
+</ol>
+</div>
+<div class="paragraph">
+<p>This mechanism ensures that publishers and subscribers are completely decoupled. Publishers do not need to know about the existence, number, or location of subscribers, and vice versa. They only need to agree on the common topics for communication.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="benefits-of-pub-sub-in-distributed-systems"><a class="anchor" href="#benefits-of-pub-sub-in-distributed-systems"></a>Benefits in Distributed Systems</h4>
+<div class="paragraph">
+<p>The Pub/Sub model offers several significant advantages, making it an indispensable pattern in complex distributed environments:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>Decoupling</strong>: Publishers and subscribers operate entirely independently. They don&#8217;t need to know about each other&#8217;s existence, network addresses, or even their availability. This simplifies system architecture, reduces dependencies, and makes systems more resilient to changes.</p>
+</li>
+<li>
+<p><strong>Scalability</strong>: New subscribers can be added or removed dynamically without requiring any changes to publishers or existing subscribers. This allows the system to scale effectively to accommodate a growing number of consumers interested in specific data streams or events.</p>
+</li>
+<li>
+<p><strong>Real-time Communication</strong>: Pub/Sub is inherently designed for broadcasting real-time updates, notifications, and events to multiple interested parties simultaneously, making it ideal for live data feeds and event-driven architectures.</p>
+</li>
+<li>
+<p><strong>Flexibility</strong>: A single message published to a topic can be consumed by many different applications for various purposes (e.g., one service archives the message, another updates a dashboard, a third triggers an alert). This promotes flexible integration and extensibility of system functionalities.</p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect3">
+<h4 id="common-pub-sub-use-cases"><a class="anchor" href="#common-pub-sub-use-cases"></a>Common Use Cases for Publish/Subscribe</h4>
+<div class="paragraph">
+<p>The Pub/Sub model is widely adopted across various domains due to its inherent benefits:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>News and Article Feeds</strong>: A content management system publishes new articles to a "news.sports" topic, and all website frontends, mobile apps, and RSS feed readers subscribed to sports news automatically receive the updates.</p>
+</li>
+<li>
+<p><strong>Stock Market Tickers</strong>: Real-time stock price updates are published to various stock symbol topics (e.g., "stock.AAPL", "stock.GOOGL"), and all trading applications, analytics engines, and display widgets subscribed to those symbols receive instantaneous data.</p>
+</li>
+<li>
+<p><strong>IoT Data Streaming</strong>: Sensors in an industrial setting publish data (e.g., temperature, humidity, machine status) to specific topics. Monitoring dashboards, anomaly detection systems, and control systems subscribe to these topics to react to live data.</p>
+</li>
+<li>
+<p><strong>Event Notifications</strong>: A user registration service publishes a "user_registered" event whenever a new user signs up. Multiple downstream services (e.g., an email service to send a welcome email, an analytics service to update user counts, a profile service to create an initial profile) can subscribe to this event to perform their respective actions.</p>
+</li>
+<li>
+<p><strong>Chat Applications</strong>: Messages sent in a chat room are published to a topic representing the room. All members currently subscribed to that room topic receive the messages, enabling real-time group communication.</p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect3">
+<h4 id="hands-on-pub-sub"><a class="anchor" href="#hands-on-pub-sub"></a>Hands-on Lab: Implementing Publish/Subscribe</h4>
+<div class="paragraph">
+<p>To solidify your understanding of the Pub/Sub messaging model, we will engage in a practical lab exercise as part of the overall messaging patterns implementation. This hands-on experience will allow you to see the one-to-many communication in action:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><a href="#hands-on-lab-implementing-messaging-patterns.adoc#implementing-publisher-for-pub-sub" class="xref unresolved">Implementing a Publisher for Publish/Subscribe</a>: You will develop a simple application that connects to our basic message broker and sends messages to a designated topic.</p>
+</li>
+<li>
+<p><a href="#hands-on-lab-implementing-messaging-patterns.adoc#implementing-subscriber-for-pub-sub" class="xref unresolved">Implementing a Subscriber for Publish/Subscribe</a>: You will create an application that connects to the same message broker, subscribes to a specific topic, and actively listens for and processes incoming messages published to that topic.</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>This lab will demonstrate how messages are broadcast to multiple subscribers and how the critical decoupling between publishers and subscribers works in practice, highlighting the flexibility and scalability of the Pub/Sub model.</p>
+</div>
+</div>
+</div>
+<nav class="pagination">
+  <span class="prev"><a href="point-to-point-ptp-messaging-model.html">Point-to-Point (PTP) messaging model</a></span>
+  <span class="next"><a href="ensuring-message-delivery-and-reliability.html">Ensuring message delivery and reliability</a></span>
+</nav>
+</article>
+  </div>
+</main>
+</div>
+<footer class="footer">
+  <img src="../../../_/img/rhl-logo-red.png" height="40px" alt="Red Hat"  href="https://redhat.com" >
+</footer><script id="site-script" src="../../../_/js/site.js" data-ui-root-path="../../../_"></script>
+<script async src="../../../_/js/vendor/highlight.js"></script>
+  </body>
+</html>

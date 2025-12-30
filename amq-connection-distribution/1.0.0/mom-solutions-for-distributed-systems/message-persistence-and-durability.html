@@ -1,0 +1,533 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Message persistence and durability :: Understanding and Implementing Message Oriented Middleware</title>
+    <link rel="prev" href="ensuring-message-delivery-and-reliability.html">
+    <link rel="next" href="../hands-on-lab-implementing-messaging-patterns/hands-on-lab-implementing-messaging-patterns.html">
+    <meta name="generator" content="Antora 3.1.3">
+    <link rel="stylesheet" href="../../../_/css/site.css">
+    <script>var uiRootPath = '../../../_'</script>
+  </head>
+  <body class="article">
+<header class="header">
+  <nav class="navbar">
+    <div class="navbar-brand">
+      <a class="navbar-item" href="https://www.redhat.com" target="_blank"><img src="../../../_/img/redhat-logo.png" height="40px" alt="Red Hat"></a>
+      <a class="navbar-item" style="font-size: 24px; color: white" href="../../..">Understanding and Implementing Message Oriented Middleware</a>
+      <button class="navbar-burger" data-target="topbar-nav">
+        <span></span>
+        <span></span>
+        <span></span>
+      </button>
+    </div>
+    <div id="topbar-nav" class="navbar-menu">
+      <div class="navbar-end">
+        <a class="navbar-item" href="https://github.com/RedHatQuickCourses/REPLACEREPONAME/issues" target="_blank">Report Issues</a>
+      </div>
+    </div>
+  </nav>
+</header>
+<div class="body">
+<div class="nav-container" data-component="amq-connection-distribution" data-version="1.0.0">
+  <aside class="nav">
+    <div class="panels">
+<div class="nav-panel-menu is-active" data-panel="menu">
+  <nav class="nav-menu">
+    <h3 class="title"><a href="../index.html">Understanding and Implementing Message Oriented Middleware</a></h3>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="../index.html">Home</a>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../introduction-to-message-oriented-middleware-mom/introduction-to-message-oriented-middleware-mom.html">Introduction to Message Oriented Middleware (MOM)</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../introduction-to-message-oriented-middleware-mom/what-is-message-oriented-middleware.html">What is Message Oriented Middleware?</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../introduction-to-message-oriented-middleware-mom/core-concepts-messages-producers-consumers-brokers.html">Core concepts: Messages, Producers, Consumers, Brokers</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../introduction-to-message-oriented-middleware-mom/benefits-of-mom-in-distributed-systems.html">Benefits of MOM in distributed systems</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../introduction-to-message-oriented-middleware-mom/common-use-cases-for-mom.html">Common use cases for MOM</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../challenges-in-distributed-systems/challenges-in-distributed-systems.html">Challenges in Distributed Systems</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../challenges-in-distributed-systems/issues-with-direct-service-to-service-communication.html">Issues with direct service-to-service communication</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../challenges-in-distributed-systems/the-need-for-asynchronous-processing.html">The need for asynchronous processing</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../challenges-in-distributed-systems/problems-with-reliability-and-data-consistency.html">Problems with reliability and data consistency</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../challenges-in-distributed-systems/scalability-and-coupling-concerns.html">Scalability and coupling concerns</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="mom-solutions-for-distributed-systems.html">MOM Solutions for Distributed Systems</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="decoupling-services-with-message-queues.html">Decoupling services with message queues</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="point-to-point-ptp-messaging-model.html">Point-to-Point (PTP) messaging model</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="publishsubscribe-pubsub-messaging-model.html">Publish/Subscribe (Pub/Sub) messaging model</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="ensuring-message-delivery-and-reliability.html">Ensuring message delivery and reliability</a>
+  </li>
+  <li class="nav-item is-current-page" data-depth="2">
+    <a class="nav-link" href="message-persistence-and-durability.html">Message persistence and durability</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../hands-on-lab-implementing-messaging-patterns/hands-on-lab-implementing-messaging-patterns.html">Hands-on Lab: Implementing Messaging Patterns</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../hands-on-lab-implementing-messaging-patterns/setting-up-a-basic-message-broker.html">Setting up a basic message broker</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../hands-on-lab-implementing-messaging-patterns/developing-a-producer-for-point-to-point-messaging.html">Developing a producer for Point-to-Point messaging</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../hands-on-lab-implementing-messaging-patterns/developing-a-consumer-for-point-to-point-messaging.html">Developing a consumer for Point-to-Point messaging</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../hands-on-lab-implementing-messaging-patterns/implementing-a-publisher-for-publishsubscribe.html">Implementing a publisher for Publish/Subscribe</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../hands-on-lab-implementing-messaging-patterns/implementing-a-subscriber-for-publishsubscribe.html">Implementing a subscriber for Publish/Subscribe</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+</ul>
+  </nav>
+</div>
+<div class="nav-panel-explore" data-panel="explore">
+  <div class="context">
+    <span class="title">Understanding and Implementing Message Oriented Middleware</span>
+    <span class="version">1.0.0</span>
+  </div>
+  <ul class="components">
+    <li class="component is-current">
+      <a class="title" href="../index.html">Understanding and Implementing Message Oriented Middleware</a>
+      <ul class="versions">
+        <li class="version is-current is-latest">
+          <a href="../index.html">1.0.0</a>
+        </li>
+      </ul>
+    </li>
+  </ul>
+</div>
+    </div>
+  </aside>
+</div>
+<main class="article">
+<div class="toolbar" role="navigation">
+<button class="nav-toggle"></button>
+  <a href="../index.html" class="home-link"></a>
+<nav class="breadcrumbs" aria-label="breadcrumbs">
+  <ul>
+    <li><a href="../index.html">Understanding and Implementing Message Oriented Middleware</a></li>
+    <li><a href="mom-solutions-for-distributed-systems.html">MOM Solutions for Distributed Systems</a></li>
+    <li><a href="message-persistence-and-durability.html">Message persistence and durability</a></li>
+  </ul>
+</nav>
+</div>
+  <div class="content">
+<aside class="toc sidebar" data-title="Contents" data-levels="2">
+  <div class="toc-menu"></div>
+</aside>
+<article class="doc">
+<h1 class="page">Message persistence and durability</h1>
+<h1 id="_message_persistence_and_durability" class="sect0"><a class="anchor" href="#_message_persistence_and_durability"></a>Message persistence and durability</h1>
+<div class="paragraph">
+<p>In distributed systems leveraging Message Oriented Middleware (MOM), ensuring that messages are not lost due to system failures, network outages, or temporary consumer unavailability is paramount for data integrity and application reliability. This section delves into the critical concepts of message persistence and durability, which are foundational to building robust and resilient messaging solutions.</p>
+</div>
+<div class="sect1">
+<h2 id="_understanding_message_persistence"><a class="anchor" href="#_understanding_message_persistence"></a>Understanding Message Persistence</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Message persistence refers to the mechanism by which a message broker stores messages on a non-volatile medium (typically disk) rather than keeping them solely in volatile memory.</p>
+</div>
+<div class="sect2">
+<h3 id="_what_is_message_persistence"><a class="anchor" href="#_what_is_message_persistence"></a>What is Message Persistence?</h3>
+<div class="paragraph">
+<p>When a producer sends a message to a broker, if that message is marked as <strong>persistent</strong>, the broker writes the message to a durable storage before acknowledging its receipt to the producer. This ensures that even if the message broker application crashes unexpectedly, the operating system reboots, or there&#8217;s a power failure, the persistent messages are not lost. Upon restart, the broker reloads these messages from storage and processes them as if no interruption occurred.</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>Volatile Storage (Memory):</strong> Messages stored only in memory are fast but are lost if the broker goes down. This is suitable for transient, non-critical data where some loss is acceptable.</p>
+</li>
+<li>
+<p><strong>Non-Volatile Storage (Disk):</strong> Messages written to disk offer reliability by surviving broker failures but introduce latency due to I/O operations. This is essential for critical business data where message loss is unacceptable.</p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_why_is_persistence_important"><a class="anchor" href="#_why_is_persistence_important"></a>Why is Persistence Important?</h3>
+<div class="paragraph">
+<p>Persistence is crucial for scenarios where message loss is unacceptable. Consider an e-commerce platform where order placement messages are sent via a MOM. If the broker crashes before delivering an order message to the order processing service, and the message was not persistent, that order would be lost, leading to customer dissatisfaction and financial impact. Persistence guarantees that such critical messages survive broker failures, ensuring "at-least-once" delivery semantics when combined with proper acknowledgment mechanisms.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_how_message_persistence_works"><a class="anchor" href="#_how_message_persistence_works"></a>How Message Persistence Works</h3>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p><strong>Producer Declaration:</strong> The producer explicitly marks a message as persistent when sending it. This is often done via a message property (e.g., <code>deliveryMode</code> in JMS, <code>delivery_mode=2</code> in AMQP 0-9-1).</p>
+</li>
+<li>
+<p><strong>Broker Storage:</strong> Upon receiving a persistent message, the broker first writes it to its configured persistent storage (e.g., a message log file, database, or specialized message store). This step typically involves an fsync or similar operation to guarantee the data is on disk.</p>
+</li>
+<li>
+<p><strong>Acknowledgment to Producer:</strong> Only <strong>after</strong> the message has been successfully written to persistent storage does the broker send an acknowledgment back to the producer, confirming its receipt and storage. This ensures the producer knows the message is safe.</p>
+</li>
+<li>
+<p><strong>Delivery to Consumer:</strong> The broker then delivers the message to an eligible consumer. Once the consumer processes the message and sends an acknowledgment back to the broker, the broker can safely remove the message from its persistent store.</p>
+</li>
+</ol>
+</div>
+<div id="fig-persistence-flow" class="listingblock">
+<div class="title">Message Persistence Flow</div>
+<div class="content">
+<pre>actor Producer
+participant Broker
+database PersistentStorage
+actor Consumer
+
+Producer -&gt; Broker: Send Persistent Message (e.g., delivery_mode=2)
+Broker -&gt; PersistentStorage: Write Message to Disk
+PersistentStorage --&gt; Broker: Message Stored (ack from storage)
+Broker --&gt; Producer: Acknowledge Message (confirm receipt)
+Broker -&gt; Consumer: Deliver Message
+Consumer --&gt; Broker: Acknowledge Processed (confirm consumption)
+Broker -&gt; PersistentStorage: Remove Message from Disk</pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_types_of_persistent_storage"><a class="anchor" href="#_types_of_persistent_storage"></a>Types of Persistent Storage</h3>
+<div class="paragraph">
+<p>Different message brokers employ various strategies for persistent storage:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>File-based Persistence:</strong> Many brokers (e.g., Apache ActiveMQ, RabbitMQ&#8217;s message store) use optimized file systems or custom journaling mechanisms to write messages to disk. This is often performant and relatively simple to configure, leveraging sequential writes for speed.</p>
+</li>
+<li>
+<p><strong>Database Persistence:</strong> Some brokers or extensions allow messages to be stored in relational databases (e.g., JMS brokers often support JDBC persistence). This offers the benefit of leveraging existing database infrastructure for backups, replication, and querying, but can introduce higher latency compared to file-based systems due to transactional overhead.</p>
+</li>
+<li>
+<p><strong>Distributed Persistence:</strong> For high-availability and scalability, some modern brokers integrate with distributed storage systems (e.g., Apache Kafka uses distributed logs like Apache ZooKeeper for coordination) or replicate messages across multiple broker instances to ensure durability and fault tolerance across a cluster.</p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_hands_on_concept_marking_messages_as_persistent"><a class="anchor" href="#_hands_on_concept_marking_messages_as_persistent"></a>Hands-on Concept: Marking Messages as Persistent</h3>
+<div class="paragraph">
+<p>While a full hands-on lab environment is covered in a later section, understanding <strong>how</strong> to mark a message as persistent is crucial. In most messaging APIs, this is a simple property set on the message or publisher.</p>
+</div>
+<div class="paragraph">
+<p>For example, using a generic Java Messaging Service (JMS) API:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-java hljs" data-lang="java">// Assuming 'connection' and 'session' are already established
+// And 'producer' is created for a destination (queue or topic)
+
+Message message = session.createTextMessage("This is a critical message.");
+producer.setDeliveryMode(DeliveryMode.PERSISTENT); // Set message as persistent
+producer.send(message);
+
+System.out.println("Sent persistent message: " + ((TextMessage) message).getText());</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>In AMQP 0-9-1, a common protocol, this is often set via the <code>delivery_mode</code> property in the message header, where <code>2</code> typically signifies persistent.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-python hljs" data-lang="python">import pika
+
+connection = pika.BlockingConnection(pika.ConnectionParameters('localhost'))
+channel = connection.channel()
+
+# Declare a durable queue. The queue itself must be durable for persistent messages
+# to survive broker restarts while residing in the queue.
+channel.queue_declare(queue='my_persistent_queue', durable=True)
+
+message_body = "This message should survive broker restart."
+channel.basic_publish(
+    exchange='', # Default exchange for direct queue routing
+    routing_key='my_persistent_queue',
+    body=message_body,
+    properties=pika.BasicProperties(
+        delivery_mode=pika.spec.PERSISTENT_DELIVERY_MODE # Mark message as persistent
+    )
+)
+print(f" [x] Sent '{message_body}'")
+
+connection.close()</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p><strong>Note: The <code>durable=True</code> on <code>queue_declare</code> makes the queue definition itself survive broker restarts. This is distinct from message persistence but often used in conjunction for robust systems where you want both the queue and its contents to persist.</strong></p>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_understanding_message_durability"><a class="anchor" href="#_understanding_message_durability"></a>Understanding Message Durability</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>While message persistence deals with the broker&#8217;s ability to store messages on disk, <strong>message durability</strong> primarily concerns the reliability of message delivery, particularly in the Publish/Subscribe (Pub/Sub) messaging model, ensuring that messages are not lost even if a subscriber is temporarily offline.</p>
+</div>
+<div class="sect2">
+<h3 id="_what_is_message_durability"><a class="anchor" href="#_what_is_message_durability"></a>What is Message Durability?</h3>
+<div class="paragraph">
+<p>In a standard Pub/Sub model, if a subscriber is not active (connected and listening) when a message is published to a topic, it misses that message. <strong>Durable subscriptions</strong> address this limitation. When a subscriber creates a <strong>durable subscription</strong>, the message broker treats that subscription as a persistent entity associated with a specific subscriber identity.</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>Non-Durable Subscription:</strong> Messages published while the subscriber is offline are missed. This is suitable for real-time notifications or monitoring where missing some data is acceptable.</p>
+</li>
+<li>
+<p><strong>Durable Subscription:</strong> The broker stores messages intended for a durable subscriber even if the subscriber is disconnected. When the subscriber reconnects using the <strong>same unique durable subscription identifier</strong>, the broker delivers all the messages that accumulated during its absence, ensuring an unbroken stream of events.</p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_why_is_durability_important"><a class="anchor" href="#_why_is_durability_important"></a>Why is Durability Important?</h3>
+<div class="paragraph">
+<p>Durability is crucial for applications that require continuous receipt of all messages from a topic, even through intermittent connectivity issues or planned downtime. For example, an analytics service that processes all events from an "Order Placed" topic needs every single event to maintain accurate reporting. If this service goes down for maintenance, durable subscriptions ensure it receives all missed events upon reconnection, preventing data gaps.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_how_message_durability_works"><a class="anchor" href="#_how_message_durability_works"></a>How Message Durability Works</h3>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p><strong>Subscriber Registers Durably:</strong> A subscriber registers its interest in a topic by creating a <strong>durable subscription</strong>. This usually involves providing a unique client identifier (for the connection) and a unique subscription name (for the specific durable interest).</p>
+</li>
+<li>
+<p><strong>Broker Stores Messages for Offline Subscribers:</strong> When a message is published to the topic, the broker identifies all active <strong>and</strong> durable subscribers. For disconnected durable subscribers, the broker stores a copy of the message in its persistent store, associating it with that specific durable subscription.</p>
+</li>
+<li>
+<p><strong>Accumulation of Messages:</strong> Messages accumulate in the broker&#8217;s store for the offline durable subscriber. This storage is often the same persistent storage mechanism used for message persistence.</p>
+</li>
+<li>
+<p><strong>Delivery on Reconnection:</strong> When the durable subscriber reconnects using its unique client identifier and subscription name, the broker delivers all the accumulated messages to it.</p>
+</li>
+<li>
+<p><strong>Acknowledgment and Removal:</strong> As the subscriber processes the delivered messages and acknowledges them, the broker removes them from the durable subscription&#8217;s store.</p>
+</li>
+</ol>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_durability_and_persistence_a_key_distinction"><a class="anchor" href="#_durability_and_persistence_a_key_distinction"></a>Durability and Persistence: A Key Distinction</h3>
+<div class="paragraph">
+<p>It&#8217;s important to differentiate:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>Persistence (of Messages):</strong> The broker stores messages on disk to survive its own failure. This applies to messages sent to both Point-to-Point (Queues) and Publish/Subscribe (Topics). It ensures the message itself is not lost.</p>
+</li>
+<li>
+<p><strong>Durability (of Subscriptions):</strong> The broker stores messages <strong>on behalf of a specific subscriber</strong> when that subscriber is offline, ensuring it doesn&#8217;t miss messages from a topic. This primarily applies to Publish/Subscribe. It ensures the subscriber gets all messages even with disconnects.</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>A message published to a topic for a durable subscriber must typically also be <strong>persistent</strong> if the message itself needs to survive broker restarts <strong>before</strong> it can be delivered to the durable subscriber. So, message persistence is often a prerequisite or a complementary feature for robust durable subscriptions. Without message persistence, a durable subscriber might still miss messages if the broker crashes before it can store them for the subscriber.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_hands_on_concept_creating_durable_subscriptions"><a class="anchor" href="#_hands_on_concept_creating_durable_subscriptions"></a>Hands-on Concept: Creating Durable Subscriptions</h3>
+<div class="paragraph">
+<p>Implementing durable subscriptions involves setting specific properties on the subscriber side.</p>
+</div>
+<div class="paragraph">
+<p>For example, using a generic JMS-like API for durable topic subscribers:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-java hljs" data-lang="java">// Assuming 'connection' and 'session' are already established
+// And 'topic' is the Topic object
+
+String clientID = "myAnalyticsClient";
+connection.setClientID(clientID); // Set a unique client ID for the connection
+connection.start();
+
+String subscriptionName = "OrderEventsProcessor";
+TopicSubscriber subscriber = session.createDurableSubscriber(topic, subscriptionName);
+
+subscriber.setMessageListener(new MessageListener() {
+    public void onMessage(Message message) {
+        // Process the message
+        System.out.println("Received durable message: " + ((TextMessage) message).getText());
+        // Acknowledge the message to remove it from the durable subscription store
+        try {
+            message.acknowledge();
+        } catch (JMSException e) {
+            e.printStackTrace();
+        }
+    }
+});
+
+// The subscriber is now active. If it disconnects and reconnects with the same
+// clientID and subscriptionName, it will receive missed messages upon reconnection.</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>In AMQP 0-9-1 (as used by RabbitMQ), durability for "topics" (which are typically implemented via exchanges and queues bound to them) involves declaring a durable queue and binding it to an exchange. The broker then stores messages for that durable queue, and the consumer connects to that durable queue.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-python hljs" data-lang="python">import pika
+
+# Publisher setup (assuming it publishes persistent messages to an exchange)
+# ...
+
+# Subscriber setup for a durable queue to mimic a durable subscription
+connection = pika.BlockingConnection(pika.ConnectionParameters('localhost'))
+channel = connection.channel()
+
+exchange_name = 'my_topic_exchange'
+queue_name = 'analytics_service_queue'
+
+# Declare a durable exchange (its definition persists)
+channel.exchange_declare(exchange=exchange_name, exchange_type='topic', durable=True)
+
+# Declare a durable queue (its definition and content persist)
+result = channel.queue_declare(queue=queue_name, durable=True)
+
+# Bind the durable queue to the exchange with a routing key (e.g., all messages with '#' wildcard)
+channel.queue_bind(exchange=exchange_name, queue=queue_name, routing_key='#')
+
+print(' [*] Waiting for messages. To exit press CTRL+C')
+
+def callback(ch, method, properties, body):
+    print(f" [x] Received {body.decode()}")
+    ch.basic_ack(delivery_tag=method.delivery_tag) # Acknowledge message
+
+channel.basic_consume(queue=queue_name, on_message_callback=callback) # Note: no auto_ack here, explicit ack is vital for durability
+
+channel.start_consuming()</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p><strong>Note: The <code>durable=True</code> on <code>exchange_declare</code> and <code>queue_declare</code> makes the exchange and queue definitions persist across broker restarts. The <code>basic_ack</code> from the consumer is crucial for the broker to know when a message can be safely removed from the durable queue, effectively marking it as processed by this 'durable subscriber'.</strong></p>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_trade_offs_and_best_practices"><a class="anchor" href="#_trade_offs_and_best_practices"></a>Trade-offs and Best Practices</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>While persistence and durability are vital for reliability, they come with trade-offs that need careful consideration:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>Performance Impact:</strong> Writing messages to disk is inherently slower than keeping them solely in memory. Excessive use of persistence can become a bottleneck, increasing message latency and reducing throughput.</p>
+</li>
+<li>
+<p><strong>Storage Requirements:</strong> Persistent messages consume disk space. Monitoring and managing storage is essential to prevent broker outages due to full disks, especially with high message volumes or long-lived durable subscriptions.</p>
+</li>
+<li>
+<p><strong>Complexity:</strong> Managing durable subscriptions (especially when they are no longer needed) adds operational overhead. Orphaned durable subscriptions can lead to message accumulation, potentially filling up disk space and impacting broker performance.</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p><strong>Best Practices:</strong></p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>Use Selectively:</strong> Apply message persistence and durable subscriptions only to messages and scenarios that absolutely require guaranteed delivery and cannot tolerate data loss. For less critical, high-volume data, consider non-persistent messages or non-durable subscriptions.</p>
+</li>
+<li>
+<p><strong>Monitor Performance:</strong> Regularly monitor broker I/O, CPU, and memory usage. Performance metrics specific to persistence (e.g., disk write latency, storage queue depth) are crucial.</p>
+</li>
+<li>
+<p><strong>Configure Storage Appropriately:</strong> Ensure the broker&#8217;s persistent storage uses fast I/O devices (e.g., SSDs) and has sufficient capacity. Implement appropriate retention policies for messages.</p>
+</li>
+<li>
+<p><strong>Manage Durable Subscriptions Lifecycle:</strong> Implement a lifecycle for durable subscriptions. Unsubscribe or delete durable subscriptions that are no longer active or needed to prevent resource leaks and message accumulation.</p>
+</li>
+<li>
+<p><strong>Combine with Acknowledgments:</strong> Persistence and durability are most effective when combined with explicit client-side acknowledgments. This ensures that messages are only removed from the broker&#8217;s persistent store <strong>after</strong> the consumer has successfully processed them, providing robust "at-least-once" delivery guarantees.</p>
+</li>
+<li>
+<p><strong>Idempotent Consumers:</strong> Design your consumers to be idempotent, meaning processing the same message multiple times has the same effect as processing it once. This is a safeguard against duplicate messages, which can occur with "at-least-once" delivery guarantees in certain failure scenarios.</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>By carefully understanding and implementing message persistence and durability, you can significantly enhance the reliability and resilience of your distributed applications, ensuring that critical data is never lost, even in the face of system instabilities.</p>
+</div>
+</div>
+</div>
+<nav class="pagination">
+  <span class="prev"><a href="ensuring-message-delivery-and-reliability.html">Ensuring message delivery and reliability</a></span>
+  <span class="next"><a href="../hands-on-lab-implementing-messaging-patterns/hands-on-lab-implementing-messaging-patterns.html">Hands-on Lab: Implementing Messaging Patterns</a></span>
+</nav>
+</article>
+  </div>
+</main>
+</div>
+<footer class="footer">
+  <img src="../../../_/img/rhl-logo-red.png" height="40px" alt="Red Hat"  href="https://redhat.com" >
+</footer><script id="site-script" src="../../../_/js/site.js" data-ui-root-path="../../../_"></script>
+<script async src="../../../_/js/vendor/highlight.js"></script>
+  </body>
+</html>

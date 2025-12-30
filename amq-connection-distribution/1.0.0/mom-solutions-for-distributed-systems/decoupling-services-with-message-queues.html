@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Decoupling services with message queues :: Understanding and Implementing Message Oriented Middleware</title>
+    <link rel="prev" href="mom-solutions-for-distributed-systems.html">
+    <link rel="next" href="point-to-point-ptp-messaging-model.html">
+    <meta name="generator" content="Antora 3.1.3">
+    <link rel="stylesheet" href="../../../_/css/site.css">
+    <script>var uiRootPath = '../../../_'</script>
+  </head>
+  <body class="article">
+<header class="header">
+  <nav class="navbar">
+    <div class="navbar-brand">
+      <a class="navbar-item" href="https://www.redhat.com" target="_blank"><img src="../../../_/img/redhat-logo.png" height="40px" alt="Red Hat"></a>
+      <a class="navbar-item" style="font-size: 24px; color: white" href="../../..">Understanding and Implementing Message Oriented Middleware</a>
+      <button class="navbar-burger" data-target="topbar-nav">
+        <span></span>
+        <span></span>
+        <span></span>
+      </button>
+    </div>
+    <div id="topbar-nav" class="navbar-menu">
+      <div class="navbar-end">
+        <a class="navbar-item" href="https://github.com/RedHatQuickCourses/REPLACEREPONAME/issues" target="_blank">Report Issues</a>
+      </div>
+    </div>
+  </nav>
+</header>
+<div class="body">
+<div class="nav-container" data-component="amq-connection-distribution" data-version="1.0.0">
+  <aside class="nav">
+    <div class="panels">
+<div class="nav-panel-menu is-active" data-panel="menu">
+  <nav class="nav-menu">
+    <h3 class="title"><a href="../index.html">Understanding and Implementing Message Oriented Middleware</a></h3>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="../index.html">Home</a>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../introduction-to-message-oriented-middleware-mom/introduction-to-message-oriented-middleware-mom.html">Introduction to Message Oriented Middleware (MOM)</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../introduction-to-message-oriented-middleware-mom/what-is-message-oriented-middleware.html">What is Message Oriented Middleware?</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../introduction-to-message-oriented-middleware-mom/core-concepts-messages-producers-consumers-brokers.html">Core concepts: Messages, Producers, Consumers, Brokers</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../introduction-to-message-oriented-middleware-mom/benefits-of-mom-in-distributed-systems.html">Benefits of MOM in distributed systems</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../introduction-to-message-oriented-middleware-mom/common-use-cases-for-mom.html">Common use cases for MOM</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../challenges-in-distributed-systems/challenges-in-distributed-systems.html">Challenges in Distributed Systems</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../challenges-in-distributed-systems/issues-with-direct-service-to-service-communication.html">Issues with direct service-to-service communication</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../challenges-in-distributed-systems/the-need-for-asynchronous-processing.html">The need for asynchronous processing</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../challenges-in-distributed-systems/problems-with-reliability-and-data-consistency.html">Problems with reliability and data consistency</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../challenges-in-distributed-systems/scalability-and-coupling-concerns.html">Scalability and coupling concerns</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="mom-solutions-for-distributed-systems.html">MOM Solutions for Distributed Systems</a>
+<ul class="nav-list">
+  <li class="nav-item is-current-page" data-depth="2">
+    <a class="nav-link" href="decoupling-services-with-message-queues.html">Decoupling services with message queues</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="point-to-point-ptp-messaging-model.html">Point-to-Point (PTP) messaging model</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="publishsubscribe-pubsub-messaging-model.html">Publish/Subscribe (Pub/Sub) messaging model</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="ensuring-message-delivery-and-reliability.html">Ensuring message delivery and reliability</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="message-persistence-and-durability.html">Message persistence and durability</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../hands-on-lab-implementing-messaging-patterns/hands-on-lab-implementing-messaging-patterns.html">Hands-on Lab: Implementing Messaging Patterns</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../hands-on-lab-implementing-messaging-patterns/setting-up-a-basic-message-broker.html">Setting up a basic message broker</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../hands-on-lab-implementing-messaging-patterns/developing-a-producer-for-point-to-point-messaging.html">Developing a producer for Point-to-Point messaging</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../hands-on-lab-implementing-messaging-patterns/developing-a-consumer-for-point-to-point-messaging.html">Developing a consumer for Point-to-Point messaging</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../hands-on-lab-implementing-messaging-patterns/implementing-a-publisher-for-publishsubscribe.html">Implementing a publisher for Publish/Subscribe</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../hands-on-lab-implementing-messaging-patterns/implementing-a-subscriber-for-publishsubscribe.html">Implementing a subscriber for Publish/Subscribe</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+</ul>
+  </nav>
+</div>
+<div class="nav-panel-explore" data-panel="explore">
+  <div class="context">
+    <span class="title">Understanding and Implementing Message Oriented Middleware</span>
+    <span class="version">1.0.0</span>
+  </div>
+  <ul class="components">
+    <li class="component is-current">
+      <a class="title" href="../index.html">Understanding and Implementing Message Oriented Middleware</a>
+      <ul class="versions">
+        <li class="version is-current is-latest">
+          <a href="../index.html">1.0.0</a>
+        </li>
+      </ul>
+    </li>
+  </ul>
+</div>
+    </div>
+  </aside>
+</div>
+<main class="article">
+<div class="toolbar" role="navigation">
+<button class="nav-toggle"></button>
+  <a href="../index.html" class="home-link"></a>
+<nav class="breadcrumbs" aria-label="breadcrumbs">
+  <ul>
+    <li><a href="../index.html">Understanding and Implementing Message Oriented Middleware</a></li>
+    <li><a href="mom-solutions-for-distributed-systems.html">MOM Solutions for Distributed Systems</a></li>
+    <li><a href="decoupling-services-with-message-queues.html">Decoupling services with message queues</a></li>
+  </ul>
+</nav>
+</div>
+  <div class="content">
+<aside class="toc sidebar" data-title="Contents" data-levels="2">
+  <div class="toc-menu"></div>
+</aside>
+<article class="doc">
+<h1 class="page">Decoupling services with message queues</h1>
+<div class="paragraph">
+<p>Here is the training content covering the topic "Decoupling services with message queues" in Antora AsciiDoc format.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-asciidoc hljs" data-lang="asciidoc">== MOM Solutions for Distributed Systems
+
+=== Decoupling services with message queues
+
+In modern distributed systems, services often need to communicate with each other to fulfill business processes. While direct service-to-service communication via synchronous API calls (e.g., REST over HTTP) is common, it introduces tight coupling. This coupling can lead to several challenges, including reduced fault tolerance, scalability issues, and difficulties in independent service evolution. Message queues offer a powerful solution to these problems by enabling services to communicate in a decoupled, asynchronous manner.
+
+A *message queue* acts as an intermediary buffer for messages. Instead of one service (the producer) directly calling another service (the consumer), the producer sends a message to the queue. The queue then durably stores this message until a consumer is ready to process it. This fundamental shift from direct invocation to indirect messaging fundamentally changes how services interact.
+
+Let's break down how message queues achieve decoupling:
+
+.   **Breaking Direct Dependencies**:
+    When Service A needs to communicate with Service B, instead of making a direct API call to Service B, Service A sends a message to a designated message queue. Service B, on the other hand, listens to and consumes messages from this queue. Neither service needs to know the network location or operational status of the other at the time of sending/receiving. Their only dependency is on the message queue itself. This breaks the compile-time and runtime dependency that direct API calls impose.
+
+.   **Asynchronous Communication**:
+    With message queues, the producer service does not have to wait for the consumer service to process the message immediately. Once the message is successfully published to the queue, the producer can continue its work without blocking. This is particularly beneficial for long-running operations or when the producer doesn't need an immediate response from the consumer. The consumer can process the message at its own pace, enabling asynchronous workflows.
+
+.   **Improved Fault Tolerance and Resilience**:
+    If a consumer service experiences an outage or becomes temporarily unavailable, the producer can continue sending messages to the queue. The messages will be persisted in the queue until the consumer recovers and is ready to process them. This prevents message loss and ensures that the system as a whole can tolerate transient failures in individual services without cascading failures. Similarly, if the producer experiences an issue after sending a message, the message is already safely stored.
+
+.   **Enhanced Scalability**:
+    Message queues facilitate horizontal scaling for consumer services. Multiple instances of a consumer service can listen to the same message queue. When a new message arrives, one of the available consumer instances will pick it up for processing. This allows you to scale up or down your consumer services independently based on the message load, without affecting the producers. The queue effectively acts as a load balancer, distributing work among available consumers.
+
+.   **Load Leveling (Throttling)**:
+    Message queues can absorb bursts of activity. If a producer generates messages much faster than a consumer can process them, the queue can buffer these messages. This prevents the consumer from becoming overwhelmed and crashing, allowing it to process messages at its maximum sustainable rate. This "load leveling" effect smooths out the workload and improves overall system stability.
+
+.   **Independent Service Evolution**:
+    Because services are decoupled, changes to one service have less impact on others. For example, if Service B needs to be refactored or replaced, Service A doesn't necessarily need to change, as long as the message format (the contract) remains consistent. This allows development teams to work on and deploy services independently, accelerating development cycles and reducing release risks.
+
+In summary, decoupling services with message queues transforms a tightly integrated, synchronous architecture into a more flexible, resilient, and scalable asynchronous system. It shifts the communication paradigm from direct requests to event-driven interactions, where services react to messages published into shared queues. This pattern is a cornerstone of robust microservices architectures and distributed systems.</code></pre>
+</div>
+</div>
+<nav class="pagination">
+  <span class="prev"><a href="mom-solutions-for-distributed-systems.html">MOM Solutions for Distributed Systems</a></span>
+  <span class="next"><a href="point-to-point-ptp-messaging-model.html">Point-to-Point (PTP) messaging model</a></span>
+</nav>
+</article>
+  </div>
+</main>
+</div>
+<footer class="footer">
+  <img src="../../../_/img/rhl-logo-red.png" height="40px" alt="Red Hat"  href="https://redhat.com" >
+</footer><script id="site-script" src="../../../_/js/site.js" data-ui-root-path="../../../_"></script>
+<script async src="../../../_/js/vendor/highlight.js"></script>
+  </body>
+</html>

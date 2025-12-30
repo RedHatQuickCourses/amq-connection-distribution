@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Common use cases for MOM :: Understanding and Implementing Message Oriented Middleware</title>
+    <link rel="prev" href="benefits-of-mom-in-distributed-systems.html">
+    <link rel="next" href="../challenges-in-distributed-systems/challenges-in-distributed-systems.html">
+    <meta name="generator" content="Antora 3.1.3">
+    <link rel="stylesheet" href="../../../_/css/site.css">
+    <script>var uiRootPath = '../../../_'</script>
+  </head>
+  <body class="article">
+<header class="header">
+  <nav class="navbar">
+    <div class="navbar-brand">
+      <a class="navbar-item" href="https://www.redhat.com" target="_blank"><img src="../../../_/img/redhat-logo.png" height="40px" alt="Red Hat"></a>
+      <a class="navbar-item" style="font-size: 24px; color: white" href="../../..">Understanding and Implementing Message Oriented Middleware</a>
+      <button class="navbar-burger" data-target="topbar-nav">
+        <span></span>
+        <span></span>
+        <span></span>
+      </button>
+    </div>
+    <div id="topbar-nav" class="navbar-menu">
+      <div class="navbar-end">
+        <a class="navbar-item" href="https://github.com/RedHatQuickCourses/REPLACEREPONAME/issues" target="_blank">Report Issues</a>
+      </div>
+    </div>
+  </nav>
+</header>
+<div class="body">
+<div class="nav-container" data-component="amq-connection-distribution" data-version="1.0.0">
+  <aside class="nav">
+    <div class="panels">
+<div class="nav-panel-menu is-active" data-panel="menu">
+  <nav class="nav-menu">
+    <h3 class="title"><a href="../index.html">Understanding and Implementing Message Oriented Middleware</a></h3>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="../index.html">Home</a>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="introduction-to-message-oriented-middleware-mom.html">Introduction to Message Oriented Middleware (MOM)</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="what-is-message-oriented-middleware.html">What is Message Oriented Middleware?</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="core-concepts-messages-producers-consumers-brokers.html">Core concepts: Messages, Producers, Consumers, Brokers</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="benefits-of-mom-in-distributed-systems.html">Benefits of MOM in distributed systems</a>
+  </li>
+  <li class="nav-item is-current-page" data-depth="2">
+    <a class="nav-link" href="common-use-cases-for-mom.html">Common use cases for MOM</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../challenges-in-distributed-systems/challenges-in-distributed-systems.html">Challenges in Distributed Systems</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../challenges-in-distributed-systems/issues-with-direct-service-to-service-communication.html">Issues with direct service-to-service communication</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../challenges-in-distributed-systems/the-need-for-asynchronous-processing.html">The need for asynchronous processing</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../challenges-in-distributed-systems/problems-with-reliability-and-data-consistency.html">Problems with reliability and data consistency</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../challenges-in-distributed-systems/scalability-and-coupling-concerns.html">Scalability and coupling concerns</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../mom-solutions-for-distributed-systems/mom-solutions-for-distributed-systems.html">MOM Solutions for Distributed Systems</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../mom-solutions-for-distributed-systems/decoupling-services-with-message-queues.html">Decoupling services with message queues</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../mom-solutions-for-distributed-systems/point-to-point-ptp-messaging-model.html">Point-to-Point (PTP) messaging model</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../mom-solutions-for-distributed-systems/publishsubscribe-pubsub-messaging-model.html">Publish/Subscribe (Pub/Sub) messaging model</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../mom-solutions-for-distributed-systems/ensuring-message-delivery-and-reliability.html">Ensuring message delivery and reliability</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../mom-solutions-for-distributed-systems/message-persistence-and-durability.html">Message persistence and durability</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../hands-on-lab-implementing-messaging-patterns/hands-on-lab-implementing-messaging-patterns.html">Hands-on Lab: Implementing Messaging Patterns</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../hands-on-lab-implementing-messaging-patterns/setting-up-a-basic-message-broker.html">Setting up a basic message broker</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../hands-on-lab-implementing-messaging-patterns/developing-a-producer-for-point-to-point-messaging.html">Developing a producer for Point-to-Point messaging</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../hands-on-lab-implementing-messaging-patterns/developing-a-consumer-for-point-to-point-messaging.html">Developing a consumer for Point-to-Point messaging</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../hands-on-lab-implementing-messaging-patterns/implementing-a-publisher-for-publishsubscribe.html">Implementing a publisher for Publish/Subscribe</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../hands-on-lab-implementing-messaging-patterns/implementing-a-subscriber-for-publishsubscribe.html">Implementing a subscriber for Publish/Subscribe</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+</ul>
+  </nav>
+</div>
+<div class="nav-panel-explore" data-panel="explore">
+  <div class="context">
+    <span class="title">Understanding and Implementing Message Oriented Middleware</span>
+    <span class="version">1.0.0</span>
+  </div>
+  <ul class="components">
+    <li class="component is-current">
+      <a class="title" href="../index.html">Understanding and Implementing Message Oriented Middleware</a>
+      <ul class="versions">
+        <li class="version is-current is-latest">
+          <a href="../index.html">1.0.0</a>
+        </li>
+      </ul>
+    </li>
+  </ul>
+</div>
+    </div>
+  </aside>
+</div>
+<main class="article">
+<div class="toolbar" role="navigation">
+<button class="nav-toggle"></button>
+  <a href="../index.html" class="home-link"></a>
+<nav class="breadcrumbs" aria-label="breadcrumbs">
+  <ul>
+    <li><a href="../index.html">Understanding and Implementing Message Oriented Middleware</a></li>
+    <li><a href="introduction-to-message-oriented-middleware-mom.html">Introduction to Message Oriented Middleware (MOM)</a></li>
+    <li><a href="common-use-cases-for-mom.html">Common use cases for MOM</a></li>
+  </ul>
+</nav>
+</div>
+  <div class="content">
+<aside class="toc sidebar" data-title="Contents" data-levels="2">
+  <div class="toc-menu"></div>
+</aside>
+<article class="doc">
+<h1 class="page">Common use cases for MOM</h1>
+<div id="preamble">
+<div class="sectionbody">
+<div class="paragraph">
+<p>Here&#8217;s the content for the topic "Common use cases for MOM" in Antora AsciiDoc format:</p>
+</div>
+</div>
+</div>
+<h1 id="_understanding_and_implementing_message_oriented_middleware" class="sect0"><a class="anchor" href="#_understanding_and_implementing_message_oriented_middleware"></a>Understanding and Implementing Message Oriented Middleware</h1>
+<div class="sect1">
+<h2 id="_introduction_to_message_oriented_middleware_mom"><a class="anchor" href="#_introduction_to_message_oriented_middleware_mom"></a>Introduction to Message Oriented Middleware (MOM)</h2>
+<div class="sectionbody">
+<div class="sect2">
+<h3 id="_common_use_cases_for_mom"><a class="anchor" href="#_common_use_cases_for_mom"></a>Common use cases for MOM</h3>
+<div class="paragraph">
+<p>Message Oriented Middleware (MM) provides a robust and flexible foundation for building distributed systems by facilitating asynchronous, decoupled, and reliable communication. Its ability to abstract away direct service-to-service communication issues makes it invaluable in a variety of real-world scenarios. By addressing challenges such as reliability, scalability, and coupling concerns, MOM enables architectures that are more resilient and maintainable.</p>
+</div>
+<div class="paragraph">
+<p>Here are some common use cases where MOM excels:</p>
+</div>
+<div class="sect3">
+<h4 id="_asynchronous_task_processing_and_background_jobs"><a class="anchor" href="#_asynchronous_task_processing_and_background_jobs"></a>Asynchronous Task Processing and Background Jobs</h4>
+<div class="paragraph">
+<p>Many applications require operations that are time-consuming or can be executed without immediately returning a result to the user. MOM is ideal for offloading such tasks to be processed in the background.</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>Scenario:</strong> An e-commerce application needs to process an order, generate an invoice, update inventory, and send a confirmation email. If these steps are performed synchronously, the user might experience a delay.</p>
+</li>
+<li>
+<p><strong>MOM Solution:</strong> When a user places an order, the application immediately sends an "Order Placed" message to a queue. The user receives an instant confirmation. Separate consumer services listen to this queue, pick up the message, and asynchronously handle tasks like inventory updates, payment processing, invoice generation, and email notifications. This prevents the primary application from blocking and improves the user experience.</p>
+</li>
+<li>
+<p><strong>Benefits:</strong></p>
+</li>
+<li>
+<p><strong>Improved Responsiveness:</strong> The user interface remains responsive as long-running tasks are delegated.</p>
+</li>
+<li>
+<p><strong>Increased Throughput:</strong> The primary application can handle more requests without being tied up by background operations.</p>
+</li>
+<li>
+<p><strong>Fault Tolerance:</strong> If a background processing service fails, the message remains in the queue and can be retried or processed by another instance when available, ensuring the task is eventually completed.</p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_decoupling_microservices_and_distributed_architectures"><a class="anchor" href="#_decoupling_microservices_and_distributed_architectures"></a>Decoupling Microservices and Distributed Architectures</h4>
+<div class="paragraph">
+<p>In complex distributed systems, especially those built with microservices, services often need to communicate without having direct, tight dependencies on each other. MOM promotes loose coupling, making systems more resilient to changes and failures.</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>Scenario:</strong> A large enterprise system has dozens or hundreds of microservices. If service A needs to call service B, and service B is temporarily down or undergoing maintenance, service A would fail. Direct coupling also makes it harder to update or scale individual services independently.</p>
+</li>
+<li>
+<p><strong>MOM Solution:</strong> Services communicate indirectly by sending messages to a broker. Service A publishes an event or sends a command message without knowing which service (or how many) will consume it. Service B (and potentially other services C, D) subscribe to messages relevant to them. If service B is unavailable, service A&#8217;s operation is not impacted; the message simply waits in the queue until service B recovers.</p>
+</li>
+<li>
+<p><strong>Benefits:</strong></p>
+</li>
+<li>
+<p><strong>Loose Coupling:</strong> Services are independent, allowing for separate development, deployment, and scaling.</p>
+</li>
+<li>
+<p><strong>Increased Resilience:</strong> Failure of one service does not cascade to others, as messages act as buffers.</p>
+</li>
+<li>
+<p><strong>Scalability:</strong> Individual services can be scaled up or down based on the load of messages they need to process.</p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_load_leveling_and_spike_handling"><a class="anchor" href="#_load_leveling_and_spike_handling"></a>Load Leveling and Spike Handling</h4>
+<div class="paragraph">
+<p>Applications often experience fluctuating loads, with periods of high demand (spikes) and periods of low demand. MOM can help distribute the workload evenly across available processing units, preventing system overload.</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>Scenario:</strong> A news website experiences a sudden surge in traffic due to a breaking news event, leading to a massive increase in requests for content processing or notification delivery.</p>
+</li>
+<li>
+<p><strong>MOM Solution:</strong> Instead of directly processing every incoming request, the application sends these requests as messages to a queue. Multiple worker services (consumers) pull messages from the queue. During a spike, messages accumulate in the queue, but the system doesn&#8217;t crash. As the load subsides, the workers gradually process the backlog. More worker instances can also be dynamically added during high load to consume messages faster.</p>
+</li>
+<li>
+<p><strong>Benefits:</strong></p>
+</li>
+<li>
+<p><strong>System Stability:</strong> Prevents services from being overwhelmed and crashing during peak loads.</p>
+</li>
+<li>
+<p><strong>Efficient Resource Utilization:</strong> Allows for a smaller, consistent pool of processing resources, with the ability to scale out during spikes.</p>
+</li>
+<li>
+<p><strong>Predictable Performance:</strong> Ensures that tasks are eventually processed, even under high stress.</p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_event_driven_architectures_eda"><a class="anchor" href="#_event_driven_architectures_eda"></a>Event-Driven Architectures (EDA)</h4>
+<div class="paragraph">
+<p>MOM is a foundational component of Event-Driven Architectures, where systems react to events as they occur.</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>Scenario:</strong> In an IoT platform, various devices generate streams of sensor data. Multiple applications might need to react to specific data points (e.g., alert if temperature exceeds a threshold, log data for analytics, update a dashboard).</p>
+</li>
+<li>
+<p><strong>MOM Solution:</strong> Devices publish sensor readings as events to a topic (using a Pub/Sub model). Different services subscribe to this topic, each consuming the relevant events to perform its specific task—one service sends alerts, another stores data in a database, and another updates a real-time dashboard.</p>
+</li>
+<li>
+<p><strong>Benefits:</strong></p>
+</li>
+<li>
+<p><strong>Real-time Responsiveness:</strong> Systems can react to events as soon as they happen.</p>
+</li>
+<li>
+<p><strong>Extensibility:</strong> New services can be added easily to consume existing events without modifying existing publishers or consumers.</p>
+</li>
+<li>
+<p><strong>Auditability:</strong> Event streams can serve as a historical record of system activities.</p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_data_integration_and_etl_extract_transform_load"><a class="anchor" href="#_data_integration_and_etl_extract_transform_load"></a>Data Integration and ETL (Extract, Transform, Load)</h4>
+<div class="paragraph">
+<p>MOM facilitates the reliable movement and transformation of data between disparate systems, often used in Enterprise Application Integration (EAI) and data warehousing.</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>Scenario:</strong> A company needs to synchronize customer data between a CRM system, an ERP system, and a marketing automation platform.</p>
+</li>
+<li>
+<p><strong>MOM Solution:</strong> When customer data changes in the CRM, an event message is published. An integration service consumes this message, transforms the data into formats suitable for the ERP and marketing platform, and then publishes new messages to respective queues for those systems to consume.</p>
+</li>
+<li>
+<p><strong>Benefits:</strong></p>
+</li>
+<li>
+<p><strong>Reliable Data Transfer:</strong> Ensures messages are delivered even if target systems are temporarily unavailable.</p>
+</li>
+<li>
+<p><strong>Data Transformation:</strong> Enables integration services to adapt data formats between different systems.</p>
+</li>
+<li>
+<p><strong>Centralized Integration Point:</strong> Provides a common backbone for data flow across the enterprise.</p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_real_time_notifications_and_stream_processing"><a class="anchor" href="#_real_time_notifications_and_stream_processing"></a>Real-time Notifications and Stream Processing</h4>
+<div class="paragraph">
+<p>For applications requiring immediate updates or continuous processing of data streams, MOM provides the necessary infrastructure.</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>Scenario:</strong> A financial trading platform needs to deliver real-time stock price updates to thousands of connected clients.</p>
+</li>
+<li>
+<p><strong>MOM Solution:</strong> Market data feeds publish price updates to a topic. Client applications subscribe to this topic to receive immediate notifications for the stocks they are interested in. Similarly, fraud detection systems can consume transaction streams in real-time to identify suspicious activities.</p>
+</li>
+<li>
+<p><strong>Benefits:</strong></p>
+</li>
+<li>
+<p><strong>Low Latency:</strong> Messages are delivered quickly to subscribers.</p>
+</li>
+<li>
+<p><strong>Scalable Distribution:</strong> A single message can be efficiently broadcast to many subscribers.</p>
+</li>
+<li>
+<p><strong>Robustness:</strong> Ensures notifications are delivered even if individual clients or services briefly disconnect.</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>By understanding these common use cases, developers and architects can better leverage the power of Message Oriented Middleware to build robust, scalable, and resilient distributed systems that effectively manage complexity and deliver superior performance.</p>
+</div>
+</div>
+</div>
+</div>
+</div>
+<nav class="pagination">
+  <span class="prev"><a href="benefits-of-mom-in-distributed-systems.html">Benefits of MOM in distributed systems</a></span>
+  <span class="next"><a href="../challenges-in-distributed-systems/challenges-in-distributed-systems.html">Challenges in Distributed Systems</a></span>
+</nav>
+</article>
+  </div>
+</main>
+</div>
+<footer class="footer">
+  <img src="../../../_/img/rhl-logo-red.png" height="40px" alt="Red Hat"  href="https://redhat.com" >
+</footer><script id="site-script" src="../../../_/js/site.js" data-ui-root-path="../../../_"></script>
+<script async src="../../../_/js/vendor/highlight.js"></script>
+  </body>
+</html>

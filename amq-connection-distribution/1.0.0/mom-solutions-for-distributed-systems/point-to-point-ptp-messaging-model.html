@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Point-to-Point (PTP) messaging model :: Understanding and Implementing Message Oriented Middleware</title>
+    <link rel="prev" href="decoupling-services-with-message-queues.html">
+    <link rel="next" href="publishsubscribe-pubsub-messaging-model.html">
+    <meta name="generator" content="Antora 3.1.3">
+    <link rel="stylesheet" href="../../../_/css/site.css">
+    <script>var uiRootPath = '../../../_'</script>
+  </head>
+  <body class="article">
+<header class="header">
+  <nav class="navbar">
+    <div class="navbar-brand">
+      <a class="navbar-item" href="https://www.redhat.com" target="_blank"><img src="../../../_/img/redhat-logo.png" height="40px" alt="Red Hat"></a>
+      <a class="navbar-item" style="font-size: 24px; color: white" href="../../..">Understanding and Implementing Message Oriented Middleware</a>
+      <button class="navbar-burger" data-target="topbar-nav">
+        <span></span>
+        <span></span>
+        <span></span>
+      </button>
+    </div>
+    <div id="topbar-nav" class="navbar-menu">
+      <div class="navbar-end">
+        <a class="navbar-item" href="https://github.com/RedHatQuickCourses/REPLACEREPONAME/issues" target="_blank">Report Issues</a>
+      </div>
+    </div>
+  </nav>
+</header>
+<div class="body">
+<div class="nav-container" data-component="amq-connection-distribution" data-version="1.0.0">
+  <aside class="nav">
+    <div class="panels">
+<div class="nav-panel-menu is-active" data-panel="menu">
+  <nav class="nav-menu">
+    <h3 class="title"><a href="../index.html">Understanding and Implementing Message Oriented Middleware</a></h3>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="../index.html">Home</a>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../introduction-to-message-oriented-middleware-mom/introduction-to-message-oriented-middleware-mom.html">Introduction to Message Oriented Middleware (MOM)</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../introduction-to-message-oriented-middleware-mom/what-is-message-oriented-middleware.html">What is Message Oriented Middleware?</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../introduction-to-message-oriented-middleware-mom/core-concepts-messages-producers-consumers-brokers.html">Core concepts: Messages, Producers, Consumers, Brokers</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../introduction-to-message-oriented-middleware-mom/benefits-of-mom-in-distributed-systems.html">Benefits of MOM in distributed systems</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../introduction-to-message-oriented-middleware-mom/common-use-cases-for-mom.html">Common use cases for MOM</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../challenges-in-distributed-systems/challenges-in-distributed-systems.html">Challenges in Distributed Systems</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../challenges-in-distributed-systems/issues-with-direct-service-to-service-communication.html">Issues with direct service-to-service communication</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../challenges-in-distributed-systems/the-need-for-asynchronous-processing.html">The need for asynchronous processing</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../challenges-in-distributed-systems/problems-with-reliability-and-data-consistency.html">Problems with reliability and data consistency</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../challenges-in-distributed-systems/scalability-and-coupling-concerns.html">Scalability and coupling concerns</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="mom-solutions-for-distributed-systems.html">MOM Solutions for Distributed Systems</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="decoupling-services-with-message-queues.html">Decoupling services with message queues</a>
+  </li>
+  <li class="nav-item is-current-page" data-depth="2">
+    <a class="nav-link" href="point-to-point-ptp-messaging-model.html">Point-to-Point (PTP) messaging model</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="publishsubscribe-pubsub-messaging-model.html">Publish/Subscribe (Pub/Sub) messaging model</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="ensuring-message-delivery-and-reliability.html">Ensuring message delivery and reliability</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="message-persistence-and-durability.html">Message persistence and durability</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../hands-on-lab-implementing-messaging-patterns/hands-on-lab-implementing-messaging-patterns.html">Hands-on Lab: Implementing Messaging Patterns</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../hands-on-lab-implementing-messaging-patterns/setting-up-a-basic-message-broker.html">Setting up a basic message broker</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../hands-on-lab-implementing-messaging-patterns/developing-a-producer-for-point-to-point-messaging.html">Developing a producer for Point-to-Point messaging</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../hands-on-lab-implementing-messaging-patterns/developing-a-consumer-for-point-to-point-messaging.html">Developing a consumer for Point-to-Point messaging</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../hands-on-lab-implementing-messaging-patterns/implementing-a-publisher-for-publishsubscribe.html">Implementing a publisher for Publish/Subscribe</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../hands-on-lab-implementing-messaging-patterns/implementing-a-subscriber-for-publishsubscribe.html">Implementing a subscriber for Publish/Subscribe</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+</ul>
+  </nav>
+</div>
+<div class="nav-panel-explore" data-panel="explore">
+  <div class="context">
+    <span class="title">Understanding and Implementing Message Oriented Middleware</span>
+    <span class="version">1.0.0</span>
+  </div>
+  <ul class="components">
+    <li class="component is-current">
+      <a class="title" href="../index.html">Understanding and Implementing Message Oriented Middleware</a>
+      <ul class="versions">
+        <li class="version is-current is-latest">
+          <a href="../index.html">1.0.0</a>
+        </li>
+      </ul>
+    </li>
+  </ul>
+</div>
+    </div>
+  </aside>
+</div>
+<main class="article">
+<div class="toolbar" role="navigation">
+<button class="nav-toggle"></button>
+  <a href="../index.html" class="home-link"></a>
+<nav class="breadcrumbs" aria-label="breadcrumbs">
+  <ul>
+    <li><a href="../index.html">Understanding and Implementing Message Oriented Middleware</a></li>
+    <li><a href="mom-solutions-for-distributed-systems.html">MOM Solutions for Distributed Systems</a></li>
+    <li><a href="point-to-point-ptp-messaging-model.html">Point-to-Point (PTP) messaging model</a></li>
+  </ul>
+</nav>
+</div>
+  <div class="content">
+<aside class="toc sidebar" data-title="Contents" data-levels="2">
+  <div class="toc-menu"></div>
+</aside>
+<article class="doc">
+<h1 class="page">Point-to-Point (PTP) messaging model</h1>
+<h1 id="_point_to_point_ptp_messaging_model" class="sect0"><a class="anchor" href="#_point_to_point_ptp_messaging_model"></a>Point-to-Point (PTP) Messaging Model</h1>
+<div class="paragraph">
+<p>The Point-to-Point (PTP) messaging model is a fundamental pattern within Message-Oriented Middleware (MOM) designed to facilitate reliable and asynchronous communication between individual services. It addresses common challenges in distributed systems by providing a robust mechanism for message delivery, ensuring that each message is consumed by exactly one recipient.</p>
+</div>
+<div class="sect2">
+<h3 id="_what_is_point_to_point_messaging"><a class="anchor" href="#_what_is_point_to_point_messaging"></a>What is Point-to-Point Messaging?</h3>
+<div class="paragraph">
+<p>At its core, the PTP model revolves around the concept of a <strong>message queue</strong>. In this model, a <strong>producer</strong> sends a message to a specific queue, and a <strong>consumer</strong> retrieves the message from that queue. The defining characteristic of PTP is that <strong>each message placed in a queue is delivered to only one consumer, and once consumed, it is removed from the queue</strong>.</p>
+</div>
+<div class="paragraph">
+<p>This "one-to-one" message delivery guarantee is crucial for tasks where a unit of work should be processed by a single worker, preventing redundant processing or conflicts.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_core_concepts_of_ptp_messaging"><a class="anchor" href="#_core_concepts_of_ptp_messaging"></a>Core Concepts of PTP Messaging</h3>
+<div class="paragraph">
+<p>Let&#8217;s break down the key components and their interactions within the PTP model:</p>
+</div>
+<div class="openblock">
+<div class="title">Message Producer:</div>
+<div class="content">
+<div class="paragraph">
+<p>The entity responsible for creating and sending messages. A producer has knowledge of the specific queue to which it intends to send messages. It does not need to know anything about the consumer(s) that will process the messages, enabling strong <strong>decoupling</strong>.</p>
+</div>
+</div>
+</div>
+<div class="openblock">
+<div class="title">Message Queue:</div>
+<div class="content">
+<div class="paragraph">
+<p>The central intermediary component in the PTP model. A queue is a persistent storage area managed by the message broker. Messages sent by producers are held in the queue until a consumer is ready to process them. Queues provide:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>Durability:</strong> Messages can persist even if the consumer or broker goes down.</p>
+</li>
+<li>
+<p><strong>Ordering:</strong> Messages are typically delivered to consumers in the order they were received (FIFO - First-In, First-Out).</p>
+</li>
+<li>
+<p><strong>Load Balancing:</strong> If multiple consumers are listening to the same queue, the broker can distribute messages among them, effectively balancing the workload.</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="openblock">
+<div class="title">Message Consumer:</div>
+<div class="content">
+<div class="paragraph">
+<p>The entity responsible for retrieving and processing messages from a specific queue. A consumer subscribes or listens to a particular queue. Once a message is retrieved, it is typically acknowledged by the consumer, signaling to the broker that the message has been successfully processed and can be safely removed from the queue.</p>
+</div>
+</div>
+</div>
+<div class="openblock">
+<div class="title">Message Broker:</div>
+<div class="content">
+<div class="paragraph">
+<p>The underlying infrastructure that manages the queues, routes messages, and ensures reliable delivery. It acts as the central hub for all message-related operations.</p>
+</div>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_message_flow_in_ptp"><a class="anchor" href="#_message_flow_in_ptp"></a>Message Flow in PTP</h4>
+<div class="paragraph">
+<p>The typical lifecycle of a message in a PTP system unfolds as follows:</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>A <strong>producer</strong> creates a message and sends it to a designated <strong>queue</strong> on the message <strong>broker</strong>.</p>
+</li>
+<li>
+<p>The <strong>broker</strong> stores the message in the queue.</p>
+</li>
+<li>
+<p>A <strong>consumer</strong> listening to that queue receives the message. If multiple consumers are listening, the broker delivers the message to <strong>one</strong> of them (e.g., using a round-robin strategy).</p>
+</li>
+<li>
+<p>The consumer processes the message.</p>
+</li>
+<li>
+<p>Upon successful processing, the consumer sends an <strong>acknowledgment</strong> back to the broker.</p>
+</li>
+<li>
+<p>The broker then <strong>removes</strong> the message from the queue.</p>
+</li>
+</ol>
+</div>
+<div class="paragraph">
+<p>If a consumer fails to acknowledge a message (e.g., due to an error or crash), the broker might re-deliver the message to another available consumer or to the same consumer after a delay, ensuring that no message is lost and every message is eventually processed.</p>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_benefits_and_use_cases_of_ptp_messaging"><a class="anchor" href="#_benefits_and_use_cases_of_ptp_messaging"></a>Benefits and Use Cases of PTP Messaging</h3>
+<div class="paragraph">
+<p>The PTP model offers several significant advantages for distributed systems:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>Decoupling Services:</strong> Producers and consumers operate independently without direct knowledge of each other. This reduces dependencies, making services easier to develop, deploy, and maintain.</p>
+</li>
+<li>
+<p><strong>Reliability and Guaranteed Delivery:</strong> Messages are persisted in queues. If a consumer is temporarily offline, messages accumulate in the queue and are delivered once the consumer becomes available. Message acknowledgment ensures that messages are not lost due to consumer failures.</p>
+</li>
+<li>
+<p><strong>Load Balancing:</strong> Multiple instances of a consumer service can listen to the same queue. The broker distributes incoming messages among these instances, allowing for horizontal scaling and efficient workload distribution.</p>
+</li>
+<li>
+<p><strong>Asynchronous Processing:</strong> Producers don&#8217;t have to wait for consumers to process messages. They can send a message and immediately continue with other tasks, improving system responsiveness and throughput.</p>
+</li>
+<li>
+<p><strong>Flow Control:</strong> Queues can act as buffers, smoothing out transient spikes in message production that consumers might not be able to handle immediately.</p>
+</li>
+</ul>
+</div>
+<div class="sect3">
+<h4 id="_common_use_cases_for_ptp"><a class="anchor" href="#_common_use_cases_for_ptp"></a>Common Use Cases for PTP</h4>
+<div class="paragraph">
+<p>PTP is ideal for scenarios where a task needs to be performed by a single, dedicated worker.</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>Task Queues/Work Queues:</strong> Distributing computationally intensive tasks (e.g., image processing, video encoding, report generation) among a pool of worker services. Each task is a message, and only one worker picks it up.</p>
+</li>
+<li>
+<p><strong>Order Processing:</strong> When a customer places an order, a message can be sent to an "Order Processing" queue. A single fulfillment service instance picks up the order to process payment, update inventory, and dispatch.</p>
+</li>
+<li>
+<p><strong>Email/SMS Notifications:</strong> Sending an email or SMS involves a specific set of actions for a single recipient. A PTP queue can manage these outgoing notifications.</p>
+</li>
+<li>
+<p><strong>Command Processing:</strong> Sending commands to a specific service for execution (e.g., "processPayment," "updateUserAccount").</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_point_to_point_messaging_and_message_persistence"><a class="anchor" href="#_point_to_point_messaging_and_message_persistence"></a>Point-to-Point Messaging and Message Persistence</h3>
+<div class="paragraph">
+<p>Message persistence is a critical aspect of PTP messaging that ensures durability. When a message is sent to a <strong>durable queue</strong>, the message broker stores it on disk (or another persistent storage mechanism) rather than just in memory.</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>Durable Queues:</strong> Messages in durable queues survive broker restarts. This guarantees that messages are not lost even if the message broker crashes or is shut down.</p>
+</li>
+<li>
+<p><strong>Non-Durable Queues:</strong> Messages in non-durable queues are typically stored in memory and are lost if the broker goes offline. These are suitable for temporary or non-critical message flows.</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>Choosing between durable and non-durable queues depends on the criticality of the messages and the application&#8217;s requirements for reliability. For most business-critical PTP scenarios, durable queues are the preferred choice.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_looking_ahead_implementing_ptp"><a class="anchor" href="#_looking_ahead_implementing_ptp"></a>Looking Ahead: Implementing PTP</h3>
+<div class="paragraph">
+<p>While we&#8217;ve explored the theoretical foundations of the Point-to-Point messaging model, its true power becomes evident in practical application. In a subsequent hands-on lab, we will delve into setting up a basic message broker and developing both producers and consumers to implement this pattern. This will provide a tangible understanding of how services can communicate robustly and asynchronously using PTP queues.</p>
+</div>
+<div class="paragraph">
+<p>This approach of message-driven communication, while powerful, differs significantly from other messaging models like Publish/Subscribe (Pub/Sub), which we will explore next to understand their distinct use cases and implementation patterns.</p>
+</div>
+</div>
+<nav class="pagination">
+  <span class="prev"><a href="decoupling-services-with-message-queues.html">Decoupling services with message queues</a></span>
+  <span class="next"><a href="publishsubscribe-pubsub-messaging-model.html">Publish/Subscribe (Pub/Sub) messaging model</a></span>
+</nav>
+</article>
+  </div>
+</main>
+</div>
+<footer class="footer">
+  <img src="../../../_/img/rhl-logo-red.png" height="40px" alt="Red Hat"  href="https://redhat.com" >
+</footer><script id="site-script" src="../../../_/js/site.js" data-ui-root-path="../../../_"></script>
+<script async src="../../../_/js/vendor/highlight.js"></script>
+  </body>
+</html>

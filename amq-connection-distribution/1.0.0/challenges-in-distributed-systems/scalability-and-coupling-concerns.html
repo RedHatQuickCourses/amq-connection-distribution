@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Scalability and coupling concerns :: Understanding and Implementing Message Oriented Middleware</title>
+    <link rel="prev" href="problems-with-reliability-and-data-consistency.html">
+    <link rel="next" href="../mom-solutions-for-distributed-systems/mom-solutions-for-distributed-systems.html">
+    <meta name="generator" content="Antora 3.1.3">
+    <link rel="stylesheet" href="../../../_/css/site.css">
+    <script>var uiRootPath = '../../../_'</script>
+  </head>
+  <body class="article">
+<header class="header">
+  <nav class="navbar">
+    <div class="navbar-brand">
+      <a class="navbar-item" href="https://www.redhat.com" target="_blank"><img src="../../../_/img/redhat-logo.png" height="40px" alt="Red Hat"></a>
+      <a class="navbar-item" style="font-size: 24px; color: white" href="../../..">Understanding and Implementing Message Oriented Middleware</a>
+      <button class="navbar-burger" data-target="topbar-nav">
+        <span></span>
+        <span></span>
+        <span></span>
+      </button>
+    </div>
+    <div id="topbar-nav" class="navbar-menu">
+      <div class="navbar-end">
+        <a class="navbar-item" href="https://github.com/RedHatQuickCourses/REPLACEREPONAME/issues" target="_blank">Report Issues</a>
+      </div>
+    </div>
+  </nav>
+</header>
+<div class="body">
+<div class="nav-container" data-component="amq-connection-distribution" data-version="1.0.0">
+  <aside class="nav">
+    <div class="panels">
+<div class="nav-panel-menu is-active" data-panel="menu">
+  <nav class="nav-menu">
+    <h3 class="title"><a href="../index.html">Understanding and Implementing Message Oriented Middleware</a></h3>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="../index.html">Home</a>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../introduction-to-message-oriented-middleware-mom/introduction-to-message-oriented-middleware-mom.html">Introduction to Message Oriented Middleware (MOM)</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../introduction-to-message-oriented-middleware-mom/what-is-message-oriented-middleware.html">What is Message Oriented Middleware?</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../introduction-to-message-oriented-middleware-mom/core-concepts-messages-producers-consumers-brokers.html">Core concepts: Messages, Producers, Consumers, Brokers</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../introduction-to-message-oriented-middleware-mom/benefits-of-mom-in-distributed-systems.html">Benefits of MOM in distributed systems</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../introduction-to-message-oriented-middleware-mom/common-use-cases-for-mom.html">Common use cases for MOM</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="challenges-in-distributed-systems.html">Challenges in Distributed Systems</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="issues-with-direct-service-to-service-communication.html">Issues with direct service-to-service communication</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="the-need-for-asynchronous-processing.html">The need for asynchronous processing</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="problems-with-reliability-and-data-consistency.html">Problems with reliability and data consistency</a>
+  </li>
+  <li class="nav-item is-current-page" data-depth="2">
+    <a class="nav-link" href="scalability-and-coupling-concerns.html">Scalability and coupling concerns</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../mom-solutions-for-distributed-systems/mom-solutions-for-distributed-systems.html">MOM Solutions for Distributed Systems</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../mom-solutions-for-distributed-systems/decoupling-services-with-message-queues.html">Decoupling services with message queues</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../mom-solutions-for-distributed-systems/point-to-point-ptp-messaging-model.html">Point-to-Point (PTP) messaging model</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../mom-solutions-for-distributed-systems/publishsubscribe-pubsub-messaging-model.html">Publish/Subscribe (Pub/Sub) messaging model</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../mom-solutions-for-distributed-systems/ensuring-message-delivery-and-reliability.html">Ensuring message delivery and reliability</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../mom-solutions-for-distributed-systems/message-persistence-and-durability.html">Message persistence and durability</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../hands-on-lab-implementing-messaging-patterns/hands-on-lab-implementing-messaging-patterns.html">Hands-on Lab: Implementing Messaging Patterns</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../hands-on-lab-implementing-messaging-patterns/setting-up-a-basic-message-broker.html">Setting up a basic message broker</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../hands-on-lab-implementing-messaging-patterns/developing-a-producer-for-point-to-point-messaging.html">Developing a producer for Point-to-Point messaging</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../hands-on-lab-implementing-messaging-patterns/developing-a-consumer-for-point-to-point-messaging.html">Developing a consumer for Point-to-Point messaging</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../hands-on-lab-implementing-messaging-patterns/implementing-a-publisher-for-publishsubscribe.html">Implementing a publisher for Publish/Subscribe</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../hands-on-lab-implementing-messaging-patterns/implementing-a-subscriber-for-publishsubscribe.html">Implementing a subscriber for Publish/Subscribe</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+</ul>
+  </nav>
+</div>
+<div class="nav-panel-explore" data-panel="explore">
+  <div class="context">
+    <span class="title">Understanding and Implementing Message Oriented Middleware</span>
+    <span class="version">1.0.0</span>
+  </div>
+  <ul class="components">
+    <li class="component is-current">
+      <a class="title" href="../index.html">Understanding and Implementing Message Oriented Middleware</a>
+      <ul class="versions">
+        <li class="version is-current is-latest">
+          <a href="../index.html">1.0.0</a>
+        </li>
+      </ul>
+    </li>
+  </ul>
+</div>
+    </div>
+  </aside>
+</div>
+<main class="article">
+<div class="toolbar" role="navigation">
+<button class="nav-toggle"></button>
+  <a href="../index.html" class="home-link"></a>
+<nav class="breadcrumbs" aria-label="breadcrumbs">
+  <ul>
+    <li><a href="../index.html">Understanding and Implementing Message Oriented Middleware</a></li>
+    <li><a href="challenges-in-distributed-systems.html">Challenges in Distributed Systems</a></li>
+    <li><a href="scalability-and-coupling-concerns.html">Scalability and coupling concerns</a></li>
+  </ul>
+</nav>
+</div>
+  <div class="content">
+<aside class="toc sidebar" data-title="Contents" data-levels="2">
+  <div class="toc-menu"></div>
+</aside>
+<article class="doc">
+<h1 class="page">Scalability and coupling concerns</h1>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-asciidoc hljs" data-lang="asciidoc">= Scalability and Coupling Concerns in Distributed Systems
+
+In modern distributed systems, services often need to communicate with each other to fulfill complex business processes. While direct service-to-service communication might seem straightforward initially, it introduces significant challenges related to scalability and coupling that can hinder the system's overall agility, resilience, and growth. Understanding these challenges is crucial for appreciating the value of solutions like Message Oriented Middleware (MOM).
+
+== Scalability Concerns
+
+Scalability refers to a system's ability to handle an increasing amount of work or its potential to be enlarged to accommodate that growth. In a distributed system with direct service-to-service communication, scalability issues often arise due to inherent dependencies.
+
+Consider a scenario where `Service A` directly calls `Service B` and `Service C` to complete a task.
+
+.Direct Service-to-Service Communication
+----
+[mermaid]
+graph TD
+    User --&gt; ServiceA
+    ServiceA --&gt; ServiceB
+    ServiceA --&gt; ServiceC
+----
+
+*   *Dependent Scaling:* If `Service B` experiences a sudden surge in load, `Service A` might become blocked waiting for `Service B` to respond, or its performance could degrade. To scale `Service A`, you might also need to scale `Service B` and `Service C` proportionally, even if `Service B` and `Service C` don't independently require that level of scaling. This creates a ripple effect where scaling one service often necessitates scaling its dependents or dependencies, leading to inefficient resource utilization.
+*   *Bottlenecks:* A single slow or overloaded service in a chain of synchronous calls can become a bottleneck, slowing down or even failing the entire process. For example, if `Service C` has a slower response time or limited capacity, `Service A` (and consequently the `User`) will be directly impacted. This makes it challenging to pinpoint and resolve performance issues without affecting other parts of the system.
+*   *Resource Management:* Managing the scaling of interconnected services manually or with complex orchestration tools can become a significant operational overhead. Each service might have different scaling requirements, and coordinating these requirements across many tightly coupled services is a non-trivial task.
+
+These challenges highlight how direct communication can tightly couple the operational characteristics (like performance and capacity) of services, making independent scaling difficult and inefficient.
+
+== Coupling Concerns
+
+Coupling refers to the degree of interdependence between software modules. In distributed systems, tight coupling between services using direct communication can lead to a host of problems that undermine maintainability, flexibility, and fault tolerance.
+
+*   *Direct Dependency:* When `Service A` makes a direct API call to `Service B`, `Service A` becomes directly dependent on the availability and interface of `Service B`.
+    *   *Deployment Issues:* If `Service B` is down for maintenance, or experiences an error, `Service A` (and any other service calling `Service B`) will fail. This creates "cascading failures" where the failure of one service can quickly bring down large parts of the system.
+    *   *Upgrade Challenges:* Making changes to the API of `Service B` (e.g., adding or removing a field, changing an endpoint) can break `Service A` and any other calling service. This necessitates coordinated deployments and extensive regression testing across multiple services, slowing down development cycles and increasing the risk of errors.
+*   *Reduced Flexibility:* Tight coupling limits the ability to independently develop, deploy, and scale services. Each service needs to be aware of the network location (IP address, port) and API contract of its dependencies. This makes it harder to:
+    *   Swap out implementations of a service (e.g., replace `Service B` with `Service B'`).
+    *   Introduce new services or features without impacting existing ones.
+    *   Refactor or optimize individual services without ripple effects.
+*   *Increased Complexity:* The web of direct connections between numerous services can become incredibly complex to manage and understand. Visualizing data flow, troubleshooting issues, and onboard new developers becomes significantly harder as the number of services and their direct interconnections grow.
+*   *Resilience:* In a tightly coupled system, the failure of one component can propagate rapidly through the system. Retries and circuit breakers can mitigate some of these issues, but they add complexity and don't fully solve the underlying problem of direct interdependence.
+
+In essence, tight coupling means that services are "aware" of each other's existence and internal workings (to some degree), making the system brittle and resistant to change. This is where Message Oriented Middleware steps in, offering a robust solution to decouple services and enhance scalability by introducing an intermediary communication layer.</code></pre>
+</div>
+</div>
+<nav class="pagination">
+  <span class="prev"><a href="problems-with-reliability-and-data-consistency.html">Problems with reliability and data consistency</a></span>
+  <span class="next"><a href="../mom-solutions-for-distributed-systems/mom-solutions-for-distributed-systems.html">MOM Solutions for Distributed Systems</a></span>
+</nav>
+</article>
+  </div>
+</main>
+</div>
+<footer class="footer">
+  <img src="../../../_/img/rhl-logo-red.png" height="40px" alt="Red Hat"  href="https://redhat.com" >
+</footer><script id="site-script" src="../../../_/js/site.js" data-ui-root-path="../../../_"></script>
+<script async src="../../../_/js/vendor/highlight.js"></script>
+  </body>
+</html>

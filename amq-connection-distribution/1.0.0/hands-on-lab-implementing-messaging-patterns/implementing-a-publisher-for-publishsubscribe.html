@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Implementing a publisher for Publish/Subscribe :: Understanding and Implementing Message Oriented Middleware</title>
+    <link rel="prev" href="developing-a-consumer-for-point-to-point-messaging.html">
+    <link rel="next" href="implementing-a-subscriber-for-publishsubscribe.html">
+    <meta name="generator" content="Antora 3.1.3">
+    <link rel="stylesheet" href="../../../_/css/site.css">
+    <script>var uiRootPath = '../../../_'</script>
+  </head>
+  <body class="article">
+<header class="header">
+  <nav class="navbar">
+    <div class="navbar-brand">
+      <a class="navbar-item" href="https://www.redhat.com" target="_blank"><img src="../../../_/img/redhat-logo.png" height="40px" alt="Red Hat"></a>
+      <a class="navbar-item" style="font-size: 24px; color: white" href="../../..">Understanding and Implementing Message Oriented Middleware</a>
+      <button class="navbar-burger" data-target="topbar-nav">
+        <span></span>
+        <span></span>
+        <span></span>
+      </button>
+    </div>
+    <div id="topbar-nav" class="navbar-menu">
+      <div class="navbar-end">
+        <a class="navbar-item" href="https://github.com/RedHatQuickCourses/REPLACEREPONAME/issues" target="_blank">Report Issues</a>
+      </div>
+    </div>
+  </nav>
+</header>
+<div class="body">
+<div class="nav-container" data-component="amq-connection-distribution" data-version="1.0.0">
+  <aside class="nav">
+    <div class="panels">
+<div class="nav-panel-menu is-active" data-panel="menu">
+  <nav class="nav-menu">
+    <h3 class="title"><a href="../index.html">Understanding and Implementing Message Oriented Middleware</a></h3>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="../index.html">Home</a>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../introduction-to-message-oriented-middleware-mom/introduction-to-message-oriented-middleware-mom.html">Introduction to Message Oriented Middleware (MOM)</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../introduction-to-message-oriented-middleware-mom/what-is-message-oriented-middleware.html">What is Message Oriented Middleware?</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../introduction-to-message-oriented-middleware-mom/core-concepts-messages-producers-consumers-brokers.html">Core concepts: Messages, Producers, Consumers, Brokers</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../introduction-to-message-oriented-middleware-mom/benefits-of-mom-in-distributed-systems.html">Benefits of MOM in distributed systems</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../introduction-to-message-oriented-middleware-mom/common-use-cases-for-mom.html">Common use cases for MOM</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../challenges-in-distributed-systems/challenges-in-distributed-systems.html">Challenges in Distributed Systems</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../challenges-in-distributed-systems/issues-with-direct-service-to-service-communication.html">Issues with direct service-to-service communication</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../challenges-in-distributed-systems/the-need-for-asynchronous-processing.html">The need for asynchronous processing</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../challenges-in-distributed-systems/problems-with-reliability-and-data-consistency.html">Problems with reliability and data consistency</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../challenges-in-distributed-systems/scalability-and-coupling-concerns.html">Scalability and coupling concerns</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../mom-solutions-for-distributed-systems/mom-solutions-for-distributed-systems.html">MOM Solutions for Distributed Systems</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../mom-solutions-for-distributed-systems/decoupling-services-with-message-queues.html">Decoupling services with message queues</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../mom-solutions-for-distributed-systems/point-to-point-ptp-messaging-model.html">Point-to-Point (PTP) messaging model</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../mom-solutions-for-distributed-systems/publishsubscribe-pubsub-messaging-model.html">Publish/Subscribe (Pub/Sub) messaging model</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../mom-solutions-for-distributed-systems/ensuring-message-delivery-and-reliability.html">Ensuring message delivery and reliability</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../mom-solutions-for-distributed-systems/message-persistence-and-durability.html">Message persistence and durability</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="hands-on-lab-implementing-messaging-patterns.html">Hands-on Lab: Implementing Messaging Patterns</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="setting-up-a-basic-message-broker.html">Setting up a basic message broker</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="developing-a-producer-for-point-to-point-messaging.html">Developing a producer for Point-to-Point messaging</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="developing-a-consumer-for-point-to-point-messaging.html">Developing a consumer for Point-to-Point messaging</a>
+  </li>
+  <li class="nav-item is-current-page" data-depth="2">
+    <a class="nav-link" href="implementing-a-publisher-for-publishsubscribe.html">Implementing a publisher for Publish/Subscribe</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="implementing-a-subscriber-for-publishsubscribe.html">Implementing a subscriber for Publish/Subscribe</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+</ul>
+  </nav>
+</div>
+<div class="nav-panel-explore" data-panel="explore">
+  <div class="context">
+    <span class="title">Understanding and Implementing Message Oriented Middleware</span>
+    <span class="version">1.0.0</span>
+  </div>
+  <ul class="components">
+    <li class="component is-current">
+      <a class="title" href="../index.html">Understanding and Implementing Message Oriented Middleware</a>
+      <ul class="versions">
+        <li class="version is-current is-latest">
+          <a href="../index.html">1.0.0</a>
+        </li>
+      </ul>
+    </li>
+  </ul>
+</div>
+    </div>
+  </aside>
+</div>
+<main class="article">
+<div class="toolbar" role="navigation">
+<button class="nav-toggle"></button>
+  <a href="../index.html" class="home-link"></a>
+<nav class="breadcrumbs" aria-label="breadcrumbs">
+  <ul>
+    <li><a href="../index.html">Understanding and Implementing Message Oriented Middleware</a></li>
+    <li><a href="hands-on-lab-implementing-messaging-patterns.html">Hands-on Lab: Implementing Messaging Patterns</a></li>
+    <li><a href="implementing-a-publisher-for-publishsubscribe.html">Implementing a publisher for Publish/Subscribe</a></li>
+  </ul>
+</nav>
+</div>
+  <div class="content">
+<aside class="toc sidebar" data-title="Contents" data-levels="2">
+  <div class="toc-menu"></div>
+</aside>
+<article class="doc">
+<h1 class="page">Implementing a publisher for Publish/Subscribe</h1>
+<h1 id="_implementing_a_publisher_for_publishsubscribe" class="sect0"><a class="anchor" href="#_implementing_a_publisher_for_publishsubscribe"></a>Implementing a Publisher for Publish/Subscribe</h1>
+<div class="paragraph">
+<p>In distributed systems, the Publish/Subscribe (Pub/Sub) messaging model is a powerful pattern for achieving loose coupling and enabling real-time data distribution. Unlike Point-to-Point (PTP) messaging, where a message is consumed by only one worker, Pub/Sub allows a single message to be delivered to multiple interested consumers simultaneously.</p>
+</div>
+<div class="sect1">
+<h2 id="_understanding_the_publishers_role_in_pubsub"><a class="anchor" href="#_understanding_the_publishers_role_in_pubsub"></a>Understanding the Publisher&#8217;s Role in Pub/Sub</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>In the Pub/Sub model, the <strong>publisher</strong> is the entity responsible for creating and sending messages to a specific <strong>topic</strong> or <strong>exchange</strong> on the message broker. The publisher&#8217;s primary characteristic is its complete unawareness of who (or if anyone) is consuming its messages. It simply broadcasts messages to the designated topic or exchange, relying on the message broker to route these messages to all registered <strong>subscribers</strong>.</p>
+</div>
+<div class="paragraph">
+<p>Key aspects of a publisher:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>Decoupling</strong>: Publishers are fully decoupled from subscribers. They don&#8217;t need to know how many subscribers there are, their addresses, or if they are even active. This promotes modularity and independent evolution of services.</p>
+</li>
+<li>
+<p><strong>Broadcasting</strong>: When a publisher sends a message, the message broker ensures that all subscribers currently interested in that specific topic or exchange receive a copy of the message. This is often referred to as "fanout."</p>
+</li>
+<li>
+<p><strong>Simplicity</strong>: The publisher&#8217;s logic is straightforward: connect to the broker, declare an exchange (if necessary), and send messages to it. It doesn&#8217;t manage queues or consumer acknowledgements directly related to delivery to specific consumers.</p>
+</li>
+</ul>
+</div>
+<div class="imageblock unresolved">
+<div class="content">
+<img src="publisher-pubsub.png" alt="Publisher in Pub/Sub Model" width="800" height="450">
+</div>
+</div>
+<div class="paragraph">
+<p><em>Figure: A publisher sends messages to an exchange, which then fans them out to multiple queues, each consumed by a subscriber.</em></p>
+</div>
+<div class="paragraph">
+<p>For a pure Pub/Sub pattern, message brokers often employ an entity known as an <strong>exchange</strong> (in RabbitMQ terms) or a <strong>topic</strong> (in Kafka or JMS terms). A <code>fanout</code> type exchange is particularly suited for this model, as it simply broadcasts all messages it receives to all queues that are bound to it, ignoring any routing keys.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_hands_on_lab_implementing_a_publisher_for_publishsubscribe"><a class="anchor" href="#_hands_on_lab_implementing_a_publisher_for_publishsubscribe"></a>Hands-on Lab: Implementing a Publisher for Publish/Subscribe</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>This lab will guide you through creating a simple publisher using Python and the <code>pika</code> library to interact with a RabbitMQ message broker. We&#8217;ll implement a publisher that sends "news updates" to a <code>fanout</code> exchange, ensuring all interested subscribers receive them.</p>
+</div>
+<div class="admonitionblock note experimental">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+This lab assumes you have a basic message broker (like RabbitMQ) already set up and running, as covered in the "Setting up a basic message broker" objective. If you haven&#8217;t done so, please refer back to that section.
+</td>
+</tr>
+</table>
+</div>
+<div class="sect2">
+<h3 id="_prerequisites"><a class="anchor" href="#_prerequisites"></a>Prerequisites</h3>
+<div class="ulist">
+<ul>
+<li>
+<p>Python 3.x installed</p>
+</li>
+<li>
+<p><code>pika</code> library installed:
+[source,bash]
+----
+pip install pika
+----</p>
+</li>
+<li>
+<p>A running RabbitMQ instance (e.g., via Docker: <code>docker run -it --rm --name rabbitmq -p 5672:5672 -p 15672:15672 rabbitmq:3-management</code>)</p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_lab_steps"><a class="anchor" href="#_lab_steps"></a>Lab Steps</h3>
+<div class="sect3">
+<h4 id="_step_1_create_the_publisher_script"><a class="anchor" href="#_step_1_create_the_publisher_script"></a>Step 1: Create the Publisher Script</h4>
+<div class="paragraph">
+<p>Create a new Python file named <code>news_publisher.py</code>. This script will connect to RabbitMQ, declare a <code>fanout</code> exchange, and periodically send messages to it.</p>
+</div>
+<div class="listingblock primary">
+<div class="title">news_publisher.py</div>
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-python hljs" data-lang="python">import pika
+import time
+import sys
+
+# --- Configuration ---
+RABBITMQ_HOST = 'localhost'
+EXCHANGE_NAME = 'news_updates'
+EXCHANGE_TYPE = 'fanout' # Perfect for Pub/Sub: broadcasts to all bound queues
+
+def main():
+    connection = None
+    try:
+        # 1. Establish a connection to RabbitMQ
+        print(f"Connecting to RabbitMQ on host: {RABBITMQ_HOST}...")
+        connection = pika.BlockingConnection(pika.ConnectionParameters(host=RABBITMQ_HOST))
+        channel = connection.channel()
+        print("Connection established successfully.")
+
+        # 2. Declare the exchange
+        # A 'fanout' exchange sends all messages to all queues bound to it.
+        # 'durable=True' means the exchange will survive a broker restart.
+        print(f"Declaring '{EXCHANGE_NAME}' exchange of type '{EXCHANGE_TYPE}'...")
+        channel.exchange_declare(exchange=EXCHANGE_NAME, exchange_type=EXCHANGE_TYPE, durable=True)
+        print(f"Exchange '{EXCHANGE_NAME}' declared.")
+
+        # 3. Publish messages
+        message_id = 0
+        while True:
+            message_id += 1
+            news_headline = f"Breaking News Update {message_id}: AI achieves sentience in a toaster!"
+
+            # Publish the message to the exchange.
+            # For a 'fanout' exchange, the 'routing_key' is ignored.
+            channel.basic_publish(
+                exchange=EXCHANGE_NAME,
+                routing_key='', # Empty routing key for fanout exchange
+                body=news_headline.encode('utf-8'),
+                properties=pika.BasicProperties(
+                    delivery_mode=pika.spec.PERSISTENT # Make message persistent
+                )
+            )
+            print(f" [x] Sent '{news_headline}'")
+            time.sleep(2) # Send a message every 2 seconds
+
+    except pika.exceptions.AMQPConnectionError as e:
+        print(f"Error connecting to RabbitMQ: {e}")
+        print("Please ensure RabbitMQ is running and accessible at the configured host.")
+        sys.exit(1)
+    except KeyboardInterrupt:
+        print("\nPublisher stopped by user.")
+    finally:
+        # 4. Close the connection
+        if connection and not connection.is_closed:
+            print("Closing RabbitMQ connection.")
+            connection.close()
+            print("Connection closed.")
+
+if __name__ == '__main__':
+    main()</code></pre>
+</div>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_step_2_understand_the_code"><a class="anchor" href="#_step_2_understand_the_code"></a>Step 2: Understand the Code</h4>
+<div class="paragraph">
+<p>Let&#8217;s break down the key parts of the publisher script:</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p><strong><code>pika.BlockingConnection(pika.ConnectionParameters(host=RABBITMQ_HOST))</code></strong>:
+This line establishes a connection to your RabbitMQ broker. We&#8217;re using <code>BlockingConnection</code> for simplicity in this example. Replace <code>localhost</code> with your broker&#8217;s IP if it&#8217;s running elsewhere.</p>
+</li>
+<li>
+<p><strong><code>channel = connection.channel()</code></strong>:
+Once connected, we create a <code>channel</code>. Channels are where most of the API operations for sending and receiving messages happen. A single connection can have multiple channels.</p>
+</li>
+<li>
+<p><strong><code>channel.exchange_declare(exchange=EXCHANGE_NAME, exchange_type=EXCHANGE_TYPE, durable=True)</code></strong>:
+This is a crucial step for Pub/Sub. We declare an <strong>exchange</strong> named <code>news_updates</code> of type <code>fanout</code>.</p>
+<div class="ulist">
+<ul>
+<li>
+<p><code>exchange</code>: The name of the exchange.</p>
+</li>
+<li>
+<p><code>exchange_type='fanout'</code>: Specifies that messages sent to this exchange should be broadcast to all queues bound to it.</p>
+</li>
+<li>
+<p><code>durable=True</code>: Ensures that the exchange will survive a RabbitMQ server restart. If not durable, the exchange would be lost, and any clients trying to publish to it would fail.</p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<p><strong><code>channel.basic_publish(&#8230;&#8203;)</code></strong>:
+This method sends the message.</p>
+<div class="ulist">
+<ul>
+<li>
+<p><code>exchange=EXCHANGE_NAME</code>: Specifies that the message should be sent to our <code>news_updates</code> exchange.</p>
+</li>
+<li>
+<p><code>routing_key=''</code>: For <code>fanout</code> exchanges, the <code>routing_key</code> is ignored, so we can leave it empty. If this were a <code>direct</code> or <code>topic</code> exchange, the routing key would be vital for message routing.</p>
+</li>
+<li>
+<p><code>body=news_headline.encode('utf-8')</code>: The actual message content. It must be bytes, so we encode the string.</p>
+</li>
+<li>
+<p><code>properties=pika.BasicProperties(delivery_mode=pika.spec.PERSISTENT)</code>: This makes the message <strong>persistent</strong>. This means if RabbitMQ crashes or restarts <strong>after</strong> receiving the message but <strong>before</strong> delivering it to a consumer, the message will still be there when the broker comes back online.</p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<p><strong><code>connection.close()</code></strong>:
+It&#8217;s good practice to close the connection when the publisher is done sending messages. In our continuous loop, this will only happen on a <code>KeyboardInterrupt</code>.</p>
+</li>
+</ol>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_step_3_run_the_publisher"><a class="anchor" href="#_step_3_run_the_publisher"></a>Step 3: Run the Publisher</h4>
+<div class="paragraph">
+<p>Open your terminal, navigate to the directory where you saved <code>news_publisher.py</code>, and run the script:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">python news_publisher.py</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>You should see output similar to this, indicating that messages are being sent:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-none hljs">Connecting to RabbitMQ on host: localhost...
+Connection established successfully.
+Declaring 'news_updates' exchange of type 'fanout'...
+Exchange 'news_updates' declared.
+ [x] Sent 'Breaking News Update 1: AI achieves sentience in a toaster!'
+ [x] Sent 'Breaking News Update 2: AI achieves sentience in a toaster!'
+ [x] Sent 'Breaking News Update 3: AI achieves sentience in a toaster!'
+...</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>At this point, the publisher is sending messages to the <code>news_updates</code> exchange. Without any subscribers, these messages will be received by the exchange but won&#8217;t be delivered to any queues, and thus won&#8217;t be consumed. They will effectively be "discarded" by the exchange if no queues are bound. The next steps in our hands-on will involve creating subscribers to receive these messages.</p>
+</div>
+<div class="paragraph">
+<p>Press <code>Ctrl+C</code> to stop the publisher when you are done.</p>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_troubleshooting_tips"><a class="anchor" href="#_troubleshooting_tips"></a>Troubleshooting Tips</h3>
+<div class="ulist">
+<ul>
+<li>
+<p><strong><code>pika.exceptions.AMQPConnectionError</code></strong>: This almost always means your RabbitMQ server is not running or is not accessible at <code>localhost:5672</code>.</p>
+</li>
+<li>
+<p>Check your Docker container if using: <code>docker ps</code>.</p>
+</li>
+<li>
+<p>Verify the port mapping: <code>5672</code> is the default AMQP port.</p>
+</li>
+<li>
+<p><strong>No output after running</strong>: Double-check your <code>RABBITMQ_HOST</code> configuration in the Python script.</p>
+</li>
+<li>
+<p><strong>Messages not appearing in RabbitMQ UI</strong>: If you have the RabbitMQ Management Plugin (usually on port 15672), you can log in (default guest/guest) and navigate to the "Exchanges" tab to see if <code>news_updates</code> exchange has been created. If messages are being sent but no queues are bound to the exchange, they won&#8217;t appear in any queue. This is expected until we create subscribers.</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>This completes the implementation of a publisher for the Publish/Subscribe pattern. The publisher successfully broadcasts messages to an exchange, completely decoupled from any consumers. In subsequent labs, you will implement subscribers that bind to this exchange to receive these news updates.</p>
+</div>
+</div>
+</div>
+</div>
+<nav class="pagination">
+  <span class="prev"><a href="developing-a-consumer-for-point-to-point-messaging.html">Developing a consumer for Point-to-Point messaging</a></span>
+  <span class="next"><a href="implementing-a-subscriber-for-publishsubscribe.html">Implementing a subscriber for Publish/Subscribe</a></span>
+</nav>
+</article>
+  </div>
+</main>
+</div>
+<footer class="footer">
+  <img src="../../../_/img/rhl-logo-red.png" height="40px" alt="Red Hat"  href="https://redhat.com" >
+</footer><script id="site-script" src="../../../_/js/site.js" data-ui-root-path="../../../_"></script>
+<script async src="../../../_/js/vendor/highlight.js"></script>
+  </body>
+</html>

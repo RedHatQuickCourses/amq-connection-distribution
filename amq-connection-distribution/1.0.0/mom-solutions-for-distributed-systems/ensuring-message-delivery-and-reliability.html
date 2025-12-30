@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Ensuring message delivery and reliability :: Understanding and Implementing Message Oriented Middleware</title>
+    <link rel="prev" href="publishsubscribe-pubsub-messaging-model.html">
+    <link rel="next" href="message-persistence-and-durability.html">
+    <meta name="generator" content="Antora 3.1.3">
+    <link rel="stylesheet" href="../../../_/css/site.css">
+    <script>var uiRootPath = '../../../_'</script>
+  </head>
+  <body class="article">
+<header class="header">
+  <nav class="navbar">
+    <div class="navbar-brand">
+      <a class="navbar-item" href="https://www.redhat.com" target="_blank"><img src="../../../_/img/redhat-logo.png" height="40px" alt="Red Hat"></a>
+      <a class="navbar-item" style="font-size: 24px; color: white" href="../../..">Understanding and Implementing Message Oriented Middleware</a>
+      <button class="navbar-burger" data-target="topbar-nav">
+        <span></span>
+        <span></span>
+        <span></span>
+      </button>
+    </div>
+    <div id="topbar-nav" class="navbar-menu">
+      <div class="navbar-end">
+        <a class="navbar-item" href="https://github.com/RedHatQuickCourses/REPLACEREPONAME/issues" target="_blank">Report Issues</a>
+      </div>
+    </div>
+  </nav>
+</header>
+<div class="body">
+<div class="nav-container" data-component="amq-connection-distribution" data-version="1.0.0">
+  <aside class="nav">
+    <div class="panels">
+<div class="nav-panel-menu is-active" data-panel="menu">
+  <nav class="nav-menu">
+    <h3 class="title"><a href="../index.html">Understanding and Implementing Message Oriented Middleware</a></h3>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="../index.html">Home</a>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../introduction-to-message-oriented-middleware-mom/introduction-to-message-oriented-middleware-mom.html">Introduction to Message Oriented Middleware (MOM)</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../introduction-to-message-oriented-middleware-mom/what-is-message-oriented-middleware.html">What is Message Oriented Middleware?</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../introduction-to-message-oriented-middleware-mom/core-concepts-messages-producers-consumers-brokers.html">Core concepts: Messages, Producers, Consumers, Brokers</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../introduction-to-message-oriented-middleware-mom/benefits-of-mom-in-distributed-systems.html">Benefits of MOM in distributed systems</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../introduction-to-message-oriented-middleware-mom/common-use-cases-for-mom.html">Common use cases for MOM</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../challenges-in-distributed-systems/challenges-in-distributed-systems.html">Challenges in Distributed Systems</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../challenges-in-distributed-systems/issues-with-direct-service-to-service-communication.html">Issues with direct service-to-service communication</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../challenges-in-distributed-systems/the-need-for-asynchronous-processing.html">The need for asynchronous processing</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../challenges-in-distributed-systems/problems-with-reliability-and-data-consistency.html">Problems with reliability and data consistency</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../challenges-in-distributed-systems/scalability-and-coupling-concerns.html">Scalability and coupling concerns</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="mom-solutions-for-distributed-systems.html">MOM Solutions for Distributed Systems</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="decoupling-services-with-message-queues.html">Decoupling services with message queues</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="point-to-point-ptp-messaging-model.html">Point-to-Point (PTP) messaging model</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="publishsubscribe-pubsub-messaging-model.html">Publish/Subscribe (Pub/Sub) messaging model</a>
+  </li>
+  <li class="nav-item is-current-page" data-depth="2">
+    <a class="nav-link" href="ensuring-message-delivery-and-reliability.html">Ensuring message delivery and reliability</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="message-persistence-and-durability.html">Message persistence and durability</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../hands-on-lab-implementing-messaging-patterns/hands-on-lab-implementing-messaging-patterns.html">Hands-on Lab: Implementing Messaging Patterns</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../hands-on-lab-implementing-messaging-patterns/setting-up-a-basic-message-broker.html">Setting up a basic message broker</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../hands-on-lab-implementing-messaging-patterns/developing-a-producer-for-point-to-point-messaging.html">Developing a producer for Point-to-Point messaging</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../hands-on-lab-implementing-messaging-patterns/developing-a-consumer-for-point-to-point-messaging.html">Developing a consumer for Point-to-Point messaging</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../hands-on-lab-implementing-messaging-patterns/implementing-a-publisher-for-publishsubscribe.html">Implementing a publisher for Publish/Subscribe</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../hands-on-lab-implementing-messaging-patterns/implementing-a-subscriber-for-publishsubscribe.html">Implementing a subscriber for Publish/Subscribe</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+</ul>
+  </nav>
+</div>
+<div class="nav-panel-explore" data-panel="explore">
+  <div class="context">
+    <span class="title">Understanding and Implementing Message Oriented Middleware</span>
+    <span class="version">1.0.0</span>
+  </div>
+  <ul class="components">
+    <li class="component is-current">
+      <a class="title" href="../index.html">Understanding and Implementing Message Oriented Middleware</a>
+      <ul class="versions">
+        <li class="version is-current is-latest">
+          <a href="../index.html">1.0.0</a>
+        </li>
+      </ul>
+    </li>
+  </ul>
+</div>
+    </div>
+  </aside>
+</div>
+<main class="article">
+<div class="toolbar" role="navigation">
+<button class="nav-toggle"></button>
+  <a href="../index.html" class="home-link"></a>
+<nav class="breadcrumbs" aria-label="breadcrumbs">
+  <ul>
+    <li><a href="../index.html">Understanding and Implementing Message Oriented Middleware</a></li>
+    <li><a href="mom-solutions-for-distributed-systems.html">MOM Solutions for Distributed Systems</a></li>
+    <li><a href="ensuring-message-delivery-and-reliability.html">Ensuring message delivery and reliability</a></li>
+  </ul>
+</nav>
+</div>
+  <div class="content">
+<aside class="toc sidebar" data-title="Contents" data-levels="2">
+  <div class="toc-menu"></div>
+</aside>
+<article class="doc">
+<h1 class="page">Ensuring message delivery and reliability</h1>
+<h1 id="_ensuring_message_delivery_and_reliability" class="sect0"><a class="anchor" href="#_ensuring_message_delivery_and_reliability"></a>Ensuring Message Delivery and Reliability</h1>
+<div class="paragraph">
+<p>When designing distributed systems with Message Oriented Middleware (MOM), one of the paramount concerns is the reliable delivery and processing of messages. In scenarios where service failures, network issues, or system crashes can occur, ensuring that messages are not lost and are processed correctly is critical for maintaining data consistency and operational integrity.</p>
+</div>
+<div class="sect1">
+<h2 id="_understanding_message_delivery_guarantees"><a class="anchor" href="#_understanding_message_delivery_guarantees"></a>Understanding Message Delivery Guarantees</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>MOM systems offer different levels of message delivery guarantees, each with its own trade-offs regarding performance, complexity, and reliability. Understanding these guarantees is fundamental to choosing the right strategy for your application.</p>
+</div>
+<div class="sect2">
+<h3 id="_at_most_once_delivery"><a class="anchor" href="#_at_most_once_delivery"></a>At-Most-Once Delivery</h3>
+<div class="paragraph">
+<p>With at-most-once delivery, a message is delivered zero or one time. This guarantee ensures that messages are never duplicated. However, it comes with the risk that a message might be lost if a failure occurs before the message is successfully delivered and processed.</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>Characteristics:</strong></p>
+</li>
+<li>
+<p>No message duplication.</p>
+</li>
+<li>
+<p>Potential for message loss.</p>
+</li>
+<li>
+<p><strong>Use Cases:</strong></p>
+</li>
+<li>
+<p>Non-critical data where occasional loss is acceptable (e.g., telemetry data, monitoring metrics).</p>
+</li>
+<li>
+<p>Situations where handling duplicates would be more problematic than occasional loss.</p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_at_least_once_delivery"><a class="anchor" href="#_at_least_once_delivery"></a>At-Least-Once Delivery</h3>
+<div class="paragraph">
+<p>At-least-once delivery ensures that a message is delivered one or more times. This guarantee prevents message loss but introduces the possibility of duplicate messages being delivered to the consumer. The system will continue attempting delivery until it receives confirmation that the message has been processed.</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>Characteristics:</strong></p>
+</li>
+<li>
+<p>No message loss.</p>
+</li>
+<li>
+<p>Potential for message duplication.</p>
+</li>
+<li>
+<p><strong>Use Cases:</strong></p>
+</li>
+<li>
+<p>Critical business transactions where data loss is unacceptable (e.g., order processing, financial transactions).</p>
+</li>
+<li>
+<p>Requires consumers to be designed to handle duplicate messages gracefully (idempotency).</p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_exactly_once_delivery"><a class="anchor" href="#_exactly_once_delivery"></a>Exactly-Once Delivery</h3>
+<div class="paragraph">
+<p>Exactly-once delivery is the holy grail of messaging guarantees, ensuring that each message is delivered and processed precisely one time, with no loss and no duplication. Achieving true exactly-once semantics is significantly more complex and often involves a combination of sophisticated mechanisms, typically at the expense of higher latency and throughput. Many "exactly-once" implementations are often "effective exactly-once" or "transactional at-least-once with idempotent consumers."</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>Characteristics:</strong></p>
+</li>
+<li>
+<p>No message loss.</p>
+</li>
+<li>
+<p>No message duplication.</p>
+</li>
+<li>
+<p>Highest complexity and overhead.</p>
+</li>
+<li>
+<p><strong>Use Cases:</strong></p>
+</li>
+<li>
+<p>Extremely sensitive transactions where both loss and duplication are intolerable (e.g., banking transfers where double-debiting or missing a debit is catastrophic).</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_mechanisms_for_ensuring_reliability"><a class="anchor" href="#_mechanisms_for_ensuring_reliability"></a>Mechanisms for Ensuring Reliability</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>MOM systems employ several mechanisms to achieve these delivery guarantees and enhance overall reliability.</p>
+</div>
+<div class="sect2">
+<h3 id="_acknowledgements_acks"><a class="anchor" href="#_acknowledgements_acks"></a>Acknowledgements (ACKs)</h3>
+<div class="paragraph">
+<p>Acknowledgements are a fundamental mechanism for ensuring message delivery. When a message is delivered to a consumer, the consumer is responsible for sending an acknowledgement (ACK) back to the message broker once it has successfully processed the message.</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>How it Works:</strong></p>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>A producer sends a message to the broker.</p>
+</li>
+<li>
+<p>The broker stores the message and delivers it to a consumer.</p>
+</li>
+<li>
+<p>The consumer processes the message.</p>
+</li>
+<li>
+<p>Upon successful processing, the consumer sends an ACK to the broker.</p>
+</li>
+<li>
+<p>The broker then removes the message from the queue or marks it as processed.</p>
+</li>
+</ol>
+</div>
+</li>
+<li>
+<p><strong>Impact on Reliability:</strong></p>
+</li>
+<li>
+<p>If the consumer crashes or fails to send an ACK within a configured timeout, the broker assumes the message was not processed and will redeliver it to another available consumer (or the same consumer upon restart). This is key to achieving <em>at-least-once</em> delivery.</p>
+</li>
+<li>
+<p>Different ACK modes exist (e.g., auto-acknowledge, client-acknowledge, individual acknowledgement, batch acknowledgement), allowing fine-grained control over when ACKs are sent.</p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_message_persistence_and_durability"><a class="anchor" href="#_message_persistence_and_durability"></a>Message Persistence and Durability</h3>
+<div class="paragraph">
+<p>While this topic has its own section, it&#8217;s crucial to mention its role in reliability. For messages to survive broker crashes or restarts, they must be stored durably. Message brokers achieve this by persisting messages to disk or a persistent storage backend before acknowledging receipt to the producer. This ensures that even if the broker fails, messages are not lost and can be recovered and delivered once the broker restarts. This is a prerequisite for any guarantee stronger than at-most-once delivery in the face of broker failures.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_retries_and_redelivery"><a class="anchor" href="#_retries_and_redelivery"></a>Retries and Redelivery</h3>
+<div class="paragraph">
+<p>When a consumer fails to acknowledge a message (due to an application error, network issue, or consumer crash), the broker will typically redeliver the message.</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>Mechanism:</strong></p>
+</li>
+<li>
+<p>The broker marks the message as "in-flight" when delivered to a consumer.</p>
+</li>
+<li>
+<p>If no ACK is received within a configured timeout, the message&#8217;s status reverts, and it becomes eligible for redelivery.</p>
+</li>
+<li>
+<p>Many brokers implement a retry count, allowing a message to be redelivered a certain number of times before being moved to a Dead Letter Queue.</p>
+</li>
+<li>
+<p><strong>Considerations:</strong></p>
+</li>
+<li>
+<p>Consumers must be idempotent to handle potential duplicate processing caused by retries.</p>
+</li>
+<li>
+<p>Excessive retries can indicate a persistent consumer processing issue, which should be investigated.</p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_dead_letter_queues_dlqs"><a class="anchor" href="#_dead_letter_queues_dlqs"></a>Dead Letter Queues (DLQs)</h3>
+<div class="paragraph">
+<p>Dead Letter Queues (DLQs), also known as Dead Letter Channels, are a specialized queue used to store messages that cannot be successfully delivered or processed after a certain number of retries or after exceeding a time-to-live (TTL).</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>Purpose:</strong></p>
+</li>
+<li>
+<p><strong>Isolate Problematic Messages:</strong> Prevent "poison pill" messages (messages that consistently cause consumer failure) from blocking the main queue.</p>
+</li>
+<li>
+<p><strong>Troubleshooting and Analysis:</strong> Provide a dedicated location for developers to inspect messages that failed processing, understand the cause of failure, and potentially reprocess them manually or after fixing the consumer logic.</p>
+</li>
+<li>
+<p><strong>Triggers for Moving to DLQ:</strong></p>
+</li>
+<li>
+<p>Message expired (TTL exceeded).</p>
+</li>
+<li>
+<p>Consumer explicitly rejected the message (negative acknowledgement).</p>
+</li>
+<li>
+<p>Message redelivered too many times (max delivery attempts reached).</p>
+</li>
+<li>
+<p><strong>Benefits:</strong> Improves system resilience by preventing unprocessable messages from indefinitely tying up resources or causing continuous errors.</p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_idempotent_consumers"><a class="anchor" href="#_idempotent_consumers"></a>Idempotent Consumers</h3>
+<div class="paragraph">
+<p>For systems aiming for <em>at-least-once</em> or <em>exactly-once</em> delivery semantics, especially where retries are involved, designing idempotent consumers is crucial. An operation is idempotent if executing it multiple times produces the same result as executing it once.</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>Why it&#8217;s Important:</strong></p>
+</li>
+<li>
+<p>Given that messages might be delivered multiple times (due to network issues, broker restarts, consumer failures leading to redelivery), an idempotent consumer ensures that processing a duplicate message does not lead to incorrect state changes or side effects.</p>
+</li>
+<li>
+<p><strong>Implementation Strategies:</strong></p>
+</li>
+<li>
+<p><strong>Unique Message IDs:</strong> Assign a unique ID to each message. Before processing, the consumer checks if this ID has already been processed and recorded. If it has, the duplicate message is ignored.</p>
+</li>
+<li>
+<p><strong>Database Transactions with Uniqueness Constraints:</strong> When updating a database, use unique keys or conditional updates (<code>UPDATE &#8230;&#8203; WHERE NOT EXISTS</code>) to ensure that an operation is applied only once based on a unique message identifier.</p>
+</li>
+<li>
+<p><strong>Atomic Operations:</strong> Design operations such that applying them multiple times naturally yields the same result (e.g., "set value X" is often idempotent, while "add value Y" is not unless carefully managed).</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>By combining robust acknowledgement mechanisms, durable message storage, strategic retries, dedicated dead-letter queues, and the principle of idempotency in consumers, MOM systems can provide a high degree of reliability, ensuring that critical data is delivered and processed even in the face of distributed system complexities and failures.</p>
+</div>
+</div>
+</div>
+</div>
+<nav class="pagination">
+  <span class="prev"><a href="publishsubscribe-pubsub-messaging-model.html">Publish/Subscribe (Pub/Sub) messaging model</a></span>
+  <span class="next"><a href="message-persistence-and-durability.html">Message persistence and durability</a></span>
+</nav>
+</article>
+  </div>
+</main>
+</div>
+<footer class="footer">
+  <img src="../../../_/img/rhl-logo-red.png" height="40px" alt="Red Hat"  href="https://redhat.com" >
+</footer><script id="site-script" src="../../../_/js/site.js" data-ui-root-path="../../../_"></script>
+<script async src="../../../_/js/vendor/highlight.js"></script>
+  </body>
+</html>

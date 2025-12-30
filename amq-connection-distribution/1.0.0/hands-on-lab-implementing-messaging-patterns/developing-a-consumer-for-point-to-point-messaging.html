@@ -1,0 +1,499 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Developing a consumer for Point-to-Point messaging :: Understanding and Implementing Message Oriented Middleware</title>
+    <link rel="prev" href="developing-a-producer-for-point-to-point-messaging.html">
+    <link rel="next" href="implementing-a-publisher-for-publishsubscribe.html">
+    <meta name="generator" content="Antora 3.1.3">
+    <link rel="stylesheet" href="../../../_/css/site.css">
+    <script>var uiRootPath = '../../../_'</script>
+  </head>
+  <body class="article">
+<header class="header">
+  <nav class="navbar">
+    <div class="navbar-brand">
+      <a class="navbar-item" href="https://www.redhat.com" target="_blank"><img src="../../../_/img/redhat-logo.png" height="40px" alt="Red Hat"></a>
+      <a class="navbar-item" style="font-size: 24px; color: white" href="../../..">Understanding and Implementing Message Oriented Middleware</a>
+      <button class="navbar-burger" data-target="topbar-nav">
+        <span></span>
+        <span></span>
+        <span></span>
+      </button>
+    </div>
+    <div id="topbar-nav" class="navbar-menu">
+      <div class="navbar-end">
+        <a class="navbar-item" href="https://github.com/RedHatQuickCourses/REPLACEREPONAME/issues" target="_blank">Report Issues</a>
+      </div>
+    </div>
+  </nav>
+</header>
+<div class="body">
+<div class="nav-container" data-component="amq-connection-distribution" data-version="1.0.0">
+  <aside class="nav">
+    <div class="panels">
+<div class="nav-panel-menu is-active" data-panel="menu">
+  <nav class="nav-menu">
+    <h3 class="title"><a href="../index.html">Understanding and Implementing Message Oriented Middleware</a></h3>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="../index.html">Home</a>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../introduction-to-message-oriented-middleware-mom/introduction-to-message-oriented-middleware-mom.html">Introduction to Message Oriented Middleware (MOM)</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../introduction-to-message-oriented-middleware-mom/what-is-message-oriented-middleware.html">What is Message Oriented Middleware?</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../introduction-to-message-oriented-middleware-mom/core-concepts-messages-producers-consumers-brokers.html">Core concepts: Messages, Producers, Consumers, Brokers</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../introduction-to-message-oriented-middleware-mom/benefits-of-mom-in-distributed-systems.html">Benefits of MOM in distributed systems</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../introduction-to-message-oriented-middleware-mom/common-use-cases-for-mom.html">Common use cases for MOM</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../challenges-in-distributed-systems/challenges-in-distributed-systems.html">Challenges in Distributed Systems</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../challenges-in-distributed-systems/issues-with-direct-service-to-service-communication.html">Issues with direct service-to-service communication</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../challenges-in-distributed-systems/the-need-for-asynchronous-processing.html">The need for asynchronous processing</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../challenges-in-distributed-systems/problems-with-reliability-and-data-consistency.html">Problems with reliability and data consistency</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../challenges-in-distributed-systems/scalability-and-coupling-concerns.html">Scalability and coupling concerns</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../mom-solutions-for-distributed-systems/mom-solutions-for-distributed-systems.html">MOM Solutions for Distributed Systems</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../mom-solutions-for-distributed-systems/decoupling-services-with-message-queues.html">Decoupling services with message queues</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../mom-solutions-for-distributed-systems/point-to-point-ptp-messaging-model.html">Point-to-Point (PTP) messaging model</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../mom-solutions-for-distributed-systems/publishsubscribe-pubsub-messaging-model.html">Publish/Subscribe (Pub/Sub) messaging model</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../mom-solutions-for-distributed-systems/ensuring-message-delivery-and-reliability.html">Ensuring message delivery and reliability</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../mom-solutions-for-distributed-systems/message-persistence-and-durability.html">Message persistence and durability</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="hands-on-lab-implementing-messaging-patterns.html">Hands-on Lab: Implementing Messaging Patterns</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="setting-up-a-basic-message-broker.html">Setting up a basic message broker</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="developing-a-producer-for-point-to-point-messaging.html">Developing a producer for Point-to-Point messaging</a>
+  </li>
+  <li class="nav-item is-current-page" data-depth="2">
+    <a class="nav-link" href="developing-a-consumer-for-point-to-point-messaging.html">Developing a consumer for Point-to-Point messaging</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="implementing-a-publisher-for-publishsubscribe.html">Implementing a publisher for Publish/Subscribe</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="implementing-a-subscriber-for-publishsubscribe.html">Implementing a subscriber for Publish/Subscribe</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+</ul>
+  </nav>
+</div>
+<div class="nav-panel-explore" data-panel="explore">
+  <div class="context">
+    <span class="title">Understanding and Implementing Message Oriented Middleware</span>
+    <span class="version">1.0.0</span>
+  </div>
+  <ul class="components">
+    <li class="component is-current">
+      <a class="title" href="../index.html">Understanding and Implementing Message Oriented Middleware</a>
+      <ul class="versions">
+        <li class="version is-current is-latest">
+          <a href="../index.html">1.0.0</a>
+        </li>
+      </ul>
+    </li>
+  </ul>
+</div>
+    </div>
+  </aside>
+</div>
+<main class="article">
+<div class="toolbar" role="navigation">
+<button class="nav-toggle"></button>
+  <a href="../index.html" class="home-link"></a>
+<nav class="breadcrumbs" aria-label="breadcrumbs">
+  <ul>
+    <li><a href="../index.html">Understanding and Implementing Message Oriented Middleware</a></li>
+    <li><a href="hands-on-lab-implementing-messaging-patterns.html">Hands-on Lab: Implementing Messaging Patterns</a></li>
+    <li><a href="developing-a-consumer-for-point-to-point-messaging.html">Developing a consumer for Point-to-Point messaging</a></li>
+  </ul>
+</nav>
+</div>
+  <div class="content">
+<aside class="toc sidebar" data-title="Contents" data-levels="2">
+  <div class="toc-menu"></div>
+</aside>
+<article class="doc">
+<h1 class="page">Developing a consumer for Point-to-Point messaging</h1>
+<h1 id="_developing_a_consumer_for_point_to_point_messaging" class="sect0"><a class="anchor" href="#_developing_a_consumer_for_point_to_point_messaging"></a>Developing a Consumer for Point-to-Point Messaging</h1>
+<div class="paragraph">
+<p>In the world of Message Oriented Middleware (MOM), the Point-to-Point (PTP) messaging model is a fundamental pattern for reliable, one-to-one message delivery. After understanding how to produce messages to a queue, the next critical step is to develop a <strong>consumer</strong> that can retrieve and process these messages. This section will delve into the technical details of PTP consumers, their role, and guide you through a hands-on lab to implement one.</p>
+</div>
+<div class="sect1">
+<h2 id="_understanding_the_point_to_point_consumer"><a class="anchor" href="#_understanding_the_point_to_point_consumer"></a>Understanding the Point-to-Point Consumer</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>A PTP consumer is an application component designed to retrieve messages from a specific message queue. In the PTP model, each message is delivered to exactly one consumer, even if multiple consumers are listening to the same queue. This ensures that messages are processed once and only once, making it ideal for tasks that require exclusive processing, such as order fulfillment, data processing jobs, or command execution.</p>
+</div>
+<div class="sect2">
+<h3 id="_the_role_and_lifecycle_of_a_ptp_consumer"><a class="anchor" href="#_the_role_and_lifecycle_of_a_ptp_consumer"></a>The Role and Lifecycle of a PTP Consumer</h3>
+<div class="paragraph">
+<p>The primary role of a PTP consumer is to listen for, receive, and process messages from its designated queue. Its lifecycle typically involves the following stages:</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p><strong>Connection:</strong> The consumer first establishes a network connection to the message broker. This connection serves as the communication channel between the consumer and the broker.</p>
+</li>
+<li>
+<p><strong>Channel Creation:</strong> Over the established connection, the consumer typically creates a <strong>channel</strong> or a <strong>session</strong>. Channels provide a lightweight multiplexing mechanism over a single network connection, allowing multiple concurrent operations.</p>
+</li>
+<li>
+<p><strong>Queue Declaration:</strong> Before it can receive messages, the consumer must declare the queue it intends to listen to. This step is crucial; if the queue doesn&#8217;t exist, declaring it often creates it. This declaration must match the queue name used by the producer.</p>
+</li>
+<li>
+<p><strong>Subscription/Consumption:</strong> The consumer then <strong>subscribes</strong> to the queue, indicating its interest in receiving messages. The broker will then start pushing messages to the consumer, or the consumer might actively poll the queue (though push-based models are more common for efficiency).</p>
+</li>
+<li>
+<p><strong>Message Reception:</strong> When a message arrives, the consumer receives it. This usually triggers a predefined callback function or listener method within the consumer application.</p>
+</li>
+<li>
+<p><strong>Message Processing:</strong> The core logic of the consumer lies in processing the received message. This could involve parsing data, performing calculations, updating a database, or invoking other services. It&#8217;s crucial that this processing logic is robust and handles potential errors gracefully.</p>
+</li>
+<li>
+<p><strong>Message Acknowledgment (ACK):</strong> After successfully processing a message, the consumer sends an acknowledgment (ACK) back to the message broker. This ACK signals to the broker that the message has been handled and can be safely removed from the queue. If an ACK is not sent (e.g., due to a consumer crash or processing error), the message might be redelivered to another available consumer, ensuring reliability.</p>
+</li>
+<li>
+<p><strong>Disconnection:</strong> Once the consumer has completed its tasks or needs to shut down, it gracefully closes its channel and then its connection to the broker.</p>
+</li>
+</ol>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_reliability_and_message_acknowledgment"><a class="anchor" href="#_reliability_and_message_acknowledgment"></a>Reliability and Message Acknowledgment</h3>
+<div class="paragraph">
+<p>Message acknowledgment is a cornerstone of reliability in PTP messaging. Without it, the broker cannot be certain that a message has been successfully processed.</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>Automatic Acknowledgment:</strong> Some messaging systems offer automatic acknowledgment, where the broker considers a message acknowledged as soon as it&#8217;s delivered to the consumer. While simpler to implement, this approach risks message loss if the consumer crashes <strong>after</strong> receiving but <strong>before</strong> processing the message.</p>
+</li>
+<li>
+<p><strong>Manual Acknowledgment:</strong> Manual acknowledgment, where the consumer explicitly sends an ACK after successful processing, is generally preferred for critical applications. This guarantees "at-least-once" delivery and, when combined with idempotent consumer logic, ensures "exactly-once" effective processing.</p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_concurrency_and_scaling_consumers"><a class="anchor" href="#_concurrency_and_scaling_consumers"></a>Concurrency and Scaling Consumers</h3>
+<div class="paragraph">
+<p>In a PTP setup, if you have multiple consumers listening to the <strong>same queue</strong>, the broker will distribute messages among them in a round-robin fashion (or similar load-balancing strategy). This allows for horizontal scaling of your processing capabilities: as message load increases, you can add more consumer instances to process messages concurrently, ensuring that each message is still processed by only one consumer.</p>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_hands_on_lab_developing_a_point_to_point_consumer"><a class="anchor" href="#_hands_on_lab_developing_a_point_to_point_consumer"></a>Hands-on Lab: Developing a Point-to-Point Consumer</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>In this lab, you will develop a simple Python consumer application that connects to your message broker, declares a queue, and listens for messages sent by the producer you developed previously.</p>
+</div>
+<div class="sect2">
+<h3 id="_prerequisites"><a class="anchor" href="#_prerequisites"></a>Prerequisites</h3>
+<div class="paragraph">
+<p>Before starting this lab, ensure you have:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>A running message broker (e.g., RabbitMQ, ActiveMQ). Refer to the "Setting up a basic message broker" section if you haven&#8217;t done this yet.</p>
+</li>
+<li>
+<p>Python 3 installed on your system.</p>
+</li>
+<li>
+<p>The <code>pika</code> library installed (for RabbitMQ compatibility). If not, install it using pip:
+<code>pip install pika</code></p>
+</li>
+<li>
+<p>A working PTP producer that sends messages to a queue named <code>hello_queue</code>. Refer to "Developing a producer for Point-to-Point messaging" if you haven&#8217;t created one.</p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_lab_objective"><a class="anchor" href="#_lab_objective"></a>Lab Objective</h3>
+<div class="paragraph">
+<p>Create a Python script that acts as a PTP consumer, connecting to the message broker, receiving messages from <code>hello_queue</code>, and printing them to the console.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_steps"><a class="anchor" href="#_steps"></a>Steps</h3>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p><strong>Create the Consumer Script:</strong>
+Open a new file named <code>consumer.py</code> in your preferred text editor or IDE.</p>
+</li>
+<li>
+<p><strong>Import Necessary Libraries:</strong>
+At the top of your <code>consumer.py</code> file, import the <code>pika</code> library.</p>
+<div class="literalblock">
+<div class="content">
+<pre>```python
+import pika
+import time
+```</pre>
+</div>
+</div>
+</li>
+<li>
+<p><strong>Establish Connection Parameters:</strong>
+Define the connection parameters for your message broker. For a local RabbitMQ instance, <code>localhost</code> is usually sufficient.</p>
+<div class="literalblock">
+<div class="content">
+<pre>```python
+connection_parameters = pika.ConnectionParameters('localhost')
+```</pre>
+</div>
+</div>
+<div class="literalblock">
+<div class="content">
+<pre>TIP: If your broker is on a different host, or requires authentication, you would adjust `pika.ConnectionParameters` accordingly (e.g., `pika.ConnectionParameters('my.broker.host', port=5672, credentials=pika.PlainCredentials('user', 'password'))`).</pre>
+</div>
+</div>
+</li>
+<li>
+<p><strong>Define the Message Callback Function:</strong>
+Create a function that will be executed whenever a message is received. This function takes four arguments: <code>ch</code> (channel), <code>method</code> (delivery method properties), <code>properties</code> (message properties), and <code>body</code> (the message content).</p>
+<div class="literalblock">
+<div class="content">
+<pre>Inside this function, you'll process the message. For this lab, we'll simply decode the message body (which is in bytes) and print it. Crucially, after processing, we will manually acknowledge the message to the broker.</pre>
+</div>
+</div>
+<div class="literalblock">
+<div class="content">
+<pre>```python
+def on_message_received(ch, method, properties, body):
+    print(f" [x] Received {body.decode()}")
+    # Simulate some work being done
+    time.sleep(1)
+    # Acknowledge the message only after successful processing
+    ch.basic_ack(delivery_tag=method.delivery_tag)
+    print(" [x] Message acknowledged")
+```
+*   `body.decode()`: Converts the message body from bytes to a string.
+*   `time.sleep(1)`: A small delay to simulate real-world message processing.
+*   `ch.basic_ack(delivery_tag=method.delivery_tag)`: This is the critical step for manual acknowledgment. It tells the broker that the message identified by `delivery_tag` has been successfully processed by this consumer and can be removed from the queue.</pre>
+</div>
+</div>
+</li>
+<li>
+<p><strong>Connect to the Broker and Consume Messages:</strong>
+In the main part of your script, establish the connection, create a channel, declare the queue, and then start consuming messages.</p>
+<div class="literalblock">
+<div class="content">
+<pre>```python
+try:
+    connection = pika.BlockingConnection(connection_parameters)
+    channel = connection.channel()</pre>
+</div>
+</div>
+<div class="literalblock">
+<div class="content">
+<pre># Declare the queue. This is idempotent; it will only create the queue if it doesn't exist.
+# Ensure the queue name matches the one used by the producer.
+channel.queue_declare(queue='hello_queue', durable=True)</pre>
+</div>
+</div>
+<div class="literalblock">
+<div class="content">
+<pre>print(' [*] Waiting for messages. To exit press CTRL+C')</pre>
+</div>
+</div>
+<div class="literalblock">
+<div class="content">
+<pre># Tell the channel to dispatch only one message at a time to this consumer.
+# This is useful for distributing messages evenly among multiple consumers and preventing a
+# single consumer from getting overloaded.
+channel.basic_qos(prefetch_count=1)</pre>
+</div>
+</div>
+<div class="literalblock">
+<div class="content">
+<pre># Start consuming messages from 'hello_queue' using the on_message_received callback.
+# auto_ack=False means we are doing manual acknowledgments.
+channel.basic_consume(queue='hello_queue', on_message_callback=on_message_received, auto_ack=False)</pre>
+</div>
+</div>
+<div class="literalblock">
+<div class="content">
+<pre># Start the blocking consumer loop
+channel.start_consuming()</pre>
+</div>
+</div>
+<div class="literalblock">
+<div class="content">
+<pre>except pika.exceptions.AMQPConnectionError as e:
+    print(f"Error connecting to RabbitMQ: {e}")
+except KeyboardInterrupt:
+    print("Consumer stopped by user.")
+finally:
+    if 'connection' in locals() and connection.is_open:
+        print("Closing connection.")
+        connection.close()
+```
+*   `pika.BlockingConnection`: Creates a blocking connection, suitable for simple scripts and labs.
+*   `channel.queue_declare(queue='hello_queue', durable=True)`: Declares the queue. `durable=True` means the queue will survive a broker restart. It's important that both producer and consumer declare the queue with the same properties.
+*   `channel.basic_qos(prefetch_count=1)`: This is important for fair dispatch. It tells RabbitMQ not to give more than one message to a worker at a time. So, if a consumer is busy processing a message, it won't receive the next message until it has acknowledged the current one. Messages will then be dispatched to the next available consumer.
+*   `channel.basic_consume`: Registers the `on_message_received` function as the callback for messages arriving on `hello_queue`. `auto_ack=False` explicitly tells the broker that we will manually acknowledge messages.
+*   `channel.start_consuming()`: Enters a blocking loop that listens for messages and invokes the callback function when a message arrives.
+*   Error handling (`try...except...finally`): Ensures graceful shutdown even if connection errors occur or the script is interrupted.</pre>
+</div>
+</div>
+</li>
+<li>
+<p><strong>Run the Consumer:</strong>
+Save the <code>consumer.py</code> file. Open your terminal or command prompt, navigate to the directory where you saved the file, and run it:</p>
+<div class="literalblock">
+<div class="content">
+<pre>```bash
+python consumer.py
+```
+You should see the message ` [*] Waiting for messages. To exit press CTRL+C`.</pre>
+</div>
+</div>
+</li>
+<li>
+<p><strong>Run the Producer (if not already running):</strong>
+Open another terminal window and run your <code>producer.py</code> script. For example:</p>
+<div class="literalblock">
+<div class="content">
+<pre>```bash
+python producer.py
+```
+This will send messages to the `hello_queue`.</pre>
+</div>
+</div>
+</li>
+<li>
+<p><strong>Observe the Output:</strong>
+In the consumer&#8217;s terminal, you should see messages being received and processed:</p>
+<div class="literalblock">
+<div class="content">
+<pre>```
+ [*] Waiting for messages. To exit press CTRL+C
+ [x] Received Hello World! 1
+ [x] Message acknowledged
+ [x] Received Hello World! 2
+ [x] Message acknowledged
+ ...
+```
+If you stop the consumer (CTRL+C) *before* it acknowledges a message, and then restart it, you might observe the unacknowledged message being redelivered (depending on the broker's configuration and timing).</pre>
+</div>
+</div>
+</li>
+</ol>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_troubleshooting_tips"><a class="anchor" href="#_troubleshooting_tips"></a>Troubleshooting Tips</h3>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>Connection Refused:</strong> Ensure your message broker is running and accessible at <code>localhost</code> (or the IP/hostname you specified). Check firewall settings if connecting to a remote broker.</p>
+</li>
+<li>
+<p><strong>Queue Mismatch:</strong> Double-check that the queue name (<code>hello_queue</code>) in both your producer and consumer scripts is identical.</p>
+</li>
+<li>
+<p><strong>No Messages Received:</strong></p>
+</li>
+<li>
+<p>Verify the producer is successfully sending messages.</p>
+</li>
+<li>
+<p>Check if the consumer has successfully connected to the broker (look for connection logs).</p>
+</li>
+<li>
+<p>Ensure no other consumer is already consuming all messages from the queue if <code>basic_qos</code> is not correctly configured or if <code>auto_ack</code> is enabled in another consumer.</p>
+</li>
+<li>
+<p><strong>Unacknowledged Messages:</strong> If <code>auto_ack</code> is set to <code>False</code> (as in our example), and your <code>on_message_received</code> function exits without calling <code>ch.basic_ack()</code>, the message will eventually be redelivered. This is a safety mechanism. Ensure your processing logic always includes an acknowledgment for successfully processed messages.</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>By completing this lab, you&#8217;ve successfully implemented a fundamental component of any PTP messaging system: the consumer. This lays the groundwork for building robust, decoupled, and scalable distributed applications.</p>
+</div>
+</div>
+</div>
+</div>
+<nav class="pagination">
+  <span class="prev"><a href="developing-a-producer-for-point-to-point-messaging.html">Developing a producer for Point-to-Point messaging</a></span>
+  <span class="next"><a href="implementing-a-publisher-for-publishsubscribe.html">Implementing a publisher for Publish/Subscribe</a></span>
+</nav>
+</article>
+  </div>
+</main>
+</div>
+<footer class="footer">
+  <img src="../../../_/img/rhl-logo-red.png" height="40px" alt="Red Hat"  href="https://redhat.com" >
+</footer><script id="site-script" src="../../../_/js/site.js" data-ui-root-path="../../../_"></script>
+<script async src="../../../_/js/vendor/highlight.js"></script>
+  </body>
+</html>
