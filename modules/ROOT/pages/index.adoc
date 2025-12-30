@@ -1,9 +1,9 @@
-=  Understanding and Implementing Message Oriented Middleware
+=  ActiveMQ Artemis Clustering and High Availability
 :navtitle: Home
 
 == Introduction
 
-Course Title:  Understanding and Implementing Message Oriented Middleware
+Course Title:  ActiveMQ Artemis Clustering and High Availability
 
 Description:
 Course description FIXME
@@ -13,13 +13,13 @@ Duration: FIXME hours
 == Topics covered in this course
 
 
-*  Introduction to Message Oriented Middleware (MOM)
+*  Message Oriented Middleware Introduction
 
-*  Challenges in Distributed Systems
+*  Challenges with clustered brokers
 
-*  MOM Solutions for Distributed Systems
+*  Solutions
 
-*  Hands-on Lab: Implementing Messaging Patterns
+*  Code Examples
 
 
 

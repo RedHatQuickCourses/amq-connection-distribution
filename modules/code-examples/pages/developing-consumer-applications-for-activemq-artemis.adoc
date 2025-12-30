@@ -1,0 +1,302 @@
+#  Developing consumer applications for ActiveMQ Artemis
+
+= Developing Consumer Applications for ActiveMQ Artemis
+
+In a Message Oriented Middleware (MOM) architecture, consumers are the critical components responsible for processing the messages that producers send to destinations (queues or topics). They are the ultimate recipients of the data, performing the business logic associated with each message. This section will delve into the technical aspects of developing robust and scalable consumer applications for ActiveMQ Artemis, including practical, hands-on activities.
+
+== Understanding the Role of Consumers
+
+As introduced in xref:./_ROOT/message-oriented-middleware-introduction.adoc[Message Oriented Middleware Introduction], MOM enables loose coupling and asynchronous communication in distributed systems. Consumers are at the heart of this asynchronous processing model.
+
+From the producer's perspective, the "Fire and Forget" pattern allows it to send a message and immediately return a response to the end-user, without waiting for the message's processing to complete. Consumers are the ones who pick up these messages from the queue and perform the actual work.
+
+Similarly, during traffic spikes, xref:./_ROOT/message-oriented-middleware-introduction.adoc[Traffic Smoothing] ensures that the system doesn't crash. Messages are buffered in the queue, and consumers process this backlog at a sustainable pace. This means consumers are designed to handle variable message loads, adapting their processing speed as needed.
+
+=== Key Characteristics of ActiveMQ Artemis Consumers
+
+ActiveMQ Artemis supports a variety of client protocols, including AMQP, MQTT, STOMP, and OpenWire. This protocol-agnostic approach means that consumers can be developed using client libraries for any of these protocols, connecting seamlessly to an Artemis broker.
+
+.The core responsibilities of an ActiveMQ Artemis consumer include:
+*   **Connecting to the Broker:** Establishing a network connection to one or more ActiveMQ Artemis brokers.
+*   **Subscribing to Destinations:** Specifying which queues or topics they wish to receive messages from.
+*   **Receiving Messages:** Pulling messages from the subscribed destinations, either synchronously (blocking until a message arrives) or asynchronously (using a message listener).
+*   **Processing Messages:** Executing the application's business logic based on the content of the received message.
+*   **Acknowledging Messages:** Notifying the broker that a message has been successfully processed, allowing the broker to remove it from the queue. This is crucial for ensuring message reliability and preventing data loss in case of consumer failure.
+
+=== Scaling with Competing Consumers
+
+One of the most powerful features of ActiveMQ Artemis for scaling consumer applications is the concept of *Competing Consumers*. As described in the xref:./_ROOT/message-oriented-middleware-introduction.adoc[Introduction to ActiveMQ Artemis], to handle increased load, you can dynamically scale up the number of consumer instances. Artemis automatically load-balances messages across these new consumers, increasing throughput linearly without changing a single line of code in the producer application.
+
+Here's how competing consumers work:
+
+. When multiple consumer instances connect to the same queue, ActiveMQ Artemis intelligently distributes messages among them.
+. Each message is delivered to only *one* of the competing consumers.
+. This allows for parallel processing of messages, significantly increasing the overall throughput of your messaging system.
+. If a consumer instance fails, any unacknowledged messages it was processing will eventually be redelivered to another available competing consumer, ensuring high availability and reliability.
+
+This pattern is a cornerstone of resilient and scalable distributed systems, allowing consumer workloads to scale horizontally to meet demand. In a clustered Artemis environment, consumers can connect to any broker in the cluster, and messages will be routed to an available consumer instance, potentially even across different broker nodes, leveraging xref:./_ROOT/activemq-artemis-clustering-overview.adoc[Server-Side Load Balancing].
+
+=== Message Acknowledgement
+
+Message acknowledgement is critical for guaranteed message delivery. When a consumer receives a message, it doesn't immediately disappear from the queue. The broker waits for the consumer to acknowledge that it has successfully processed the message.
+
+Common acknowledgement modes include:
+
+*   **AUTO_ACKNOWLEDGE:** The session automatically acknowledges messages when they are received or after the transaction commits. This is convenient but can lead to message loss if the consumer crashes *after* receiving but *before* fully processing a message.
+*   **CLIENT_ACKNOWLEDGE:** The client application is responsible for explicitly acknowledging messages using `message.acknowledge()`. This provides the highest control and reliability. If the consumer crashes before acknowledging, the message will be redelivered.
+*   **DUPS_OK_ACKNOWLEDGE:** The session acknowledges messages lazily. This can reduce overhead but may result in duplicate message delivery if the consumer fails.
+*   **SESSION_TRANSACTED:** Messages are part of a transaction. Acknowledgement occurs when the transaction commits, and messages are rolled back to the queue if the transaction fails.
+
+For enterprise applications requiring high reliability, `CLIENT_ACKNOWLEDGE` or `SESSION_TRANSACTED` are generally preferred.
+
+== Hands-on Lab: Developing an AMQP Consumer
+
+In this lab, you will develop a simple Java-based consumer application that connects to ActiveMQ Artemis using the AMQP 1.0 protocol. You will subscribe to a queue, receive messages, and acknowledge them. We will then demonstrate the *Competing Consumers* pattern by running multiple instances of our consumer.
+
+=== Prerequisites
+
+Before you begin, ensure you have:
+
+*   **Java Development Kit (JDK) 11 or newer:** Installed and configured.
+*   **Apache Maven:** Installed and configured.
+*   **An ActiveMQ Artemis Broker:** A running instance of ActiveMQ Artemis. For simplicity, you can run a standalone Artemis broker locally (e.g., download from Apache Artemis site and run `bin/artemis run`). Ensure it's listening on the default AMQP port (5672 or 61616 for OpenShift deployments).
+
+=== Step 1: Create a Maven Project
+
+First, create a new Maven project for your consumer application.
+
+. Create a new directory for your project:
++
+[source,bash]
+----
+mkdir artemis-consumer-app
+cd artemis-consumer-app
+----
+
+. Create a `pom.xml` file with the necessary dependencies:
++
+[source,xml]
+----
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <groupId>com.example.artemis</groupId>
+    <artifactId>artemis-consumer-app</artifactId>
+    <version>1.0.0-SNAPSHOT</version>
+
+    <properties>
+        <maven.compiler.source>11</maven.compiler.source>
+        <maven.compiler.target>11</maven.compiler.target>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <qpid-jms.version>2.2.0</qpid-jms.version> <1>
+        <slf4j.version>2.0.7</slf4j.version> <2>
+    </properties>
+
+    <dependencies>
+        <!-- Qpid JMS Client for AMQP 1.0 -->
+        <dependency>
+            <groupId>org.apache.qpid</groupId>
+            <artifactId>qpid-jms-client</artifactId>
+            <version>${qpid-jms.version}</version>
+        </dependency>
+        <!-- Logging -->
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-api</artifactId>
+            <version>${slf4j.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-simple</artifactId>
+            <version>${slf4j.version}</version>
+            <scope>runtime</scope>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>3.8.1</version>
+                <configuration>
+                    <source>${maven.compiler.source}</source>
+                    <target>${maven.compiler.target}</target>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>exec-maven-plugin</artifactId>
+                <version>3.1.0</version>
+                <configuration>
+                    <mainClass>com.example.artemis.Consumer</mainClass>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+</project>
+----
+<1> The Qpid JMS client is a robust implementation for AMQP 1.0.
+<2> SLF4J is used for logging, with `slf4j-simple` providing a basic console logger.
+
+=== Step 2: Write the Consumer Application
+
+Create the Java source file `src/main/java/com/example/artemis/Consumer.java`.
+
+. Create the directory structure:
++
+[source,bash]
+----
+mkdir -p src/main/java/com/example/artemis
+----
+
+. Create the `Consumer.java` file with the following content:
++
+[source,java]
+----
+package com.example.artemis;
+
+import org.apache.qpid.jms.JmsConnectionFactory;
+import javax.jms.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+public class Consumer {
+
+    private static final Logger LOG = LoggerFactory.getLogger(Consumer.class);
+    private static final String BROKER_URL = "amqp://localhost:5672"; // <1>
+    private static final String QUEUE_NAME = "example.queue"; // <2>
+
+    public static void main(String[] args) throws Exception {
+        Connection connection = null;
+        Session session = null;
+        MessageConsumer consumer = null;
+
+        try {
+            LOG.info("Connecting to broker: {}", BROKER_URL);
+            JmsConnectionFactory factory = new JmsConnectionFactory(BROKER_URL);
+            connection = factory.createConnection(); // <3>
+            connection.start(); // <4>
+
+            session = connection.createSession(false, Session.CLIENT_ACKNOWLEDGE); // <5>
+            Destination destination = session.createQueue(QUEUE_NAME); // <6>
+            consumer = session.createConsumer(destination); // <7>
+
+            LOG.info("Waiting for messages on queue: {}", QUEUE_NAME);
+
+            // Using an asynchronous message listener
+            consumer.setMessageListener(message -> { // <8>
+                try {
+                    if (message instanceof TextMessage) {
+                        TextMessage textMessage = (TextMessage) message;
+                        LOG.info("Received message: '{}' from Consumer on Thread: {}", textMessage.getText(), Thread.currentThread().getName());
+                    } else {
+                        LOG.info("Received non-text message: {}", message.getClass().getName());
+                    }
+                    message.acknowledge(); // <9>
+                    LOG.info("Message acknowledged.");
+                } catch (JMSException e) {
+                    LOG.error("Error processing message: {}", e.getMessage(), e);
+                }
+            });
+
+            // Keep the main thread alive to allow message listener to operate
+            Thread.currentThread().join(); // <10>
+
+        } catch (JMSException e) {
+            LOG.error("JMS Exception occurred: {}", e.getMessage(), e);
+        } finally {
+            // Clean up resources if an error occurs before the join()
+            if (consumer != null) {
+                try {
+                    consumer.close();
+                } catch (JMSException e) {
+                    LOG.error("Error closing consumer: {}", e.getMessage(), e);
+                }
+            }
+            if (session != null) {
+                try {
+                    session.close();
+                } catch (JMSException e) {
+                    LOG.error("Error closing session: {}", e.getMessage(), e);
+                }
+            }
+            if (connection != null) {
+                try {
+                    connection.close();
+                } catch (JMSException e) {
+                    LOG.error("Error closing connection: {}", e.getMessage(), e);
+                }
+            }
+        }
+    }
+}
+----
+<1> Connection URI for your Artemis broker. If using a local standalone broker, `localhost:5672` is common. For OpenShift, this would be the AMQP service route.
+<2> The name of the queue to consume messages from. Make sure this queue exists on your Artemis broker. If it doesn't, Artemis will typically auto-create it on first use.
+<3> Creates a connection to the broker.
+<4> Starts the connection. Messages will not be delivered until the connection is started.
+<5> Creates a session. `false` indicates not transacted. `Session.CLIENT_ACKNOWLEDGE` means the consumer must explicitly acknowledge messages.
+<6> Defines the destination (queue) we want to consume from.
+<7> Creates a message consumer linked to our destination.
+<8> Sets an asynchronous `MessageListener`. This is a non-blocking way to receive messages. The `onMessage` method will be invoked whenever a new message arrives.
+<9> **Crucial step!** Explicitly acknowledges the message. Without this, the message would remain on the queue and eventually be redelivered.
+<10> Keeps the main thread alive indefinitely so the `MessageListener` can continue to receive messages. In a real application, you might use a more sophisticated lifecycle management.
+
+=== Step 3: Compile and Run the Consumer
+
+. Compile your application using Maven:
++
+[source,bash]
+----
+mvn clean install
+----
+
+. Run the consumer application:
++
+[source,bash]
+----
+mvn exec:java
+----
++
+You should see output similar to this, indicating the consumer is connected and waiting for messages:
++
+[source,console]
+----
+[INFO] Connecting to broker: amqp://localhost:5672
+[INFO] Waiting for messages on queue: example.queue
+----
+
+. If you have a producer application (as covered in xref:./_ROOT/developing-producer-applications.adoc[Developing Producer Applications]) running and sending messages to `example.queue`, your consumer will start receiving and logging them:
++
+[source,console]
+----
+[INFO] Received message: 'Hello from Producer - 1' from Consumer on Thread: ActiveMQJMSClient-Thread-1
+[INFO] Message acknowledged.
+[INFO] Received message: 'Hello from Producer - 2' from Consumer on Thread: ActiveMQJMSClient-Thread-2
+[INFO] Message acknowledged.
+----
+
+=== Step 4: Demonstrate Competing Consumers
+
+To observe the *Competing Consumers* pattern:
+
+. Keep your first consumer instance running.
+. Open a *new terminal window* in the `artemis-consumer-app` directory.
+. Run another instance of the consumer:
++
+[source,bash]
+----
+mvn exec:java
+----
+
+. Now, if you send messages from your producer to `example.queue`, you will notice that the messages are distributed between the two running consumer instances. Each message will be processed by only one consumer.
++
+You will see messages appearing alternately in the logs of your two consumer terminals, demonstrating that ActiveMQ Artemis is load-balancing messages across the available consumers. This behavior highlights how easily you can scale your message processing capabilities by simply deploying more consumer instances.
+
+. To stop the consumers, press `Ctrl+C` in each terminal window.
+
+This hands-on activity provides a foundational understanding of how to build reliable and scalable consumer applications for ActiveMQ Artemis, leveraging its core features like protocol agnosticism and competing consumers.

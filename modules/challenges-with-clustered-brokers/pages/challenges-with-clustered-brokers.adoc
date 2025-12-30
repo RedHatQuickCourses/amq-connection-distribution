@@ -1,0 +1,10 @@
+#  Challenges with clustered brokers
+
+=== Challenges with Clustered Brokers
+
+Clustered message brokers, while offering high availability, introduce specific challenges:
+
+*   **Uneven Connection Distribution**: Clients often connect to a single broker in a cluster, leading to an unequal distribution of connections and associated consumers across nodes.
+*   **Bottlenecks**: A single connection point can become a bottleneck, limiting throughput even in a scaled-out cluster.
+*   **Message Redistribution Overhead**: To compensate for uneven connections, messages might need to be redistributed between brokers, which adds significant overhead and reduces overall cluster throughput.
+*   **Disk Paging Issues**: High-volume queues, especially when relying on message redistribution, can be forced to page pending messages to disk, impacting performance.

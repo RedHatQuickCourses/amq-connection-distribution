@@ -1,0 +1,11 @@
+#  Message Oriented Middleware Introduction
+
+== Message Oriented Middleware Introduction
+
+Message Oriented Middleware (MOM) is the backbone of modern distributed systems, enabling loose coupling and independent scaling.
+
+*   *Role of MOM in distributed systems:* Decouples producers from consumers, allowing independent scaling and communication across microservices.
+*   *Benefits of asynchronous communication:* Ensures high availability, reliability, and faster system response times by not requiring immediate responses.
+*   *Ensuring resilience and reliability with MOM:* Messages are persisted safely even if a consumer fails, guaranteeing eventual consistency and preventing cascading failures.
+*   *Introduction to ActiveMQ Artemis:* A next-generation, high-performance messaging broker built on non-blocking I/O.
+*   *Key features and architecture of ActiveMQ Artemis:* Protocol-agnostic (AMQP, MQTT, STOMP, OpenWire), designed for low latency, and supports patterns like "Fire and Forget" for reduced latency and "Traffic Smoothing" to handle message spikes.

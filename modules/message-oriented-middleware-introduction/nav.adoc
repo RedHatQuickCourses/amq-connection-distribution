@@ -1,0 +1,6 @@
+* xref:message-oriented-middleware-introduction.adoc[]
+** xref:role-of-mom-in-distributed-systems.adoc[]
+** xref:benefits-of-asynchronous-communication.adoc[]
+** xref:ensuring-resilience-and-reliability-with-mom.adoc[]
+** xref:introduction-to-activemq-artemis.adoc[]
+** xref:key-features-and-architecture-of-activemq-artemis.adoc[]

@@ -1,0 +1,291 @@
+#  Configuring ActiveMQArtemis Custom Resources for clustering
+
+= Configuring ActiveMQArtemis Custom Resources for Clustering
+
+The deployment and management of ActiveMQ Artemis brokers on Kubernetes-based platforms like OpenShift are significantly streamlined through the use of Custom Resources (CRs) and Operators. The Red Hat AMQ Operator leverages the Kubernetes API to provide a native way to declare, configure, and manage ActiveMQ Artemis instances, including clustered deployments, directly through YAML manifests.
+
+== Introduction to ActiveMQArtemis Custom Resources
+
+ActiveMQ Artemis Custom Resources (CRs) act as a declarative blueprint for your broker deployments. Instead of manually configuring pods, services, routes, and persistent volumes, you define a single `ActiveMQArtemis` CR, and the Red Hat AMQ Operator translates this declaration into the necessary underlying Kubernetes resources. This approach simplifies operations, automates lifecycle management, and ensures consistency across environments.
+
+image::operator-overview.png[Operator Overview, 600, 400]
+
+As introduced in the challenges section, clustered brokers can face issues like uneven connection distribution, bottlenecks from single connection points, and the overhead of message redistribution leading to reduced throughput and disk paging. By deploying ActiveMQ Artemis on OpenShift with the AMQ Operator and a properly configured CR, we can address these challenges by:
+
+*   **Automated Scaling and High Availability**: The Operator automatically provisions multiple broker instances and configures their clustering, ensuring high availability and fault tolerance.
+*   **Server-Side Load Balancing**: OpenShift's service mechanisms and the broker's internal features work together to distribute client connections and messages evenly across cluster members.
+*   **Simplified Management**: Declarative configuration through CRs reduces the complexity of managing distributed message brokers, making it easier to scale and maintain.
+
+== Anatomy of an ActiveMQArtemis Custom Resource
+
+The `ActiveMQArtemis` Custom Resource defines the desired state of your ActiveMQ Artemis cluster. Let's examine a typical configuration snippet used to deploy a clustered broker, as referenced in our context:
+
+[source,yaml]
+----
+apiVersion: broker.amq.io/v1beta1
+kind: ActiveMQArtemis
+metadata:
+  name: broker
+  namespace: broker
+spec:
+  acceptors:
+    - bindToAllInterfaces: true
+      connectionsAllowed: -1
+      expose: true
+      name: broker
+      port: 61617
+      sslEnabled: true
+      sslSecret: tls
+  addressSettings:
+    addressSetting:
+      - match: '#'
+        # ... other address settings ...
+----
+
+Let's break down the key sections of this Custom Resource:
+
+*   `apiVersion`: Specifies the version of the Kubernetes API the object is using. For the AMQ Broker Operator, this is typically `broker.amq.io/v1beta1`.
+*   `kind`: Indicates the type of Kubernetes resource, which is `ActiveMQArtemis` for deploying a broker instance.
+*   `metadata`: Contains essential identifying information for the object:
+    *   `name`: A unique identifier for this particular ActiveMQArtemis deployment (e.g., `broker`).
+    *   `namespace`: The OpenShift project or Kubernetes namespace where this broker will be deployed (e.g., `broker`).
+*   `spec`: This is the core of the CR, defining the desired state and detailed configuration of your ActiveMQ Artemis cluster.
+
+Within the `spec` section:
+
+*   `acceptors`:
+    *   An `acceptor` defines a network endpoint where clients can connect to the broker. A single broker can host multiple acceptors, each configured for different protocols (e.g., AMQP, OpenWire, Core), SSL/non-SSL, or specific ports.
+    *   `bindToAllInterfaces: true`: Configures the acceptor to listen on all available network interfaces within the broker pod.
+    *   `connectionsAllowed: -1`: Specifies that there is no limit on the number of concurrent client connections this acceptor can handle.
+    *   `expose: true`: This crucial setting instructs the Red Hat AMQ Operator to automatically create an OpenShift Route (for external access) or a Kubernetes Service (for internal cluster access) for this acceptor, making it accessible to clients.
+    *   `name: broker`: A unique logical name for this specific acceptor configuration within the CR.
+    *   `port: 61617`: The TCP port number on which this acceptor will listen for incoming client connections. This port typically corresponds to the Artemis Core protocol.
+    *   `sslEnabled: true`: Enables SSL/TLS encryption for secure communication over this acceptor.
+    *   `sslSecret: tls`: Specifies the name of the Kubernetes Secret that contains the SSL/TLS certificate and private key (`tls.crt` and `tls.key`). This secret must exist in the same namespace as the `ActiveMQArtemis` CR.
+
+*   `addressSettings`:
+    *   This section allows for fine-grained configuration of message addresses and queues within the broker.
+    *   `addressSetting`: A list of specific address settings.
+    *   `match: '#'`: A wildcard pattern indicating that the following settings apply to *all* addresses and queues on the broker. More specific patterns (e.g., `myQueue` or `topic.*`) can be used for targeted configurations.
+    *   Common additional settings (not fully shown in the context but crucial for clustering and performance):
+        *   `maxSizeBytes`, `pageSizeBytes`: Control memory and disk usage for queues, preventing excessive memory consumption or disk paging for high-volume queues.
+        *   `redistributionDelay`: As highlighted in the challenges, message redistribution between cluster nodes can introduce significant overhead. Setting this delay (e.g., to `0` for immediate redistribution) can impact overall cluster throughput.
+
+*   `deploymentPlan`: (While not explicitly shown in the provided context snippet, this is a fundamental part of deploying a clustered broker with the Operator).
+    *   `size`: This field (e.g., `size: 2`) is typically found under `spec.deploymentPlan` and specifies the desired number of broker instances the Operator should deploy to form a cluster. For example, to achieve a two-node cluster for high availability and load balancing, you would set `size: 2`. The Operator then manages the creation of the underlying StatefulSet, individual broker pods, and their internal clustering configuration.
+    *   `image`: Specifies the container image to use for the ActiveMQ Artemis broker pods (e.g., `registry.redhat.io/amq7/amq-broker-rhel8:7.10`).
+
+== Hands-on Activity: Deploying a Clustered ActiveMQ Artemis Broker on OpenShift
+
+This activity guides you through deploying a two-node ActiveMQ Artemis cluster on OpenShift using the Red Hat AMQ Operator and an `ActiveMQArtemis` Custom Resource.
+
+=== Prerequisites
+
+*   An OpenShift cluster with `oc` CLI configured and logged in.
+*   The Red Hat AMQ Operator installed in your cluster. (If not installed, please follow the official Red Hat documentation to subscribe to and install the Operator in your desired namespace, e.g., `amq-broker`). For this lab, we'll assume the operator is installed and configured to watch resources in the `broker` namespace.
+
+=== Step 1: Create a Project (Namespace)
+
+First, create a dedicated OpenShift project (namespace) for your broker deployment.
+
+[source,bash]
+----
+oc new-project broker
+----
+
+=== Step 2: Create a TLS Secret for SSL Communication
+
+Since our `ActiveMQArtemis` CR will specify `sslEnabled: true` and `sslSecret: tls` for secure communication, we need to create a Kubernetes Secret named `tls` containing the necessary certificate and private key. For demonstration purposes, we'll generate a self-signed certificate.
+
+.Generate a self-signed certificate and key:
+[source,bash]
+----
+openssl req -x509 -nodes -days 365 -newkey rsa:2048 -keyout tls.key -out tls.crt -subj "/CN=activemq-artemis-broker"
+----
+This command creates two files: `tls.key` (the private key) and `tls.crt` (the certificate). The `CN` (Common Name) in a production environment should match the service name or route hostname that clients will use to connect. For this lab, `activemq-artemis-broker` is sufficient.
+
+.Create the Kubernetes Secret named `tls`:
+[source,bash]
+----
+oc create secret tls tls --cert=tls.crt --key=tls.key -n broker
+----
+Verify that the secret has been successfully created:
+[source,bash]
+----
+oc get secret tls -n broker
+----
+
+=== Step 3: Define the ActiveMQArtemis Custom Resource
+
+Create a file named `artemis-cluster-cr.yaml` with the following content. This configuration builds upon the context provided and extends it to deploy a fully functional two-node cluster with multiple common protocols.
+
+[source,yaml]
+----
+apiVersion: broker.amq.io/v1beta1
+kind: ActiveMQArtemis
+metadata:
+  name: my-broker-cluster
+  namespace: broker
+spec:
+  deploymentPlan:
+    size: 2 # This specifies a two-node cluster for high availability and load balancing
+    image: registry.redhat.io/amq7/amq-broker-rhel8:7.10 # Specify a suitable AMQ Broker image
+  acceptors:
+    - name: amqp
+      port: 5672
+      protocol: amqp
+      expose: true
+      sslEnabled: true
+      sslSecret: tls
+      bindToAllInterfaces: true
+      connectionsAllowed: -1
+    - name: openwire
+      port: 61616
+      protocol: openwire
+      expose: true
+      sslEnabled: true
+      sslSecret: tls
+      bindToAllInterfaces: true
+      connectionsAllowed: -1
+    - name: core
+      port: 61617
+      protocol: core
+      expose: true
+      sslEnabled: true
+      sslSecret: tls
+      bindToAllInterfaces: true
+      connectionsAllowed: -1
+  addressSettings:
+    addressSetting:
+      - match: '#' # Apply these settings to all addresses
+        maxSizeBytes: -1 # No size limit for messages in memory
+        maxDeliveryAttempts: 10
+        redistributionDelay: 0 # Set to 0 for immediate redistribution to minimize overhead
+        deadLetterAddress: DLQ
+        expiryAddress: ExpiryQueue
+  # Optional: Persistence configuration is highly recommended for production environments
+  # journalStorage:
+  #   size: 1Gi
+  #   storageClassName: standard # Use your cluster's default storage class or a specific one
+  # bindingsStorage:
+  #   size: 1Gi
+  #   storageClassName: standard
+  # largeMessagesStorage:
+  #   size: 1Gi
+  #   storageClassName: standard
+----
+
+.Explanation of Key Configuration Points:
+*   `metadata.name: my-broker-cluster`: A more descriptive name for our cluster deployment.
+*   `deploymentPlan.size: 2`: This critical setting instructs the Red Hat AMQ Operator to deploy *two* ActiveMQ Artemis broker instances, which will automatically form a cluster.
+*   `deploymentPlan.image`: Specifies the container image for the brokers. Using a Red Hat certified image is recommended.
+*   `acceptors`: We've included `amqp` (port `5672`), `openwire` (port `61616`), and `core` (port `61617`) acceptors, all exposed via OpenShift Routes and secured with SSL, as is common in real-world deployments. The `core` acceptor here matches the port from the context.
+*   `addressSettings.addressSetting.redistributionDelay: 0`: As mentioned in the challenges, message redistribution overhead can reduce cluster throughput. Setting this to `0` ensures immediate redistribution, which can be beneficial for high-volume queues.
+
+=== Step 4: Apply the Custom Resource
+
+Apply the `artemis-cluster-cr.yaml` file to your OpenShift cluster using the `oc apply` command.
+
+[source,bash]
+----
+oc apply -f artemis-cluster-cr.yaml -n broker
+----
+
+The Red Hat AMQ Operator will now reconcile this Custom Resource, creating and configuring all the necessary Kubernetes resources, which include:
+
+*   A `StatefulSet` that manages the two ActiveMQ Artemis pods.
+*   Headless Services for internal cluster communication between brokers.
+*   Standard Services and OpenShift Routes for client access to each of the defined acceptors.
+
+=== Step 5: Verify the Deployment
+
+Monitor the deployment process and verify that your cluster is fully up and running.
+
+.Check the pods:
+[source,bash]
+----
+oc get pods -n broker
+----
+You should see two pods named `my-broker-cluster-ss-0` and `my-broker-cluster-ss-1` (or similar naming based on the operator's convention) in a `Running` state.
+
+.Check the services and routes:
+[source,bash]
+----
+oc get svc -n broker
+oc get route -n broker
+----
+You should observe services and routes corresponding to your `amqp`, `openwire`, and `core` acceptors (e.g., `my-broker-cluster-amqp`, `my-broker-cluster-openwire`, `my-broker-cluster-core`). Make a note of the hostnames of these routes; these are the external endpoints your client applications will use to connect.
+
+.Check the `ActiveMQArtemis` CR status:
+[source,bash]
+----
+oc get activemqartemis my-broker-cluster -n broker -o yaml
+----
+Examine the `status` section within the output. It should indicate that the cluster is `Running` and healthy, providing details about the deployed brokers.
+
+== Client Connection to a Clustered Artemis Environment
+
+Once your ActiveMQ Artemis cluster is deployed and accessible via OpenShift Routes, client applications need to connect in a way that fully leverages the cluster's high availability and message load-balancing capabilities.
+
+The provided context gives an example of a connection URL and the use of `JmsPoolConnectionFactory`. For client applications, especially those connecting from outside the OpenShift cluster, you would typically use the hostname of the exposed OpenShift Route for your chosen protocol (e.g., `openwire` or `amqp`).
+
+A connection URL similar to the one shown in the context is crucial for robust client-side behavior:
+
+[source,properties]
+----
+quarkus.artemis.url=ssl://<ROUTE_HOSTNAME>:61616?ha=true&reconnectAttempts=30&retryInterval=5000&connectionLoadBalancingPolicyClassName=org.apache.activemq.artemis.api.core.client.loadbalance.RandomConnectionLoadBalancingPolicy&callTimeout=2000
+quarkus.artemis.username=admin
+quarkus.artemis.password=admin
+----
+
+.Explanation of URL Parameters for Clustered Client Connections:
+*   `ssl://<ROUTE_HOSTNAME>:61616`: Specifies the SSL protocol and the hostname/port of the OpenShift Route for the OpenWire acceptor. Replace `<ROUTE_HOSTNAME>` with the actual route host you obtained from `oc get route`.
+*   `ha=true`: Enables ActiveMQ Artemis's client-side High Availability features. This allows the client to automatically detect if its primary connection to a broker is lost and attempt to failover to another available broker in the cluster, ensuring continuous operation.
+*   `reconnectAttempts`, `retryInterval`, `reconnectInitialDelay`: These parameters configure the client's reconnection behavior, determining how many times and how often it attempts to reconnect after a connection failure.
+*   `connectionLoadBalancingPolicyClassName=org.apache.activemq.artemis.api.core.client.loadbalance.RandomConnectionLoadBalancingPolicy`: This is a critical setting for client-side load balancing. It instructs the ActiveMQ Artemis client to randomly select an available broker from the list of cluster members when establishing new connections. This policy is instrumental in distributing client connections evenly across the cluster, directly addressing the challenge of "uneven connection distribution across cluster nodes" and preventing a single broker from becoming a bottleneck.
+*   `callTimeout`: Sets a timeout for synchronous operations or calls made over the connection.
+
+Furthermore, wrapping the `ActiveMQConnectionFactory` in a `JmsPoolConnectionFactory` (from the `pooled-jms` library by messaginghub) is a highly recommended practice, especially within application frameworks like Spring or Quarkus, as evidenced by the context:
+
+[source,java]
+----
+import io.smallrye.common.annotation.Identifier;
+import jakarta.enterprise.inject.Produces;
+import jakarta.inject.Singleton;
+import org.apache.activemq.artemis.jms.client.ActiveMQConnectionFactory;
+import org.eclipse.microprofile.config.inject.ConfigProperty;
+import org.messaginghub.pooled.jms.JmsPoolConnectionFactory;
+
+@Singleton
+public class MyConfig {
+
+    @ConfigProperty(name = "quarkus.artemis.url")
+    String url;
+
+    @Produces
+    @Identifier("pcfProducer") // Identifies this as the producer connection factory
+    public JmsPoolConnectionFactory producerConnectionFactory(@ConfigProperty(name = "quarkus.artemis.username") String username,
+                                                              @ConfigProperty(name = "quarkus.artemis.password") String password) {
+        ActiveMQConnectionFactory artemisConnectionFactory = new ActiveMQConnectionFactory(url);
+        artemisConnectionFactory.setUser(username);
+        artemisConnectionFactory.setPassword(password);
+
+        JmsPoolConnectionFactory pcf = new JmsPoolConnectionFactory();
+        pcf.setConnectionFactory(artemisConnectionFactory);
+        pcf.setMaxConnections(10); // Set to be >= number of brokers for effective load balancing
+        // pcf.setMaxSessionsPerConnection(1); // Tune based on application requirements
+        // pcf.setConnectionCheckInterval(30000); // How often to check for idle connections
+        // pcf.setConnectionIdleTimeout(30000); // Timeout for idle connections
+        return pcf;
+    }
+    // A similar method can be provided for a consumer-specific connection factory,
+    // allowing for independent tuning of connection pool settings based on usage patterns.
+}
+----
+
+.Key Aspects of `JmsPoolConnectionFactory` for Clustered Environments:
+*   **Connection Pooling**: `JmsPoolConnectionFactory` reuses JMS connections, significantly reducing the overhead associated with establishing new connections for every message producer or consumer.
+*   **Separation of Producer/Consumer Factories**: The context implies the ability to separate producer and consumer connection factories. This allows for independent tuning of connection pool parameters for each type of client, preventing contention and ensuring optimal resource allocation (e.g., producers might need more connections, consumers fewer but more session-per-connection).
+*   **`setMaxConnections`**: This property (e.g., `pcf.setMaxConnections(10)`) is crucial for client-side load balancing in a clustered environment. By setting `setMaxConnections` to a value greater than or equal to the number of brokers in your cluster (e.g., `2` for a 2-node cluster, or higher if more parallel connections are needed), the pooled factory can establish multiple underlying physical connections, each potentially to a different broker instance within the cluster. This effectively distributes the load of client connections across the entire cluster, directly addressing the challenge of "bottlenecks from single connection points."
+
+By combining the declarative power of OpenShift Operators for broker deployment, properly configured `ActiveMQArtemis` Custom Resources for cluster setup, and intelligent client-side connection management with `JmsPoolConnectionFactory` and load-balancing policies, you can achieve a robust, highly available, and performant ActiveMQ Artemis messaging cluster.

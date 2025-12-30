@@ -1,0 +1,129 @@
+#  Server-side message load balancing
+
+[[server-side-message-load-balancing]]
+= Server-side Message Load Balancing
+
+Server-side message load balancing is a cornerstone feature in ActiveMQ Artemis clustering, designed to overcome the inherent challenges of distributing messages efficiently and reliably across multiple broker nodes. This mechanism ensures optimal resource utilization, prevents bottlenecks, and significantly enhances the overall throughput and resilience of your messaging infrastructure.
+
+== The Challenge: Uneven Distribution and Bottlenecks
+
+In distributed systems leveraging Message Oriented Middleware (MOM), applications often attempt to connect to brokers using simple connection pools or client-side load-balancing policies. This typically results in an application establishing a single connection to a single broker within the cluster. While seemingly straightforward, this approach creates a significant bottleneck: all messages from that producer application are funneled to one specific broker, irrespective of where the consumers for those messages are located across the cluster.
+
+The ActiveMQ Artemis cluster can technically mitigate this by moving messages between nodes (often configured with parameters like `redistribution-delay`). However, this inter-broker message redistribution introduces substantial overhead. Relying heavily on this process leads to:
+
+*   **Reduced Overall Cluster Throughput:** Message data must be transferred across the network between brokers, consuming bandwidth and adding latency.
+*   **Single Connection Point Bottlenecks:** A single broker can become overloaded with messages, even if other brokers in the cluster are underutilized.
+*   **Disk Paging Issues:** For high-volume queues, an overloaded broker may exhaust its memory buffer, forcing pending messages to be paged to disk. This drastically degrades performance, increases latency, and can impact system stability.
+
+These issues directly impact the resilience and reliability that MOM is intended to provide, undermining the benefits of asynchronous communication.
+
+== The Solution: Intelligent Server-Side Routing
+
+ActiveMQ Artemis addresses these challenges through its sophisticated server-side message load balancing. Unlike client-side approaches, this mechanism leverages the cluster's inherent awareness of its members' state to make intelligent routing decisions at the broker level.
+
+Here's how it works:
+
+1.  **Cluster Awareness:** All brokers within an ActiveMQ Artemis cluster are aware of each other. They maintain information about which queues and topics are hosted on which nodes and, crucially, which consumers are connected to which specific brokers for those destinations.
+2.  **Intelligent Message Routing:** When a producer application sends a message to a queue or topic, it connects to one of the brokers in the cluster. Instead of simply accepting and potentially holding the message locally, the connected broker checks the cluster topology.
+3.  **Consumer-Driven Distribution:** If the broker receiving the message does not have an active consumer for that specific queue or topic, but another broker within the cluster *does* have one or more consumers, the message is intelligently routed to the appropriate broker. This routing happens seamlessly and efficiently within the cluster.
+
+This server-side intelligence ensures that messages are delivered to the most suitable broker—the one with an available consumer—as directly as possible. The benefits are substantial:
+
+*   **Even Message Distribution:** Workload is balanced across all cluster members, preventing any single node from becoming a bottleneck.
+*   **Maximized Throughput:** By avoiding unnecessary message redistribution and directly routing messages to consumers, the cluster achieves higher message processing rates.
+*   **Reduced Latency:** Messages reach their intended consumers faster, as they take a more direct path within the cluster.
+*   **Optimal Resource Utilization:** All brokers contribute effectively to message processing, making the most of available hardware resources.
+*   **Prevention of Disk Paging:** Queues are less likely to back up on a single node, significantly reducing the risk of messages being paged to disk.
+
+== Hands-on Activity: Verifying Message Distribution in a Clustered Environment
+
+To demonstrate the effectiveness of server-side message load balancing, we will deploy a two-node ActiveMQ Artemis cluster on OpenShift and observe how messages are distributed across its members.
+
+.Prerequisites
+*   An ActiveMQ Artemis cluster named `broker` deployed on OpenShift. This can be achieved by installing the Red Hat AMQ Operator and creating an `ActiveMQArtemis` custom resource with appropriate clustering configurations.
+*   At least two broker pods, for example, `broker-ss-0` and `broker-ss-1`, running as part of the cluster.
+*   Producer applications actively sending messages to a specific queue (e.g., `prices`).
+*   Consumer applications connected to the cluster, subscribed to the `prices` queue, and actively consuming messages.
+
+.Example `ActiveMQArtemis` Custom Resource for a Clustered Setup
+To deploy a cluster, you might use a configuration similar to this (truncated for brevity, focusing on acceptors and address settings):
+
+```yaml
+apiVersion: broker.amq.io/v1beta1
+kind: ActiveMQArtemis
+metadata:
+  name: broker
+  namespace: broker
+spec:
+  acceptors:
+    - bindToAllInterfaces: true
+      connectionsAllowed: -1
+      expose: true
+      name: broker
+      port: 61617 # Example SSL port
+      sslEnabled: true
+      sslSecret: tls
+  addressSettings:
+    addressSetting:
+      - match: '#' # Default settings for all addresses
+        # ... other address settings for redistribution-delay, etc.
+  # ... other cluster and HA configurations
+```
+
+.Steps to Verify Message Distribution
+
+.  **Ensure Producer and Consumer Activity:**
+    Confirm that your producer applications are actively sending a consistent stream of messages to the `prices` queue and that your consumer applications are running, connected to the cluster, and processing these messages. This continuous activity is crucial for observing load balancing.
+
+.  **Execute the `artemis queue stat` command:**
+    Use the `oc exec` command to run the `artemis queue stat` utility within one of your broker pods (e.g., `broker-ss-0`). The `--clustered` flag is paramount here, as it instructs Artemis to aggregate and display statistics from *all* active nodes within the cluster, providing a comprehensive view of message distribution.
+
+    ```bash
+    oc exec broker-ss-0 -- /home/jboss/amq-broker/bin/artemis queue stat \
+      --url tcp://broker-ss-0:61616 \
+      --clustered \
+      --user admin \
+      --password admin \
+      --queueName prices
+    ```
+
+    *   `broker-ss-0`: The name of the primary broker pod from which to execute the command.
+    *   `/home/jboss/amq-broker/bin/artemis`: The path to the Artemis command-line management utility within the pod's filesystem.
+    *   `--url tcp://broker-ss-0:61616`: The URL to connect to the broker's management interface. Note that `61616` is a common default for non-SSL connections for management.
+    *   `--clustered`: **Crucial flag** that aggregates statistics across all cluster members, allowing you to see the overall distribution.
+    *   `--user admin --password admin`: Credentials required to authenticate with the broker's management API.
+    *   `--queueName prices`: Specifies the particular queue whose statistics you wish to inspect across the cluster.
+
+.  **Analyze the Output:**
+    The output from this command will list statistics for the `prices` queue, broken down by each broker in the cluster. You should observe that the `Message Count`, `Messages Added`, and `Messages Delivered` metrics are roughly similar across `broker-ss-0` and `broker-ss-1` (and any other cluster members). This near-equal distribution of messages and connections across both brokers is direct evidence that the server-side load balancing mechanisms are actively at work, efficiently distributing the messaging workload.
+
+    Example Output (values will vary based on your load):
+
+    ```text
+    Broker: broker-ss-0
+      Queue: prices
+        Message Count: 25123
+        Consumer Count: 1
+        Messages Added: 50000
+        Messages Delivered: 25123
+        Messages Acknowledged: 25123
+        Messages Expired: 0
+        Messages Killed: 0
+        Messages In Memory: 25123
+        Scheduled Count: 0
+        Messages Paged: 0
+
+    Broker: broker-ss-1
+      Queue: prices
+        Message Count: 24987
+        Consumer Count: 1
+        Messages Added: 49990
+        Messages Delivered: 24987
+        Messages Acknowledged: 24987
+        Messages Expired: 0
+        Messages Killed: 0
+        Messages In Memory: 24987
+        Scheduled Count: 0
+        Messages Paged: 0
+    ```
+    In this example, the statistics for `prices` queue on both `broker-ss-0` and `broker-ss-1` are very close. This demonstrates that producers are sending messages to various cluster members, and ActiveMQ Artemis is intelligently routing them to available consumers, ensuring an even distribution and preventing any single broker from being overwhelmed. This optimal distribution is key to maintaining high performance and preventing issues like disk paging in high-volume scenarios.

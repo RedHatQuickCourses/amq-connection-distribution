@@ -1,0 +1,10 @@
+#  Code Examples
+
+=== Code Examples
+
+The code examples demonstrate how to interact with ActiveMQ Artemis:
+
+*   Developing *producer applications* to send messages to queues, such as publishing price updates.
+*   Developing *consumer applications* to receive and process messages from queues.
+*   Illustrating how clients connect to a clustered Artemis environment, leveraging `JmsPoolConnectionFactory`.
+*   Showcasing various message publishing and consumption patterns, including the use of `@JmsListener` for simpler consumer creation in frameworks like Spring Boot.

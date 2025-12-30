@@ -1,0 +1,68 @@
+#  Reduced cluster throughput in specific scenarios
+
+[[reduced-cluster-throughput]]
+=== Reduced Cluster Throughput in Specific Scenarios
+
+This section explores scenarios where an ActiveMQ Artemis cluster might experience reduced throughput despite its distributed nature. Understanding these challenges is crucial for designing efficient and performant messaging solutions.
+
+==== The Bottleneck of Uneven Client Connections
+
+Under typical conditions, when client applications connect to a JMS broker cluster like ActiveMQ Artemis, standard connection mechanisms do not inherently guarantee an even distribution of connections across all cluster nodes. Without a sophisticated connection pooling strategy or a client-side load-balancing policy, an application often establishes a single connection to a single broker within the cluster.
+
+[quote, Context Reference]
+____
+"When clients connect to a JMS broker cluster (such as ActiveMQ Artemis), standard connection mechanisms do not automatically guarantee an even distribution of connections across the cluster. Without a connection pool or load-balancing policy, an application typically establishes a single connection to a single broker, creating a bottleneck."
+____
+
+This singular connection point can inadvertently create a *bottleneck*. Even if the cluster consists of multiple robust brokers, if a significant portion of producers or consumers connect to just one or a few nodes, those specific brokers can become overloaded, while other nodes remain underutilized. This uneven distribution prevents the cluster from effectively leveraging its full processing capacity.
+
+==== The Overhead of Message Redistribution
+
+ActiveMQ Artemis clusters offer a powerful feature: *message redistribution*. This mechanism ensures that messages always find their way to an available consumer, even if that consumer is attached to a different broker in the cluster. For instance, if a producer connects to `Broker A` and sends messages to a queue, but the only active consumer for that queue is connected to `Broker B`, the cluster automatically bridges the messages from `Broker A` to `Broker B` for processing.
+
+[quote, Context Reference]
+____
+"Message Redistribution: If a consumer is only attached to Broker B, but messages land on Broker A, the cluster can automatically bridge that message from A to B to ensure it gets processed."
+____
+
+While essential for ensuring message delivery and high availability, this *inter-broker message transfer* introduces significant overhead. Each message that needs to be moved between nodes consumes network bandwidth, CPU cycles for serialization/deserialization, and internal broker resources. This process is managed through configuration parameters like `redistribution-delay`, which controls when messages are moved.
+
+==== Impact on Overall Throughput and High-Volume Queues
+
+The cumulative effect of frequent message redistribution, especially when dealing with an uneven distribution of client connections, is a measurable *reduction in overall cluster throughput*. The cluster spends a considerable amount of its resources managing internal message movement rather than directly processing new messages or delivering them to local consumers.
+
+For queues experiencing a high volume of messages, this overhead can be particularly detrimental. Under sustained high load and heavy redistribution, pending messages might overwhelm the broker's memory buffer, forcing the broker to *page these messages to disk*. Disk paging is a significantly slower operation compared to in-memory processing and further degrades performance, introducing latency and drastically reducing the effective throughput of the messaging system.
+
+[quote, Context Reference]
+____
+"While the cluster can mitigate this by moving messages between nodes (configured via redistribution-delay), this process introduces significant overhead. Reliance on message redistribution reduces overall cluster throughput and can force high-volume queues to page pending messages to disk."
+____
+
+==== Hands-on Insight: Identifying Redistribution Impact
+
+To fully *demonstrate* reduced throughput requires a working cluster setup and specific client configurations that *induce* the problem. However, you can conceptually understand how to *identify* the impact of message redistribution by monitoring your ActiveMQ Artemis brokers.
+
+Once you have an ActiveMQ Artemis cluster deployed (as we will cover in later sections), you would typically monitor:
+
+*   **Broker Metrics:** Observe CPU usage, memory consumption, and network I/O across individual broker nodes. Discrepancies between nodes (e.g., one node consistently having much higher CPU/network activity than others) can indicate an uneven load or heavy redistribution.
+*   **Queue Statistics:** Examine the `MESSAGE COUNT`, `CONSUMER COUNT`, and `MESSAGES ADDED`/`ACKED` for specific queues on each node.
+
+Consider a hypothetical scenario in a two-node cluster (Broker A, Broker B) with a queue named `myQueue`. If all your producer applications connect *only* to Broker A, sending messages to `myQueue`, and all consumers for `myQueue` connect *only* to Broker B:
+
+1.  Messages for `myQueue` would initially land on Broker A.
+2.  Because consumers are on Broker B, messages would then need to be *redistributed* from Broker A to Broker B.
+3.  You would observe messages *piling up* on Broker A (a high `MESSAGE COUNT` on Broker A for `myQueue`) before they are redistributed, and Broker A would likely show higher network egress and CPU for redistribution tasks compared to Broker B.
+
+The following snippet shows an example of queue statistics that can be gathered from an Artemis broker. While this particular snippet reflects a healthy state for the `prices` queue (0 messages pending, 2 consumers, 188 messages added and acknowledged), in a problematic scenario you would look for a significant `MESSAGE COUNT` on a broker that *lacks local consumers* for that queue, combined with high CPU and network usage, indicating active and potentially excessive redistribution.
+
+[source, text]
+----
+>>> Queue stats on node e779f217-d741-11f0-906c-0a580ad9003a,
+url=tcp://broker-ss-1.broker-hdls-svc.broker.svc.cluster.local:61616
+|NAME  
+|ADDRESS|CONSUMER|MESSAGE|MESSAGES|DELIVERING|MESSAGES|SCHEDULED|ROUTING|INTERNAL| 
+|      |       | COUNT  | COUNT | ADDED  |  COUNT   | ACKED  |  COUNT  | TYPE  |        | 
+|prices|prices |   2    |   0   |  188   |    0     |  188   |    0    |ANYCAST| false  |
+----
+
+Understanding these symptoms is the first step toward implementing the solutions we will discuss in the subsequent sections, such as client-side connection pooling, server-side message load balancing, and scaling competing consumers, all designed to optimize cluster throughput.

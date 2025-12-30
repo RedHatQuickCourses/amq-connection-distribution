@@ -1,0 +1,104 @@
+#  Overhead and impact of message redistribution
+
+```asciidoc
+=== Overhead and Impact of Message Redistribution
+
+In a clustered ActiveMQ Artemis environment, the primary goal is to distribute messages and processing load evenly across all available broker nodes. However, certain scenarios can lead to an uneven distribution, necessitating a mechanism to ensure messages reach their intended consumers, regardless of which broker they initially landed on. This mechanism is known as *message redistribution*.
+
+==== What is Message Redistribution?
+
+Message redistribution occurs when a message arrives at a broker node in the cluster, but its corresponding consumer is connected to a *different* broker node within the same cluster. To ensure the message is eventually processed, the cluster automatically bridges or moves that message from the broker where it was initially received to the broker where the consumer is attached.
+
+Consider a scenario where:
+*   Broker A and Broker B form a cluster.
+*   A producer sends a message to Broker A.
+*   The only available consumer for that message is connected to Broker B.
+
+In this case, ActiveMQ Artemis will automatically redistribute the message from Broker A to Broker B.
+
+This situation often arises due to:
+*   **Uneven Client Connection Distribution**: Without sophisticated connection pooling or client-side load-balancing policies, applications may establish a single connection to an arbitrary broker in the cluster, leading to an imbalance in where producers and consumers connect. Messages from a producer connected to Broker A might be destined for a consumer connected only to Broker B.
+*   **Dynamic Consumer Attachments**: Consumers might connect and disconnect, or specific consumers for certain queues might only be active on a subset of brokers.
+
+==== The Overhead of Redistribution
+
+While message redistribution ensures message delivery and processing, it comes at a significant cost:
+
+*   **Increased Network Traffic**: Moving messages between brokers involves network communication within the cluster. Each redistributed message consumes network bandwidth and introduces latency. For high-volume queues, this can lead to substantial inter-broker network traffic.
+*   **CPU and Memory Consumption**: Each redistribution operation requires processing on both the source and destination brokers. Messages need to be read from storage (or memory) on the source, serialized, transmitted, received, deserialized, and then written to storage (or memory) on the destination. This consumes CPU cycles and memory resources on the cluster nodes.
+*   **Latency**: The act of moving a message from one broker to another adds to its overall journey time. While ActiveMQ Artemis is designed for low latency, redistribution inherently introduces an additional hop, increasing the time from producer send to consumer receipt.
+
+==== Impact on Overall Cluster Throughput
+
+Reliance on message redistribution directly reduces the overall throughput of the ActiveMQ Artemis cluster. When brokers spend a significant portion of their resources (CPU, network, I/O) on moving messages internally rather than processing new incoming messages or delivering to local consumers, the effective capacity of the cluster diminishes.
+
+Imagine a pipeline: if a large portion of the work involves moving items back and forth between different segments of the pipeline instead of moving new items forward, the overall flow rate decreases. Similarly, message redistribution diverts resources that could otherwise be used for core messaging operations, leading to:
+*   **Slower Message Processing Rates**: The number of messages the cluster can process per second decreases.
+*   **Reduced Scalability**: The ability to scale by adding more brokers is hampered if existing brokers are bottlenecked by redistribution overhead.
+
+==== Disk Paging Issues for High-Volume Queues
+
+One of the most critical impacts of heavy message redistribution, particularly for high-volume queues, is the potential for **disk paging**.
+
+ActiveMQ Artemis queues are designed to hold messages in memory for fast access. However, if a queue accumulates a large number of messages (e.g., waiting for redistribution or consumer processing), and the broker's memory limits are reached, Artemis will *page* these pending messages to disk.
+
+When messages are being constantly redistributed, or if redistribution cannot keep up with the incoming message rate due to the overhead:
+*   Messages might spend more time in queues on the initial broker before being moved.
+*   The destination broker might also accumulate messages if the consumer is slow or redistribution rates are high.
+*   This accumulation increases the likelihood of queues exceeding their in-memory capacity, forcing messages to be written to disk.
+
+Disk I/O operations are orders of magnitude slower than memory operations. When messages are paged to disk:
+*   **Significant Performance Degradation**: Reading and writing messages to disk introduces severe latency and drastically reduces throughput.
+*   **Increased Resource Consumption**: Disk I/O consumes CPU and often leads to higher average response times for the broker.
+*   **Reduced Predictability**: Performance becomes inconsistent, with spikes in latency due to disk access.
+
+==== Hands-on Activity: Observing Redistribution Delay
+
+ActiveMQ Artemis provides configuration options to control redistribution behavior, such as `redistribution-delay`. This setting determines how long a message will wait on a broker before it is considered for redistribution to another node with an available consumer. While a delay can prevent immediate, rapid redistribution storms for very short-lived imbalances, an overly long delay can also increase message latency and the risk of disk paging.
+
+To observe this, you would typically:
+
+1.  **Set up an ActiveMQ Artemis cluster**: As outlined in our solutions, this involves deploying a two-node cluster on OpenShift using the Red Hat AMQ Operator and an `ActiveMQArtemis` custom resource.
+    ```asciidoc
+    .Example ActiveMQArtemis Custom Resource for a basic cluster
+    [source,yaml]
+    ----
+    apiVersion: broker.amq.io/v1beta1
+    kind: ActiveMQArtemis
+    metadata:
+      name: broker
+      namespace: broker
+    spec:
+      acceptors:
+        - bindToAllInterfaces: true
+          connectionsAllowed: -1
+          expose: true
+          name: broker
+          port: 61617
+          sslEnabled: true
+          sslSecret: tls
+      addressSettings:
+        addressSetting:
+          - match: '#'
+            # Example: configure redistribution-delay for all addresses
+            redistributionDelay: 5000 # 5 seconds
+            # ... other address settings
+      # ... other cluster configuration for a multi-node deployment
+    ----
+    ```
+    *   *Note*: The `redistributionDelay` is an `addressSetting` and typically configured on a per-address basis. A value of `-1` disables redistribution.
+
+2.  **Deploy a producer and consumer application**:
+    *   Configure a producer to connect only to `broker-ss-0`.
+    *   Configure a consumer to connect only to `broker-ss-1` for a specific queue (e.g., `prices`).
+
+3.  **Generate message load**: Start the producer to send messages to the `prices` queue via `broker-ss-0`.
+
+4.  **Monitor broker metrics**: Use the `oc exec` command with `artemis queue stat` to observe queue metrics.
+    *   Look for `messagesAdded` on `broker-ss-0` for the `prices` queue.
+    *   Look for `messagesAcknowledged` on `broker-ss-1` for the `prices` queue.
+    *   Observe the `redistribution-delay` in action by noting the time it takes for messages to move from `broker-ss-0` to `broker-ss-1` and then be consumed. You might see messages accumulating on `broker-ss-0` for the configured delay period before redistribution kicks in.
+    *   For very high volumes, you could potentially observe increases in disk usage on `broker-ss-0` as messages might be paged before redistribution if memory limits are hit.
+
+The goal is to minimize the reliance on message redistribution by employing strategies such as client-side load balancing, server-side message load balancing, and ensuring an even distribution of competing consumers across the cluster nodes.
+```

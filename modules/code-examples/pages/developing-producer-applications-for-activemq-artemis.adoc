@@ -1,0 +1,269 @@
+#  Developing producer applications for ActiveMQ Artemis
+
+= Developing Producer Applications for ActiveMQ Artemis
+:navtitle: Producer Applications
+
+Understanding the role of a producer in a Message Oriented Middleware (MOM) system like ActiveMQ Artemis is crucial for building robust and scalable distributed applications. Producers are the engines that initiate communication, sending messages that drive business processes without needing to wait for immediate processing.
+
+== The Producer's Role in MOM
+
+In the architecture of Message Oriented Middleware (MOM), a *producer* is an application component responsible for creating and sending messages to a messaging broker (in our case, ActiveMQ Artemis). As outlined in the provided context, the core value proposition of Artemis lies in *decoupling the Producer from the Consumer*. This decoupling offers significant benefits for distributed systems:
+
+*   *Asynchronous Communication*: Producers don't wait for consumers to process messages. They embody the "Fire and Forget" pattern, sending the message to the queue and immediately returning a success response to the end user. This dramatically reduces latency for the end user and allows the producer application to continue with other tasks without blocking, enhancing overall system responsiveness.
+*   *Resilience and Reliability*: One of MOM's key advantages is ensuring resilience. If a consumer service is temporarily unavailable or crashes, the message is not lost. Instead, it is persisted safely within the ActiveMQ Artemis queue until the service recovers, guaranteeing eventual consistency and high reliability. The producer remains unaffected and can continue sending messages.
+*   *Traffic Smoothing and Scalability*: Producers can send messages at their own pace, even if consumers are slower or experience sudden spikes in load (e.g., during peak events like Black Friday sales). The broker's queues act as a "shock absorber" or buffer, absorbing bursts of messages. This "traffic smoothing" mechanism allows consumers to process the backlog at a sustainable pace without crashing the system, enabling dynamic scaling with competing consumers. ActiveMQ Artemis will automatically load-balance messages across scaled-up consumer instances, increasing throughput linearly without producer code changes.
+
+The "Fire and Forget" pattern is a cornerstone of this asynchronous model, where the producer's concern ends once the message is successfully handed over to the broker, thereby reducing latency and improving the user experience.
+
+== Connecting to ActiveMQ Artemis from a Producer
+
+To send messages, a producer application needs to establish a connection to an ActiveMQ Artemis broker. ActiveMQ Artemis is designed to be protocol-agnostic, supporting a variety of open protocols including AMQP, MQTT, STOMP, and OpenWire. This versatility allows clients written in different languages and using various frameworks to connect seamlessly.
+
+For Java applications, the standard Java Message Service (JMS) API is commonly used. JMS clients typically connect to Artemis using either the OpenWire or AMQP protocol.
+
+When producers connect to an ActiveMQ Artemis cluster, the process is largely transparent from the producer's perspective, especially if a connection load-balancing policy or a list of broker URLs is provided. The cluster's built-in intelligence, including server-side message load balancing and high availability (HA) features, handles the distribution and failover of messages. If a producer connects to a broker node that does not have a matching consumer for a specific message, the cluster can intelligently route that message to another node where a consumer is available. In case of a primary broker failure, backup brokers can immediately take over (failover), ensuring zero downtime for critical business operations and uninterrupted message flow from producers.
+
+== Hands-on Activity: Developing a Simple JMS Producer
+
+In this activity, you will create a simple Java application that acts as a producer, sending text messages to an ActiveMQ Artemis queue using the JMS API.
+
+=== Prerequisites
+
+*   Java Development Kit (JDK) 11 or higher installed.
+*   Maven installed (version 3.6 or higher).
+*   An ActiveMQ Artemis instance running and accessible. For this lab, we'll assume a standalone broker running on `localhost` with the default OpenWire port `61616`. If you're using an OpenShift deployed cluster, you would connect to the exposed service route or headless service. Refer to the 'Deploying ActiveMQ Artemis on OpenShift' section for cluster deployment instructions.
+
+=== Steps
+
+==== 1. Set up your Maven Project
+
+First, create a new Maven project or add the necessary dependencies to an existing one.
+
+. `pom.xml`
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <groupId>com.example.artemis</groupId>
+    <artifactId>artemis-producer</artifactId>
+    <version>1.0-SNAPSHOT</version>
+
+    <properties>
+        <maven.compiler.source>11</maven.compiler.source>
+        <maven.compiler.target>11</maven.compiler.target>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <artemis.version>2.29.0</artemis.version> <!-- Use a recent stable version -->
+        <slf4j.version>1.7.36</slf4j.version>
+    </properties>
+
+    <dependencies>
+        <!-- ActiveMQ Artemis JMS Client -->
+        <dependency>
+            <groupId>org.apache.activemq</groupId>
+            <artifactId>artemis-jms-client</artifactId>
+            <version>${artemis.version}</version>
+        </dependency>
+        <!-- SLF4J for logging (optional but good practice) -->
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-simple</artifactId>
+            <version>${slf4j.version}</version>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>3.8.1</version>
+                <configuration>
+                    <source>${maven.compiler.source}</source>
+                    <target>${maven.compiler.target}</target>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>exec-maven-plugin</artifactId>
+                <version>3.0.0</version>
+                <configuration>
+                    <mainClass>com.example.artemis.producer.SimpleProducer</mainClass>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+</project>
+```
+*Explanation:*
+The `artemis-jms-client` dependency provides the necessary classes to interact with ActiveMQ Artemis using the Java Message Service (JMS) API. We include `slf4j-simple` for basic console logging, which is helpful for observing the application's behavior. The `exec-maven-plugin` is configured to allow direct execution of our producer application from the Maven command line.
+
+==== 2. Create the Producer Application Code
+
+Create a new Java class named `SimpleProducer.java` inside the `src/main/java/com/example/artemis/producer/` directory.
+
+. `SimpleProducer.java`
+```java
+package com.example.artemis.producer;
+
+import org.apache.activemq.artemis.jms.client.ActiveMQConnectionFactory;
+
+import javax.jms.Connection;
+import javax.jms.ConnectionFactory;
+import javax.jms.DeliveryMode;
+import javax.jms.Destination;
+import javax.jms.MessageProducer;
+import javax.jms.Session;
+import javax.jms.TextMessage;
+
+/**
+ * A simple JMS producer application for ActiveMQ Artemis.
+ * This producer sends five text messages to a specified queue.
+ */
+public class SimpleProducer {
+
+    // The URL for connecting to the ActiveMQ Artemis broker
+    private static final String BROKER_URL = "tcp://localhost:61616"; // Default Artemis OpenWire port
+    // The name of the queue to which messages will be sent
+    private static final String QUEUE_NAME = "myQueue";
+
+    public static void main(String[] args) throws Exception {
+        Connection connection = null;
+        Session session = null;
+        try {
+            // 1. Create a ConnectionFactory
+            // ActiveMQConnectionFactory is used to create connections to the broker.
+            // For a basic setup, this is sufficient. For clustered environments or advanced features,
+            // you might use JNDI lookups or a pooled connection factory.
+            ConnectionFactory connectionFactory = new ActiveMQConnectionFactory(BROKER_URL);
+
+            // 2. Create a Connection
+            // This establishes the physical network connection to the ActiveMQ Artemis broker.
+            connection = connectionFactory.createConnection();
+            connection.start(); // Connections must be started to allow message flow
+
+            // 3. Create a Session
+            // A session is a single-threaded context for producing and consuming messages.
+            // Parameters:
+            //   - false: Indicates the session is not transacted.
+            //   - Session.AUTO_ACKNOWLEDGE: Messages are automatically acknowledged by the broker upon delivery.
+            session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
+
+            // 4. Create a Destination (Queue or Topic)
+            // Here, we define a queue named 'myQueue'. If this queue does not exist
+            // on the broker, ActiveMQ Artemis will typically create it dynamically upon first use.
+            Destination destination = session.createQueue(QUEUE_NAME);
+
+            // 5. Create a MessageProducer
+            // This object is responsible for sending messages to the specified destination.
+            MessageProducer producer = session.createProducer(destination);
+
+            // Set delivery mode to PERSISTENT.
+            // PERSISTENT ensures that messages survive broker restarts and network failures
+            // until they are successfully consumed. For non-critical, temporary messages,
+            // DeliveryMode.NON_PERSISTENT can be used for higher throughput.
+            producer.setDeliveryMode(DeliveryMode.PERSISTENT);
+
+            // 6. Create and Send Messages
+            System.out.println("Starting to send messages to queue: " + QUEUE_NAME);
+            for (int i = 0; i < 5; i++) {
+                String text = "Hello Artemis from Producer! Message " + (i + 1);
+                TextMessage message = session.createTextMessage(text);
+                producer.send(message); // Send the message
+                System.out.println("  Sent: \"" + text + "\"");
+            }
+
+            System.out.println("All messages sent successfully.");
+
+        } finally {
+            // 7. Close Resources
+            // It is critical to close JMS sessions and connections in a 'finally' block
+            // to ensure resources are released even if errors occur, preventing resource leaks.
+            if (session != null) {
+                try {
+                    session.close();
+                    System.out.println("JMS Session closed.");
+                } catch (javax.jms.JMSException e) {
+                    System.err.println("Error closing session: " + e.getMessage());
+                }
+            }
+            if (connection != null) {
+                try {
+                    connection.close();
+                    System.out.println("JMS Connection closed.");
+                } catch (javax.jms.JMSException e) {
+                    System.err.println("Error closing connection: " + e.getMessage());
+                }
+            }
+            System.out.println("Producer application gracefully shut down.");
+        }
+    }
+}
+```
+
+*Explanation:*
+The `SimpleProducer` code demonstrates the fundamental JMS pattern for sending messages:
+
+1.  *ConnectionFactory*: An `ActiveMQConnectionFactory` is instantiated with the broker's connection URL (`tcp://localhost:61616`). This factory is responsible for creating `Connection` objects.
+2.  *Connection*: A `Connection` object is created from the factory and then started. This establishes the physical link to the Artemis broker.
+3.  *Session*: A `Session` provides a single-threaded context for sending and receiving messages. We create a non-transacted session with `AUTO_ACKNOWLEDGE` mode for simplicity, meaning messages are automatically acknowledged by the broker upon successful delivery.
+4.  *Destination*: A `Destination` object represents where messages are sent or received. Here, we specify a `Queue` named `myQueue`.
+5.  *MessageProducer*: The `MessageProducer` is created from the session and associated with the `Destination`. We explicitly set the `DeliveryMode` to `PERSISTENT` to ensure that messages are stored durably by Artemis, surviving broker restarts.
+6.  *Message Creation and Sending*: A loop creates `TextMessage` objects (a simple message type for strings) and sends them using `producer.send(message)`. This embodies the "Fire and Forget" pattern.
+7.  *Resource Closure*: In the `finally` block, both the `Session` and `Connection` are meticulously closed. This is crucial for releasing system resources and preventing leaks, ensuring proper application shutdown.
+
+==== 3. Run the Producer Application
+
+Open your terminal, navigate to the root directory of your Maven project (`artemis-producer`), and execute the following command:
+
+```bash
+mvn clean install exec:java
+```
+
+You should observe output similar to this, indicating the messages have been sent:
+
+```text
+[INFO] Scanning for projects for project com.example.artemis:artemis-producer:jar:1.0-SNAPSHOT
+...
+[INFO] --- exec-maven-plugin:3.0.0:java (default-cli) @ artemis-producer ---
+Starting to send messages to queue: myQueue
+  Sent: "Hello Artemis from Producer! Message 1"
+  Sent: "Hello Artemis from Producer! Message 2"
+  Sent: "Hello Artemis from Producer! Message 3"
+  Sent: "Hello Artemis from Producer! Message 4"
+  Sent: "Hello Artemis from Producer! Message 5"
+All messages sent successfully.
+JMS Session closed.
+JMS Connection closed.
+Producer application gracefully shut down.
+[INFO] ------------------------------------------------------------------------
+[INFO] BUILD SUCCESS
+[INFO] ------------------------------------------------------------------------
+```
+
+*Verification:*
+If you have access to the ActiveMQ Artemis management console (typically available at `http://localhost:8161/console` for a standalone broker) or other management tools, you can verify that:
+
+*   A queue named `myQueue` has been created (if it didn't exist).
+*   The queue now contains 5 messages.
+
+This confirms that your producer application successfully connected to ActiveMQ Artemis and delivered the messages.
+
+== Troubleshooting Tips for Producers
+
+*   *Connection Refused*:
+    *   Ensure your ActiveMQ Artemis broker is running and accessible at the specified `BROKER_URL` (`tcp://localhost:61616` or your specific cluster address/port).
+    *   Check firewall rules if connecting from a different machine or network.
+    *   Verify the broker's acceptor port (default OpenWire is 61616) is correctly configured and listening.
+*   *JMS Exceptions*:
+    *   Carefully review the stack trace for specific error messages. Common issues include incorrect broker URL, security credentials (if authentication is enabled), or non-existent destinations (though Artemis often auto-creates queues).
+    *   Ensure the `artemis-jms-client` dependency version is compatible with your Artemis broker version.
+*   *Messages Not Appearing in Queue*:
+    *   Confirm the `QUEUE_NAME` in your producer code exactly matches the queue name expected on the broker.
+    *   If connecting to a clustered setup, ensure producers are configured to connect to an active broker within the cluster.
+    *   Check the ActiveMQ Artemis broker logs for any errors related to message reception, authentication failures, or resource limits.
+*   *Performance Issues*:
+    *   For high-throughput scenarios, consider connection pooling (e.g., using a `JmsPoolConnectionFactory`) to reuse connections and sessions efficiently.
+    *   Adjust `DeliveryMode` to `NON_PERSISTENT` if message durability is not strictly required, as persistent messages incur disk I/O overhead.
+    *   Batching messages (sending multiple messages within a single transaction if transacted sessions are used) can also improve throughput.

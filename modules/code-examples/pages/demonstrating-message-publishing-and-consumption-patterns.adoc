@@ -1,0 +1,135 @@
+#  Demonstrating message publishing and consumption patterns
+
+= Demonstrating Message Publishing and Consumption Patterns
+
+This section focuses on the practical implementation of message publishing and consumption within an ActiveMQ Artemis clustered environment. Understanding these patterns is crucial for designing robust, scalable, and highly available distributed systems that leverage Message Oriented Middleware (MOM). We will explore how producer and consumer applications interact with the cluster and how message load balancing is achieved.
+
+== Technical Explanation: Publishing and Consumption Patterns
+
+In a clustered ActiveMQ Artemis setup, clients (producers and consumers) don't necessarily connect to a single broker instance. Instead, they are designed to connect to the cluster, allowing for load balancing and high availability.
+
+=== Producer Application Pattern
+
+A producer application's primary role is to create and send messages to a specific destination (queue or topic) within the messaging system. In a clustered environment, producers benefit from the cluster's load-balancing capabilities. When a producer connects to the cluster, the connection factory typically uses a list of broker URLs or a discovery mechanism to distribute connections across available broker nodes. This ensures that no single broker becomes a bottleneck for incoming messages.
+
+The act of publishing a message involves:
+.  Establishing a connection to the broker.
+.  Creating a session within that connection.
+.  Creating a `MessageProducer` for a specific destination.
+.  Constructing and sending the message.
+
+While the provided context focuses more on the consumer's advanced logic, a basic producer would simply send messages. The context implicitly shows a re-publishing step within a consumer's `onMessage` method:
+
+[source,java]
+----
+var connection = producerFactory.createConnection();
+var session = connection.createSession();
+var producer = session.createProducer(session.createQueue("newQ"));
+producer.send(session.createTextMessage(UUID.randomUUID().toString()));
+System.out.println(">> Sent again");
+----
+This snippet demonstrates sending a new message to a queue named `newQ`, illustrating the core mechanics of message publishing.
+
+=== Consumer Application Pattern and Competing Consumers
+
+Consumer applications retrieve and process messages from destinations. In a clustered environment, the "competing consumer" pattern is fundamental for scaling message processing. Multiple consumer instances can subscribe to the same queue, and messages are distributed among them. This allows for parallel processing and ensures that if one consumer fails, others can pick up the slack.
+
+A key aspect of effective load balancing for consumers in a cluster is ensuring that client connections are distributed evenly across the broker nodes. As noted in the context:
+"`Likewise the consumer application will use the consumer specific connection factory. The interesting part in the consumer application is that we're creating the same number of consumers as the number of max connections in the consumer connection factory. This way, all the connections (and by association, the consumers) will be created alternately on both brokers.`"
+
+This strategy ensures optimal utilization of all cluster nodes and prevents bottlenecks on a single broker. Each consumer instance effectively competes for messages from the shared queue, with the broker intelligently distributing messages to available consumers on different nodes.
+
+The provided `onMessage` method from the context illustrates a typical message processing flow:
+
+[source,java]
+----
+public void onMessage(String message, MessageHeaders headers) throws Exception {
+    System.out.println("Message received :: Total Time Taken: " +
+        (Long.parseLong(Objects.requireNonNull(headers.get("timestamp")).toString()) -
+         Long.parseLong(Objects.requireNonNull(headers.get("jms_timestamp")).toString())));
+    var connection = producerFactory.createConnection();
+    var session = connection.createSession();
+    var producer = session.createProducer(session.createQueue("newQ"));
+    producer.send(session.createTextMessage(UUID.randomUUID().toString()));
+    System.out.println(">> Sent again");
+}
+----
+This consumer not only processes the incoming message (calculating time taken based on timestamps) but also immediately re-publishes a new, unique message to a different queue (`newQ`). This pattern is common in scenarios where a message triggers a subsequent task or workflow.
+
+The overall consumer application structure, which manages these `onMessage` handlers, might look something like this (as hinted in the context):
+
+[source,java]
+----
+import io.quarkus.runtime.ShutdownEvent;
+import io.quarkus.runtime.StartupEvent;
+import io.smallrye.common.annotation.Identifier;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.event.Observes;
+import jakarta.inject.Inject;
+import jakarta.jms.JMSException;
+import jakarta.jms.Session;
+import org.messaginghub.pooled.jms.JmsPoolConnectionFactory;
+
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+
+@ApplicationScoped
+public class Consumer implements Runnable {
+    // ... application logic for setting up JMS listeners ...
+}
+----
+This `Consumer` class, likely managed by an application framework like Quarkus, would be responsible for initiating and managing multiple consumer instances, each connecting to the clustered brokers.
+
+== Hands-on Activity: Verifying Message Distribution
+
+To truly appreciate the benefits of clustered ActiveMQ Artemis, it's essential to observe how messages and consumer connections are distributed across broker nodes. We will use the `artemis` CLI tool to inspect queue statistics.
+
+=== Prerequisites
+*   An ActiveMQ Artemis cluster deployed on OpenShift, managed by the Red Hat AMQ Operator (as per objectives).
+*   Producer and consumer applications deployed and actively sending/receiving messages to a queue named `prices` (or a similar test queue you've configured).
+
+=== Steps
+
+.  **Ensure Producer and Consumer Applications are Running**:
+   Before verifying, make sure your producer application is continuously sending messages to the `prices` queue and your consumer application instances are actively listening to the `prices` queue. This will generate traffic and establish connections.
+
+.  **Execute the `artemis queue stat` Command**:
+   Open your terminal and execute the following `oc exec` command. This command connects to one of your broker pods (e.g., `broker-ss-0`) and runs the `artemis queue stat` utility to inspect the `prices` queue. The `--clustered` flag is crucial as it aggregates statistics across all nodes in the cluster.
+
+   [source,bash]
+   ----
+   oc exec broker-ss-0 -- /home/jboss/amq-broker/bin/artemis queue stat \
+     --url tcp://broker-ss-0:61616 \
+     --clustered \
+     --user admin \
+     --password admin \
+     --queueName prices
+   ----
+
+   *   `broker-ss-0`: Replace with the name of one of your broker pods if it differs.
+   *   `--url tcp://broker-ss-0:61616`: Specifies the JMX URL of the broker to connect to for statistics.
+   *   `--clustered`: Instructs the command to query statistics across all cluster members.
+   *   `--user admin --password admin`: Provide the credentials for accessing the broker's management interface.
+   *   `--queueName prices`: The name of the queue you wish to inspect.
+
+.  **Analyze the Output**:
+   The command will return statistics for the specified queue, aggregated from across the cluster. You should observe output similar to the context example:
+
+   [source]
+   ----
+   ****************************************************
+   >>> Queue stats on node e779f217-d741-11f0-906c-0a580ad9003a,
+   url=tcp://broker-ss-1.broker-hdls-svc.broker.svc.cluster.local:61616
+   |NAME  |ADDRESS|CONSUMER|MESSAGE|MESSAGES|DELIVERING|MESSAGES|SCHEDULED|ROUTING|INTERNAL|
+   |      |       | COUNT  | COUNT | ADDED  |  COUNT   | ACKED  |  COUNT  | TYPE  |        |
+   |prices|prices |   2    |   0   |  188   |    0     |  188   |    0    |ANYCAST| false  |
+   ----
+
+   *   **CONSUMER COUNT**: This field is particularly important. In the example output, `CONSUMER COUNT` is `2`. If you have multiple broker nodes and your consumer application is configured as described earlier (e.g., creating 2 consumers that distribute connections alternately), you would ideally see an even distribution, perhaps 1 consumer on each node, or a total reflecting all active consumers across the cluster for that queue. The context explicitly mentions: "`To verify the consumer and message distribution, we can run the following command which shows a near equal distribution of messages and connections across both brokers.`"
+   *   **MESSAGE COUNT**: Indicates the number of messages currently held in the queue. Ideally, in an actively consumed queue, this number should be low or zero.
+   *   **MESSAGES ADDED**: The total number of messages that have been enqueued since the broker started or was last reset.
+   *   **MESSAGES ACKED**: The total number of messages that have been successfully acknowledged by consumers.
+
+   By repeatedly running this command or checking statistics on different broker pods, you can confirm that connections and messages are indeed being distributed across the cluster, demonstrating the effectiveness of ActiveMQ Artemis's clustering and client-side load balancing mechanisms.
+
+This hands-on verification confirms that your applications are effectively leveraging the ActiveMQ Artemis cluster for robust message publishing and scalable consumption.

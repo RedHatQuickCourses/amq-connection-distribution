@@ -1,16 +1,16 @@
 name: amq-connection-distribution
-title:  Understanding and Implementing Message Oriented Middleware
+title:  ActiveMQ Artemis Clustering and High Availability
 version: 1.0.0
 nav:
 - modules/ROOT/nav.adoc
 - modules/LABENV/nav.adoc
 
-- modules/introduction-to-message-oriented-middleware-mom/nav.adoc
+- modules/message-oriented-middleware-introduction/nav.adoc
 
-- modules/challenges-in-distributed-systems/nav.adoc
+- modules/challenges-with-clustered-brokers/nav.adoc
 
-- modules/mom-solutions-for-distributed-systems/nav.adoc
+- modules/solutions/nav.adoc
 
-- modules/hands-on-lab-implementing-messaging-patterns/nav.adoc
+- modules/code-examples/nav.adoc
 
 - modules/appendix/nav.adoc

@@ -1,0 +1,85 @@
+#  Disk paging issues for high-volume queues
+
+```asciidoc
+= Disk Paging Issues for High-Volume Queues
+
+[[disk-paging-issues]]
+While ActiveMQ Artemis is designed for high-performance messaging, certain scenarios within a clustered environment, especially when dealing with high-volume queues, can lead to significant performance degradation, specifically through *disk paging*. Understanding this mechanism is crucial for designing resilient and performant messaging systems.
+
+== Understanding Disk Paging in ActiveMQ Artemis
+
+In a message-oriented middleware like ActiveMQ Artemis, messages are typically held in memory buffers as they await processing by consumers. This in-memory storage provides the fastest possible access and lowest latency. However, these memory buffers are finite resources.
+
+When a message broker experiences a sustained high influx of messages into a particular queue, and the rate of message production significantly outpaces the rate of consumption, the in-memory buffers allocated for that queue can become exhausted. To prevent memory exhaustion and potential system crashes, ActiveMQ Artemis employs a protective mechanism: it offloads pending messages from memory to persistent storage – typically disk. This process is known as *disk paging*.
+
+=== Causes and Triggers
+
+Disk paging is not an inherent flaw but a vital protective mechanism to maintain broker stability under stress. It is often triggered by a combination of factors, particularly in clustered setups:
+
+*   **High-Volume Queues**: Queues consistently receiving a very large number of messages per second, pushing the limits of the broker's memory.
+*   **Slow or Insufficient Consumers**: Consumers unable to keep pace with the message production rate, leading to an ever-growing backlog of messages in the queue.
+*   **Uneven Connection Distribution Across Cluster Nodes**: As highlighted in the "Challenges with clustered brokers," if a producer connects to one broker (say, Broker A) but the consumers for that specific queue are primarily connected to another broker (Broker B), messages must be *redistributed* from Broker A to Broker B across the cluster.
+    The provided context explicitly states: "Reliance on message redistribution reduces overall cluster throughput and can force high-volume queues to page pending messages to disk." This redistribution process, involving inter-broker communication and internal processing, introduces significant overhead. If this overhead, combined with high message volumes, overwhelms a broker's memory resources, messages will be paged to disk.
+*   **Overhead and Impact of Message Redistribution**: The act of moving messages between nodes consumes network bandwidth, CPU cycles, and memory. When this overhead is significant due to high volumes, it adds to the pressure on memory resources, accelerating the onset of disk paging.
+
+=== Impact of Disk Paging
+
+While disk paging is a necessary evil that prevents out-of-memory errors and broker crashes, it comes at a significant performance cost:
+
+*   **Reduced Cluster Throughput**: Disk I/O operations are orders of magnitude slower than memory access. When messages are paged to disk, the broker's ability to process and deliver messages is severely hampered, leading to a drastic reduction in overall system and cluster throughput.
+*   **Increased Latency**: Messages that are paged to disk will experience much higher end-to-end latency. They need to be written to disk, and then later read back into memory before being delivered to consumers. This directly contradicts the low-latency benefits of asynchronous communication and the "Fire and Forget" pattern, as the actual data processing is significantly delayed.
+*   **Disk I/O Bottlenecks**: Continuous paging can saturate the underlying disk subsystem (SSDs or HDDs), affecting not just ActiveMQ Artemis but potentially other applications or services sharing the same storage resources.
+*   **Resource Consumption**: Paging consumes significant CPU cycles for disk operations and increases wear and tear on storage devices. In virtualized or cloud environments, heavy disk I/O can also lead to "noisy neighbor" issues and increased operational costs.
+
+In essence, disk paging transforms the high-speed, in-memory message processing capability of ActiveMQ Artemis into a much slower, disk-bound operation, severely degrading the performance, responsiveness, and reliability of the entire messaging system. Proactive monitoring and architectural solutions are crucial to mitigate this problem.
+
+== Hands-on Activity: Observing Queue Metrics for High-Volume Scenarios
+
+While we won't intentionally force disk paging in a lab environment (as it's a condition to avoid), understanding how to observe key queue metrics is crucial for identifying potential high-volume scenarios that *could* lead to paging. This activity focuses on diagnostic skills to spot these precursor conditions.
+
+The goal of this activity is to:
+
+*   Learn how to inspect the current state of queues on an ActiveMQ Artemis broker.
+*   Identify key metrics that indicate high message volumes or message accumulation that could lead to disk paging.
+
+[NOTE]
+====
+For this activity, you would typically need a running ActiveMQ Artemis broker (standalone or clustered) and some producer applications actively sending messages to queues. If you don't have a cluster set up yet, you can follow the instructions in the "Deploying ActiveMQ Artemis on OpenShift" section later in this training. For now, we'll use an example output from the context.
+====
+
+=== Step 1: Accessing Broker Management Interface
+
+To get real-time statistics and monitor your queues, you would typically connect to your ActiveMQ Artemis broker's management console (often a web interface) or use JMX tools. For deployments on platforms like OpenShift, this might involve using `oc rsh` into a broker pod and utilizing the `artemis` CLI management commands, or accessing the OpenShift console to view pod logs and metrics exposed through monitoring stacks.
+
+=== Step 2: Inspecting Queue Statistics
+
+Once you have access to the broker's management interface, you can query for queue statistics. Let's look at an example output from a clustered node, similar to what's provided in our context:
+
+[source,text]
+----
+Queue stats on node e779f217-d741-11f0-906c-0a580ad9003a,
+url=tcp://broker-ss-1.broker-hdls-svc.broker.svc.cluster.local:61616
+|NAME  |ADDRESS|CONSUMER|MESSAGE|MESSAGES|DELIVERING|MESSAGES|SCHEDULED|ROUTING|IN
+TERNAL|
+|      |       | COUNT  | COUNT | ADDED  |  COUNT   | ACKED  |  COUNT  |
+TYPE  |        |
+|prices|prices |   2    |   0   |  188   |    0     |  188   |    0    
+|ANYCAST| false  |
+----
+
+Let's break down the key columns from this output that are most relevant to identifying high-volume scenarios and potential disk paging risks:
+
+*   `NAME`: The identifier of the queue (e.g., `prices`).
+*   `ADDRESS`: The address the queue is bound to (e.g., `prices`).
+*   `CONSUMER COUNT`: The number of active consumers currently subscribed to this queue (`2` in this example). A low consumer count relative to the incoming message volume is a critical indicator of a potential bottleneck.
+*   `MESSAGE COUNT`: The current number of messages *waiting* in the queue (`0` in this example). A rapidly increasing or consistently high `MESSAGE COUNT` (e.g., thousands or millions) is the primary indicator of message accumulation and memory pressure.
+*   `MESSAGES ADDED`: The total number of messages that have been added to this queue since its creation or last reset (`188`). This metric provides insight into the historical incoming volume.
+
+=== Step 3: Interpreting Metrics for Paging Risk
+
+*   **Consistently High `MESSAGE COUNT`**: If the `MESSAGE COUNT` for a queue starts to climb into thousands, tens of thousands, or even millions and stays high, this queue is a prime candidate for potential disk paging. This indicates that messages are accumulating faster than they are being processed.
+*   **`MESSAGES ADDED` vs. `MESSAGE COUNT` Trend**: In a healthy, well-balanced queue, even with a high `MESSAGES ADDED` rate, the `MESSAGE COUNT` should ideally fluctuate near zero (or a very low number), as consumers quickly process messages. If `MESSAGE COUNT` persistently grows while `MESSAGES ADDED` continues to climb, it's a strong signal that consumers are not keeping pace, leading to a backlog.
+*   **Low `CONSUMER COUNT` relative to Load**: A low number of consumers for a high-volume queue directly contributes to message accumulation. Identifying queues with high `MESSAGE COUNT` and relatively low `CONSUMER COUNT` points to a need for scaling out consumer applications. (This aligns with the "Scaling with competing consumers" objective).
+
+By regularly monitoring these critical metrics, you can proactively identify queues that are under stress and take corrective actions (such as scaling consumer instances, optimizing client connection strategies to achieve server-side message load balancing, or reviewing cluster redistribution configurations) *before* disk paging significantly impacts your system's performance and reliability.
+```

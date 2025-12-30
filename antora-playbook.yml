@@ -1,5 +1,5 @@
 site:
-  title:  Understanding and Implementing Message Oriented Middleware
+  title:  ActiveMQ Artemis Clustering and High Availability
   start_page: amq-connection-distribution::index.adoc
 
 content:

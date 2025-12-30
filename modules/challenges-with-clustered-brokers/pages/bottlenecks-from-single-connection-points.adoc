@@ -1,0 +1,64 @@
+#  Bottlenecks from single connection points
+
+```asciidoc
+= Bottlenecks from Single Connection Points in Clustered Brokers
+
+In a distributed system leveraging a Message Oriented Middleware (MOM) like ActiveMQ Artemis, the primary goal of clustering brokers is often to enhance scalability, throughput, and fault tolerance. However, a significant challenge arises when client applications are not inherently designed to intelligently distribute their connections across the various nodes of a broker cluster. This oversight frequently leads to performance bottlenecks originating from what is effectively a "single connection point."
+
+== The Single Connection Point Phenomenon
+
+The core of this problem lies in how many client applications, especially those built using modern frameworks like Spring Boot or Quarkus, manage their connections to a message broker. By default, these applications tend to establish a *single connection* to what they perceive as the broker's endpoint.
+
+In a standalone ActiveMQ Artemis broker setup, connecting to a single endpoint is the expected and correct behavior. However, when deploying ActiveMQ Artemis in a clustered configuration, where multiple broker nodes work in concert to handle message traffic, this default client behavior can inadvertently negate the benefits of clustering. Rather than distributing connections evenly across all available broker nodes, an application instance might resolve the cluster's address (e.g., via a DNS entry or a configured URL list) and consistently connect to only *one specific broker node*.
+
+image::single-connection-bottleneck.png[Single Connection Bottleneck Illustration, 800, 450]
+_Figure 1: Illustration showing how multiple clients might form single connection points to specific brokers in a cluster, leading to an unbalanced load._
+
+As the context highlights: "an application typically establishes a single connection to a single broker, creating a bottleneck." This fundamental behavior means that even with a robust cluster backend, the front-end connection logic of the client can prevent effective load distribution.
+
+== Critical Consequences of Bottlenecked Connections
+
+The reliance on a single connection point to a particular broker node within a cluster leads to several detrimental impacts, undermining the scalability and efficiency that clustering aims to provide:
+
+=== Uneven Connection and Message Distribution
+
+When all client connections (from a specific producer or consumer application instance) are funneled through a single broker node, it inevitably results in an *uneven connection distribution* across the cluster. One broker node becomes disproportionately burdened with managing client connections and processing message traffic, while other nodes in the cluster remain underutilized or even idle. This directly addresses the challenge of "uneven connection distribution across cluster nodes" outlined in the objectives.
+
+For instance, consider the queue statistics provided in the context:
+```
+Queue stats on node e779f217-d741-11f0-906c-0a580ad9003a,
+url=tcp://broker-ss-1.broker-hdls-svc.broker.svc.cluster.local:61616
+|NAME  
+|ADDRESS|CONSUMER|MESSAGE|MESSAGES|DELIVERING|MESSAGES|SCHEDULED|ROUTING|IN
+TERNAL| 
+|      |       | COUNT  | COUNT | ADDED  |  COUNT   | ACKED  |  COUNT  | 
+TYPE  |        | 
+|prices|prices |   2    |   0   |  188   |    0     |  188   |    0    
+|ANYCAST| false  |
+```
+If another node in the cluster shows significantly different (e.g., much lower) message counts or consumer counts for the same queue, it's a strong indicator of uneven distribution stemming from single connection points.
+
+=== Reduced Cluster Throughput
+
+The overloaded broker node, handling a disproportionate share of connections and messages, becomes a performance choke point. Even if other nodes in the cluster possess ample computing resources, network bandwidth, and memory, the overall rate at which messages can be processed and delivered is dictated by the capacity of that single, overtaxed node. This *reduces overall cluster throughput*, preventing the messaging system from scaling effectively beyond the limits of the most burdened node.
+
+=== Overhead and Impact of Message Redistribution
+
+ActiveMQ Artemis provides mechanisms, such as `redistributionDelay` in address settings, to automatically move messages between nodes within a cluster to help balance queue loads. While this feature can mitigate imbalances to some extent, it comes with a significant performance cost:
+
+*   **Increased Network Traffic**: Messages that are initially sent to an overloaded node but need to be consumed by a client connected to another, less-busy node must be physically moved across the network. This adds latency and consumes valuable network bandwidth.
+*   **CPU Overhead**: Brokers expend CPU cycles not only on processing messages but also on managing, tracking, and coordinating the redistribution of these messages across the cluster.
+*   **Reduced Efficiency**: As the context states, "Reliance on message redistribution reduces overall cluster throughput." This process essentially performs additional work to correct an imbalance that ideally should have been avoided through better initial connection distribution.
+
+=== Disk Paging Issues for High-Volume Queues
+
+When a single broker node receives a high volume of messages for a particular queue, and its resources are strained due to client connection imbalance, it may struggle to process these messages quickly enough. In such scenarios, ActiveMQ Artemis might be forced to *page pending messages to disk*. Disk operations are orders of magnitude slower than in-memory message handling. This can severely degrade performance, introduce significant message latency, and put undue stress on the underlying storage system, further impacting "high-volume queues" as mentioned in the objectives.
+
+=== Connection Disparity for Dynamic Consumers
+
+The challenges posed by single connection points are particularly acute for client applications where consumers are short-lived or frequently disconnect and reconnect. Modern application frameworks often "create and scale connections on demand." If each new connection attempt, upon restart or scaling, consistently targets the same overloaded broker node, it perpetuates the imbalance. The context explicitly notes: "Since the brokers generally handle the connection independently, it creates a connection disparity between the two nodes and by association, the same disparity leaks into consumers." This leads to unpredictable consumer distribution and makes it harder to achieve stable, high-performance message processing.
+
+== Overcoming the Bottleneck
+
+Understanding this bottleneck is critical for designing and deploying robust and scalable ActiveMQ Artemis solutions. It underscores the need for intelligent client-side connection strategies or server-side load balancing mechanisms to ensure that client connections and message load are truly distributed evenly across all cluster members. Without addressing this fundamental issue, the full benefits of ActiveMQ Artemis clustering, such as enhanced scalability and high availability, cannot be fully realized.
+```

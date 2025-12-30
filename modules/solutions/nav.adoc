@@ -1,0 +1,8 @@
+* xref:solutions.adoc[]
+** xref:activemq-artemis-clustering-overview.adoc[]
+** xref:high-availability-ha-and-automatic-failover.adoc[]
+** xref:server-side-message-load-balancing.adoc[]
+** xref:scaling-with-competing-consumers.adoc[]
+** xref:deploying-activemq-artemis-on-openshift.adoc[]
+** xref:utilizing-the-red-hat-amq-operator.adoc[]
+** xref:configuring-activemqartemis-custom-resources-for-clustering.adoc[]

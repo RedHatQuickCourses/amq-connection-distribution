@@ -1,0 +1,65 @@
+#  Uneven connection distribution across cluster nodes
+
+= ActiveMQ Artemis Clustering and High Availability
+:page-topic: Uneven connection distribution across cluster nodes
+
+=== Uneven Connection Distribution Across Cluster Nodes
+
+When deploying a Message Oriented Middleware (MOM) like ActiveMQ Artemis in a clustered environment, the goal is to achieve high availability, fault tolerance, and scalable message processing. However, a common challenge arises when clients connect to such a cluster: the automatic and even distribution of client connections across all cluster nodes is not inherently guaranteed by standard connection mechanisms. This phenomenon, known as uneven connection distribution, can lead to several performance and operational issues.
+
+This section delves into the specifics of this problem, explaining why it occurs and its implications for the overall health and efficiency of your ActiveMQ Artemis cluster.
+
+==== The Problem: Why Connections Don't Distribute Evenly
+
+Modern applications, particularly those built with popular frameworks like Spring Boot or Quarkus, are designed for flexibility and scalability. They often establish and scale connections to external services, including message brokers, on demand. While efficient for individual service interaction, this approach can inadvertently lead to connection disparities in a clustered broker setup.
+
+The core reasons for uneven distribution are:
+
+*   **Lack of Client-Side Load Balancing for Connections:** Standard JMS client APIs or basic connection factories typically establish a connection to a *single* specified broker address (or the first available from a list). They do not inherently implement logic to actively probe and balance connections across multiple active broker nodes in a cluster. Without a sophisticated connection pool or a client-side load-balancing policy, an application will often establish a single connection point to a single broker instance.
+*   **Independent Broker Handling:** Each ActiveMQ Artemis broker instance within a cluster generally handles its client connections independently. When a client connects, it forms a session with that specific broker. There's no automatic internal cluster mechanism that rebalances *active client connections* across nodes once established.
+*   **On-Demand Connection Scaling:** Application frameworks dynamically create and manage connections based on immediate needs. If an application starts and connects to `Broker A`, and then scales up by creating more connections, it might continue connecting exclusively to `Broker A` simply because it was the initial connection point or is perceived as "available." This behavior creates a connection disparity between nodes.
+*   **Short-Lived or Frequently Disconnecting Consumers:** This problem is exacerbated when consumers are not long-lasting or disconnect frequently. New connection attempts are made, and without a cluster-aware connection strategy, these new connections might continually favor an already more-connected node or randomly pick one, further skewing the distribution.
+
+==== Impact and Consequences
+
+The uneven distribution of client connections across cluster nodes has significant negative impacts:
+
+*   **Resource Bottlenecks:** A single broker node can become overloaded with connections, processing a disproportionately high volume of messages. This leads to increased CPU and memory utilization on that node, potentially causing performance degradation, slower message processing, and even stability issues. Meanwhile, other nodes in the cluster remain underutilized, wasting valuable resources.
+*   **Consumer Disparity:** Since consumers are typically attached to specific connections, an uneven distribution of connections directly translates to an uneven distribution of consumers. If most producers and consumers connect to `Broker A`, `Broker B` might have few to no active consumers. This means messages intended for queues primarily handled by `Broker A` will be processed quickly, while messages landing on `Broker B` for the same queue might sit idle, waiting for message redistribution or for a consumer to connect to `Broker B`.
+*   **Reduced Cluster Throughput:** While ActiveMQ Artemis clusters offer features like message redistribution (configured via `redistributionDelay`) to move messages between nodes if consumers are not present on the initial target node, relying heavily on this mechanism introduces significant overhead. The act of moving messages across the network between brokers consumes network bandwidth and CPU cycles, reducing the overall effective throughput of the cluster. It's an alleviation, not a solution, for the underlying connection imbalance.
+*   **Disk Paging Issues:** In scenarios with high-volume queues, if a disproportionate number of messages land on an overloaded broker node (due to producer connections) but consumers are scarce or absent on that node (due to consumer connection disparity), pending messages might accumulate rapidly. This can force the broker to page these messages to disk, significantly degrading performance due to increased I/O operations and latency.
+
+==== Observing Uneven Distribution
+
+To illustrate, consider a two-node ActiveMQ Artemis cluster (`broker-ss-0` and `broker-ss-1`). Without a proper client-side connection load balancing strategy, an application might direct all its client connections to `broker-ss-0`.
+
+Let's assume the cluster is deployed using the Red Hat AMQ Operator with a configuration similar to this (extract from `ActiveMQArtemis` custom resource):
+
+[source,yaml]
+----
+apiVersion: broker.amq.io/v1beta1
+kind: ActiveMQArtemis
+metadata:
+  name: broker
+  namespace: broker
+spec:
+  # ... other configurations ...
+  deploymentPlan:
+    size: 2 # Creates two broker pods in a cluster
+    # ...
+----
+
+After deployment, you might observe queue statistics on one node showing activity, while another node for the same queue might be idle if all clients connect to the former. For example, if all clients connect to `broker-ss-1`:
+
+[source]
+----
+>>> Queue stats on node e779f217-d741-11f0-906c-0a580ad9003a,
+url=tcp://broker-ss-1.broker-hdls-svc.broker.svc.cluster.local:61616
+|NAME  |ADDRESS|CONSUMER|MESSAGE|MESSAGES|DELIVERING|MESSAGES|SCHEDULED|ROUTING|INTERNAL|
+|      |       | COUNT  | COUNT | ADDED  |  COUNT   | ACKED  |  COUNT  | TYPE  |        |
+|prices|prices |   2    |   0   |  188   |    0     |  188   |    0    |ANYCAST| false  |
+----
+
+Here, `broker-ss-1` shows 2 consumers and 188 messages added to the `prices` queue. If you were to check `broker-ss-0`, you might find `CONSUMER COUNT` and `MESSAGES ADDED` to be 0 for the same queue, indicating that clients are not connecting to or utilizing `broker-ss-0` for message processing.
+
+This scenario highlights the critical need for strategies that ensure connections are distributed as evenly as possible across all cluster members, preventing bottlenecks and maximizing the efficiency of the entire ActiveMQ Artemis cluster. The following sections will explore solutions to this challenge, including client-side load balancing and server-side message routing mechanisms.

@@ -1,0 +1,306 @@
+#  Scaling with competing consumers
+
+= Scaling with Competing Consumers
+
+When designing robust and performant message-oriented architectures, especially with increasing message volumes, it's critical to ensure that your message processing layer can scale effectively. One of the most fundamental and powerful patterns for achieving this with ActiveMQ Artemis is *scaling with competing consumers*. This strategy allows for efficient message processing by distributing workload across multiple consumer instances.
+
+== Understanding Competing Consumers
+
+In essence, competing consumers are multiple independent consumer instances that all subscribe to the *same queue* on an ActiveMQ Artemis broker (or cluster). The core idea is that each message sent to that queue will be processed by exactly one of the available consumers.
+
+Here's a detailed breakdown of how this pattern works and its benefits:
+
+*   **Shared Workload Distribution:** When several consumers are attached to the same queue, ActiveMQ Artemis intelligently distributes the incoming messages among them. Each message is delivered to only one consumer, ensuring that no message is processed multiple times. This transforms a single point of consumption into a shared, load-balanced pool of workers.
+*   **Automatic Load Balancing:** ActiveMQ Artemis automatically handles the distribution of messages. It does not require explicit configuration to balance messages between consumers on the same queue. If a new consumer instance comes online, Artemis will immediately begin routing messages to it, and if a consumer goes offline, messages will be rerouted to the remaining active consumers. This dynamic adaptation ensures optimal resource utilization and avoids bottlenecks.
+*   **Horizontal Scalability:** The primary advantage of competing consumers is the ability to scale your message processing capacity horizontally. As your application's message load increases, you can simply deploy more instances of your consumer application. Each new instance joins the pool, increasing the total throughput linearly without any changes to the producer's code or the queue configuration. This makes your system highly adaptable to varying loads.
+*   **Increased Throughput:** By allowing multiple consumers to process messages concurrently, the overall rate at which messages are consumed from the queue significantly increases. This is crucial for high-volume systems where a single consumer would quickly become overwhelmed, leading to message backlogs.
+*   **Resilience and High Availability (HA):** This pattern also enhances the resilience of your system. If one consumer instance crashes or becomes unresponsive, ActiveMQ Artemis will detect its failure (e.g., if messages are not acknowledged) and re-deliver any unacknowledged messages to other available competing consumers. This prevents message loss and ensures continuous processing, contributing to the overall high availability of your messaging system.
+
+The concept is to treat the consumers as a processing farm. When a producer sends a message, it doesn't care which specific consumer picks it up, only that *a* consumer does.
+
+The provided context highlights this with queue statistics:
+[source,text]
+----
+>>> Queue stats on node e779f217-d741-11f0-906c-0a580ad9003a,
+url=tcp://broker-ss-1.broker-hdls-svc.broker.svc.cluster.local:61616
+|NAME  |ADDRESS|CONSUMER|MESSAGE|MESSAGES|DELIVERING|MESSAGES|SCHEDULED|ROUTING|INTERNAL|
+|      |       | COUNT  | COUNT | ADDED  |  COUNT   | ACKED  |  COUNT  | TYPE  |        |
+|prices|prices |   2    |   0   |  188   |    0     |  188   |    0    |ANYCAST| false  |
+----
+In this snippet, for the `prices` queue, the `CONSUMER COUNT` is `2`. This clearly shows two consumers actively listening to the `prices` queue, demonstrating the competing consumer pattern in a live environment, where they would be sharing the 188 messages that have been added.
+
+== Hands-on Activity: Demonstrating Competing Consumers
+
+In this activity, you will deploy an ActiveMQ Artemis broker, create a simple Java producer application to send messages, and then run multiple instances of a consumer application to observe how ActiveMQ Artemis automatically distributes messages among them.
+
+=== Prerequisites
+
+*   An ActiveMQ Artemis broker instance running. For this demonstration, a single standalone broker is sufficient.
+    *   You can download and run Artemis from its official website.
+    *   Alternatively, use Docker:
+        [source,bash]
+        ----
+        docker run -it --rm -p 8161:8161 -p 61616:61616 apache/activemq-artemis
+        ----
+*   Java Development Kit (JDK) 11 or newer installed.
+*   Apache Maven build tool installed.
+
+=== Step 1: Create a Maven Project
+
+First, create a new Maven project that will house both your producer and consumer applications.
+
+. Create a new directory for your project:
++
+[source,bash]
+----
+mkdir artemis-competing-consumers
+cd artemis-competing-consumers
+----
+
+. Create a `pom.xml` file inside `artemis-competing-consumers` with the following content. This configuration includes the necessary ActiveMQ Artemis JMS client dependency.
++
+[source,xml]
+----
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <groupId>com.example.artemis</groupId>
+    <artifactId>competing-consumers</artifactId>
+    <version>1.0-SNAPSHOT</version>
+
+    <properties>
+        <maven.compiler.source>11</maven.compiler.source>
+        <maven.compiler.target>11</maven.compiler.target>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    </properties>
+
+    <dependencies>
+        <!-- ActiveMQ Artemis JMS Client -->
+        <dependency>
+            <groupId>org.apache.activemq</groupId>
+            <artifactId>artemis-jms-client</artifactId>
+            <version>2.33.0</version> <!-- Use a recent, stable version -->
+        </dependency>
+    </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>3.8.1</version>
+                <configuration>
+                    <source>${maven.compiler.source}</source>
+                    <target>${maven.compiler.target}</target>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>exec-maven-plugin</artifactId>
+                <version>3.0.0</version>
+                <configuration>
+                    <mainClass>${exec.mainClass}</mainClass>
+                    <arguments>
+                        <argument>${exec.args}</argument>
+                    </arguments>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+</project>
+----
+
+=== Step 2: Develop the Producer Application
+
+Create a Java class `src/main/java/com/example/artemis/ProducerApp.java` that sends a series of text messages to a queue named `myQueue`.
+
+. Create the `ProducerApp.java` file:
++
+[source,java]
+----
+package com.example.artemis;
+
+import javax.jms.*;
+import javax.naming.InitialContext;
+import java.util.Hashtable;
+
+public class ProducerApp {
+
+    public static void main(String[] args) throws Exception {
+        Connection connection = null;
+        InitialContext initialContext = null;
+        try {
+            // Configure JNDI for connection factory
+            Hashtable<String, String> env = new Hashtable<>();
+            env.put("java.naming.factory.initial", "org.apache.activemq.artemis.jndi.ActiveMQInitialContextFactory");
+            env.put("connectionFactory.ConnectionFactory", "tcp://localhost:61616");
+            env.put("queue.myQueue", "myQueue"); // Define the queue to send messages to
+
+            initialContext = new InitialContext(env);
+
+            ConnectionFactory connectionFactory = (ConnectionFactory) initialContext.lookup("ConnectionFactory");
+            connection = connectionFactory.createConnection();
+            Session session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE); // Non-transacted, auto-acknowledge
+            Queue queue = (Queue) initialContext.lookup("myQueue");
+            MessageProducer producer = session.createProducer(queue);
+
+            connection.start(); // Start the connection
+
+            for (int i = 0; i < 20; i++) { // Send 20 messages for demonstration
+                TextMessage message = session.createTextMessage("Message " + (i + 1));
+                producer.send(message);
+                System.out.println("Producer Sent: " + message.getText());
+                Thread.sleep(100); // Small delay to observe messages individually
+            }
+
+            System.out.println("Producer finished sending messages.");
+
+        } finally {
+            if (connection != null) {
+                connection.close();
+            }
+            if (initialContext != null) {
+                initialContext.close();
+            }
+        }
+    }
+}
+----
+
+=== Step 3: Develop the Consumer Application
+
+Create a Java class `src/main/java/com/example/artemis/ConsumerApp.java` that listens for messages on the `myQueue`. This consumer will use a `MessageListener` to asynchronously process incoming messages, similar to the pattern shown in the context.
+
+. Create the `ConsumerApp.java` file:
++
+[source,java]
+----
+package com.example.artemis;
+
+import javax.jms.*;
+import javax.naming.InitialContext;
+import java.util.Hashtable;
+
+public class ConsumerApp {
+
+    private static String consumerId; // To identify each consumer instance
+
+    public static void main(String[] args) throws Exception {
+        // Allow consumer ID to be passed as an argument, default to "Consumer-1"
+        consumerId = (args.length > 0) ? args[0] : "Consumer-1";
+        Connection connection = null;
+        InitialContext initialContext = null;
+        try {
+            // Configure JNDI for connection factory and queue
+            Hashtable<String, String> env = new Hashtable<>();
+            env.put("java.naming.factory.initial", "org.apache.activemq.artemis.jndi.ActiveMQInitialContextFactory");
+            env.put("connectionFactory.ConnectionFactory", "tcp://localhost:61616");
+            env.put("queue.myQueue", "myQueue"); // Define the queue to listen to
+
+            initialContext = new InitialContext(env);
+            ConnectionFactory connectionFactory = (ConnectionFactory) initialContext.lookup("ConnectionFactory");
+            connection = connectionFactory.createConnection();
+            Session session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE); // Non-transacted, auto-acknowledge
+            Queue queue = (Queue) initialContext.lookup("myQueue");
+
+            // Create a consumer and set a message listener
+            session.createConsumer(queue).setMessageListener(message -> {
+                try {
+                    String text = message.getBody(String.class);
+                    System.out.println(consumerId + " received: " + text);
+                } catch (JMSException e) {
+                    System.err.println(consumerId + " Error processing message: " + e.getMessage());
+                    throw new RuntimeException(e);
+                }
+            });
+
+            connection.start(); // Start the connection to begin receiving messages
+            System.out.println(consumerId + " is waiting for messages...");
+
+            // Keep the consumer application alive indefinitely to receive messages
+            Thread.sleep(Long.MAX_VALUE);
+
+        } catch (Exception ex) {
+            System.err.println(consumerId + " caught Exception: " + ex.getMessage());
+            ex.printStackTrace();
+        } finally {
+            if (connection != null) {
+                connection.close();
+            }
+            if (initialContext != null) {
+                initialContext.close();
+            }
+        }
+    }
+}
+----
+
+=== Step 4: Compile the Applications
+
+Navigate to your project root directory (`artemis-competing-consumers`) and compile both applications using Maven.
+
+[source,bash]
+----
+mvn clean install
+----
+This command will compile your Java classes and download any necessary dependencies.
+
+=== Step 5: Run the Broker (if not already running)
+
+Ensure your ActiveMQ Artemis broker is running and accessible on `tcp://localhost:61616`.
+
+If using Docker:
+[source,bash]
+----
+docker run -it --rm -p 8161:8161 -p 61616:61616 apache/activemq-artemis
+----
+Keep this terminal window open.
+
+=== Step 6: Run a Single Consumer
+
+Open a *new* terminal window. Start the first consumer instance, identifying it as `Consumer-A`.
+
+[source,bash]
+----
+mvn exec:java -Dexec.mainClass="com.example.artemis.ConsumerApp" -Dexec.args="Consumer-A"
+----
+You should see output similar to: `Consumer-A is waiting for messages...` Keep this terminal open.
+
+=== Step 7: Run the Producer
+
+Open *another new* terminal window. Run the producer application.
+
+[source,bash]
+----
+mvn exec:java -Dexec.mainClass="com.example.artemis.ProducerApp"
+----
+The producer will send 20 messages. Observe the `Consumer-A` terminal; it should receive and print all 20 messages, as it is currently the only consumer.
+
+=== Step 8: Run a Second Competing Consumer
+
+Open a *third new* terminal window. Start a second consumer instance, identifying it as `Consumer-B`.
+
+[source,bash]
+----
+mvn exec:java -Dexec.mainClass="com.example.artemis.ConsumerApp" -Dexec.args="Consumer-B"
+----
+You should see output similar to: `Consumer-B is waiting for messages...` Now, both `Consumer-A` and `Consumer-B` are actively listening to `myQueue`. Keep this terminal open.
+
+=== Step 9: Run the Producer Again and Observe Distribution
+
+Go back to the producer terminal (or open a fourth one if you closed it) and run the producer once more.
+
+[source,bash]
+----
+mvn exec:java -Dexec.mainClass="com.example.artemis.ProducerApp"
+----
+
+Now, observe the output in both the `Consumer-A` and `Consumer-B` terminals. You will notice that:
+
+*   Messages are no longer all going to a single consumer.
+*   Messages are being *shared* and load-balanced between `Consumer-A` and `Consumer-B`. Each consumer will receive roughly half of the 20 messages (e.g., `Consumer-A` gets 10, `Consumer-B` gets 10, or a similar distribution).
+
+This clearly demonstrates the competing consumer pattern in action. By adding more consumer instances, you have scaled your message processing capability without any changes to the producer code or the underlying queue configuration. You can try running more consumer instances (e.g., `Consumer-C`) and observe how messages are further distributed among them, showcasing the linear scalability this pattern provides.

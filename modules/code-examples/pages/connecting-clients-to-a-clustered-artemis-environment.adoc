@@ -1,0 +1,360 @@
+#  Connecting clients to a clustered Artemis environment
+
+= Connecting clients to a clustered Artemis environment
+
+In a standalone ActiveMQ Artemis setup, client applications typically establish a single connection to a single broker instance. While simple, this approach introduces a xref:challenge-single-connection-bottleneck[single point of failure] and can create a bottleneck if that broker becomes overwhelmed. To truly harness the power of an ActiveMQ Artemis cluster – achieving high availability, fault tolerance, and efficient message distribution – clients need a more intelligent connection strategy.
+
+== Understanding Client Connectivity in a Clustered Environment
+
+The primary goal when connecting a client to an ActiveMQ Artemis cluster is to ensure that the client can leverage the distributed nature of the brokers. This means achieving:
+
+*   **High Availability (HA) and Automatic Failover:** If one broker node in the cluster fails, the client should automatically and transparently reconnect to another active broker without manual intervention, ensuring zero downtime for critical business operations. As the xref:context-ha-failover[context] states, "if a primary broker fails, a backup broker can immediately take over (Failover), ensuring zero downtime."
+*   **Client-Side Load Balancing:** Ideally, new client connections should be distributed across multiple active brokers in the cluster. This prevents a single broker from becoming a *single connection point* and bottleneck, thereby ensuring more xref:context-evenly-distribute[even connection distribution] and higher overall cluster throughput. While xref:context-server-side-lb[server-side message load balancing] handles routing messages *between* brokers if a consumer isn't present, client-side load balancing distributes the *initial connections* and subsequent message flow more effectively.
+
+Connecting to a clustered environment primarily involves configuring the client's connection URI (Uniform Resource Identifier) to include the addresses of multiple brokers within the cluster. This allows the client library to manage failover and connection attempts across the available nodes.
+
+== Connection URI for Clustered Environments
+
+To connect to a clustered ActiveMQ Artemis environment, clients provide a connection string that lists multiple broker endpoints. The client library then uses this list to attempt connections and handle failover.
+
+A typical clustered connection URI might look like this:
+
+`tcp://host1:port1,tcp://host2:port2,tcp://host3:port3?option1=value1&option2=value2`
+
+Let's break down the components:
+
+*   `tcp://`: Specifies the communication protocol (e.g., TCP for core protocol, AMQP, OpenWire).
+*   `hostN:portN`: Each comma-separated entry represents the hostname or IP address and port of an ActiveMQ Artemis broker instance within your cluster.
+*   `?options`: Various options can be appended to the URI to control client behavior, such as failover settings, retry intervals, and load balancing policies.
+
+=== Key Connection Options
+
+When connecting clients to a cluster, some critical options enhance reliability and performance:
+
+*   **`ha=true`**: This is essential for enabling high availability and failover logic on the client side. When set to `true`, the client library will attempt to reconnect to other brokers in the provided list if the initial connection fails or is lost.
+*   **`retryInterval=MILLISECONDS`**: Specifies the delay (in milliseconds) before the client attempts to reconnect to a broker after a connection failure.
+*   **`retryIntervalMultiplier=DECIMAL`**: A multiplier applied to the `retryInterval` after each failed reconnection attempt, often used to implement an exponential backoff strategy.
+*   **`reconnectAttempts=NUMBER`**: The maximum number of times the client will attempt to reconnect to the brokers in the list before giving up.
+*   **`connectionLoadBalancingPolicy=POLICY`**: Defines how the client distributes new connections across the available brokers. Common policies include `ROUND_ROBIN` (default) or `RANDOM`.
+
+By providing multiple broker addresses in the connection URI and configuring `ha=true`, the client actively participates in maintaining high availability. If the broker it's connected to goes down, it will try to reconnect to the next available broker in the list, providing seamless failover. This prevents the *bottlenecks from single connection points* and reduces the reliance on *message redistribution overhead* that can impact overall cluster throughput, as discussed in the xref:challenge-redistribution-overhead[challenges with clustered brokers].
+
+== Hands-on Activity: Connecting a Client to a Clustered Artemis Environment
+
+In this activity, you will develop a simple producer application that connects to a two-node ActiveMQ Artemis cluster. This will demonstrate how to configure the client's connection URI to leverage the cluster's high availability and allow for client-side load balancing.
+
+=== Prerequisites
+
+Before starting, ensure you have:
+
+*   A running two-node ActiveMQ Artemis cluster. For example, you might have deployed this using the xref:solution-amq-operator[Red Hat AMQ Operator] on OpenShift by configuring an `ActiveMQArtemis` xref:solution-custom-resources[Custom Resource] for clustering, as mentioned in the solutions. Let's assume your brokers are accessible at `broker-0-svc-headless.broker.svc.cluster.local:61616` and `broker-1-svc-headless.broker.svc.cluster.local:61616`.
+*   A Java Development Kit (JDK) installed.
+*   Apache Maven for project management.
+
+=== Step 1: Create a Maven Project
+
+Create a new Maven project for your client application.
+
+.Create a new directory for your project:
+```bash
+mkdir artemis-cluster-client
+cd artemis-cluster-client
+```
+
+.Create a `pom.xml` file with the following content:
+[source,xml]
+----
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <groupId>com.example.artemis</groupId>
+    <artifactId>artemis-cluster-client</artifactId>
+    <version>1.0-SNAPSHOT</version>
+
+    <properties>
+        <maven.compiler.source>11</maven.compiler.source>
+        <maven.compiler.target>11</maven.compiler.target>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <artemis.version>2.29.0</artemis.version> <!-- Use a version compatible with your broker -->
+    </properties>
+
+    <dependencies>
+        <!-- ActiveMQ Artemis JMS Client -->
+        <dependency>
+            <groupId>org.apache.activemq</groupId>
+            <artifactId>artemis-jms-client</artifactId>
+            <version>${artemis.version}</version>
+        </dependency>
+        <!-- Logging (optional, but good practice) -->
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-simple</artifactId>
+            <version>1.7.36</version>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>3.8.1</version>
+                <configuration>
+                    <source>${maven.compiler.source}</source>
+                    <target>${maven.compiler.target}</target>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>exec-maven-plugin</artifactId>
+                <version>3.0.0</version>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>java</goal>
+                        </goals>
+                    </execution>
+                </executions>
+                <configuration>
+                    <mainClass>com.example.artemis.ClusteredProducer</mainClass>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+</project>
+----
+
+=== Step 2: Develop the Clustered Producer Application
+
+Create a Java file named `ClusteredProducer.java` in `src/main/java/com/example/artemis/` with the following content. This application will connect to the cluster using a URI that lists both broker endpoints and enable HA.
+
+.Create the producer application:
+[source,java]
+----
+package com.example.artemis;
+
+import org.apache.activemq.artemis.jms.client.ActiveMQConnectionFactory;
+
+import javax.jms.*;
+import java.util.logging.Logger;
+
+public class ClusteredProducer {
+
+    private static final Logger logger = Logger.getLogger(ClusteredProducer.class.getName());
+    // Define the connection URI with multiple broker endpoints and HA enabled
+    // Replace with your actual cluster service hostnames/IPs and ports
+    private static final String BROKER_URL = "tcp://broker-0-svc-headless.broker.svc.cluster.local:61616," +
+                                             "tcp://broker-1-svc-headless.broker.svc.cluster.local:61616" +
+                                             "?ha=true&retryInterval=1000&reconnectAttempts=-1"; // -1 for infinite retries
+
+    private static final String QUEUE_NAME = "myClusteredQueue";
+
+    public static void main(String[] args) throws JMSException {
+        Connection connection = null;
+        Session session = null;
+        MessageProducer producer = null;
+
+        try {
+            // 1. Create an ActiveMQConnectionFactory with the clustered URI
+            ActiveMQConnectionFactory connectionFactory = new ActiveMQConnectionFactory(BROKER_URL);
+            logger.info("Attempting to connect to Artemis cluster: " + BROKER_URL);
+
+            // 2. Create a connection to the broker
+            connection = connectionFactory.createConnection();
+            connection.start(); // Start the connection to allow message flow
+            logger.info("Successfully connected to Artemis cluster.");
+
+            // 3. Create a session (false for not transacted, AUTO_ACKNOWLEDGE for automatic acknowledgment)
+            session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
+
+            // 4. Create a queue destination
+            Destination destination = session.createQueue(QUEUE_NAME);
+            logger.info("Using queue: " + QUEUE_NAME);
+
+            // 5. Create a message producer
+            producer = session.createProducer(destination);
+            producer.setDeliveryMode(DeliveryMode.PERSISTENT); // Ensure message persistence
+
+            // 6. Send messages
+            for (int i = 0; i < 10; i++) {
+                String text = "Hello from clustered producer! Message #" + (i + 1);
+                TextMessage message = session.createTextMessage(text);
+                producer.send(message);
+                logger.info("Sent message: " + text);
+                try {
+                    Thread.sleep(100); // Small delay
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                }
+            }
+            logger.info("Finished sending messages.");
+
+        } catch (JMSException e) {
+            logger.severe("JMS Exception occurred: " + e.getMessage());
+            e.printStackTrace();
+        } finally {
+            // 7. Close resources in reverse order of creation
+            if (producer != null) {
+                try {
+                    producer.close();
+                } catch (JMSException e) {
+                    logger.warning("Error closing producer: " + e.getMessage());
+                }
+            }
+            if (session != null) {
+                try {
+                    session.close();
+                } catch (JMSException e) {
+                    logger.warning("Error closing session: " + e.getMessage());
+                }
+            }
+            if (connection != null) {
+                try {
+                    connection.close();
+                } catch (JMSException e) {
+                    logger.warning("Error closing connection: " + e.getMessage());
+                }
+            }
+            logger.info("Resources closed.");
+        }
+    }
+}
+----
+
+=== Step 3: Develop the Clustered Consumer Application
+
+Now, create a Java file named `ClusteredConsumer.java` in the same directory (`src/main/java/com/example/artemis/`) to act as a consumer. This consumer will also connect to the cluster using the same multi-host URI, demonstrating how multiple clients can connect for load balancing and HA.
+
+.Create the consumer application:
+[source,java]
+----
+package com.example.artemis;
+
+import org.apache.activemq.artemis.jms.client.ActiveMQConnectionFactory;
+
+import javax.jms.*;
+import java.util.logging.Logger;
+
+public class ClusteredConsumer {
+
+    private static final Logger logger = Logger.getLogger(ClusteredConsumer.class.getName());
+    // Define the connection URI with multiple broker endpoints and HA enabled
+    // Replace with your actual cluster service hostnames/IPs and ports
+    private static final String BROKER_URL = "tcp://broker-0-svc-headless.broker.svc.cluster.local:61616," +
+                                             "tcp://broker-1-svc-headless.broker.svc.cluster.local:61616" +
+                                             "?ha=true&retryInterval=1000&reconnectAttempts=-1"; // -1 for infinite retries
+
+    private static final String QUEUE_NAME = "myClusteredQueue";
+
+    public static void main(String[] args) throws JMSException {
+        Connection connection = null;
+        Session session = null;
+        MessageConsumer consumer = null;
+
+        try {
+            // 1. Create an ActiveMQConnectionFactory with the clustered URI
+            ActiveMQConnectionFactory connectionFactory = new ActiveMQConnectionFactory(BROKER_URL);
+            logger.info("Attempting to connect to Artemis cluster: " + BROKER_URL);
+
+            // 2. Create a connection to the broker
+            connection = connectionFactory.createConnection();
+            connection.start(); // Start the connection to allow message flow
+            logger.info("Successfully connected to Artemis cluster.");
+
+            // 3. Create a session
+            session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
+
+            // 4. Create a queue destination
+            Destination destination = session.createQueue(QUEUE_NAME);
+            logger.info("Listening on queue: " + QUEUE_NAME);
+
+            // 5. Create a message consumer
+            consumer = session.createConsumer(destination);
+
+            // 6. Set up a message listener to process incoming messages asynchronously
+            consumer.setMessageListener(message -> {
+                if (message instanceof TextMessage) {
+                    TextMessage textMessage = (TextMessage) message;
+                    try {
+                        logger.info("Received message: " + textMessage.getText());
+                    } catch (JMSException e) {
+                        logger.severe("Error processing message: " + e.getMessage());
+                    }
+                } else {
+                    logger.info("Received non-text message: " + message.toString());
+                }
+            });
+
+            logger.info("Consumer started. Waiting for messages. Press Ctrl+C to exit.");
+            // Keep the main thread alive to allow the message listener to run
+            Thread.currentThread().join();
+
+        } catch (JMSException e) {
+            logger.severe("JMS Exception occurred: " + e.getMessage());
+            e.printStackTrace();
+        } catch (InterruptedException e) {
+            logger.warning("Consumer interrupted.");
+            Thread.currentThread().interrupt();
+        } finally {
+            // 7. Close resources
+            if (consumer != null) {
+                try {
+                    consumer.close();
+                } catch (JMSException e) {
+                    logger.warning("Error closing consumer: " + e.getMessage());
+                }
+            }
+            if (session != null) {
+                try {
+                    session.close();
+                } catch (JMSException e) {
+                    logger.warning("Error closing session: " + e.getMessage());
+                }
+            }
+            if (connection != null) {
+                try {
+                    connection.close();
+                } catch (JMSException e) {
+                    logger.warning("Error closing connection: " + e.getMessage());
+                }
+            }
+            logger.info("Resources closed.");
+        }
+    }
+}
+----
+
+=== Step 4: Run the Applications
+
+.Compile the applications:
+```bash
+mvn clean compile
+```
+
+.Run the `ClusteredConsumer` first in one terminal:
+```bash
+mvn exec:java -Dexec.mainClass="com.example.artemis.ClusteredConsumer"
+```
+You should see output indicating the consumer connected to one of the brokers and is waiting for messages.
+
+.Run the `ClusteredProducer` in a separate terminal:
+```bash
+mvn exec:java -Dexec.mainClass="com.example.artemis.ClusteredProducer"
+```
+The producer will connect to one of the brokers (potentially the same or a different one than the consumer, depending on the client's load balancing policy) and send 10 messages. You should see these messages being received by the consumer.
+
+=== Step 5: Observe Failover (Optional)
+
+To observe automatic failover:
+
+.While the producer and consumer are running, identify which broker they are connected to (usually indicated in the logs or by monitoring your cluster).
+.Deliberately stop or restart that specific broker node in your ActiveMQ Artemis cluster (e.g., scale down the pod in OpenShift).
+.Observe the client logs:
+*   The producer and consumer should detect the connection loss.
+*   They will then attempt to reconnect to the *other* available broker in the connection URI list.
+*   Once reconnected, message flow should resume, demonstrating the `High Availability (HA) and automatic failover` capability mentioned in the xref:context-ha-failover[context].
+
+This hands-on exercise illustrates how simply configuring the connection URI to include multiple broker endpoints enables your client applications to be cluster-aware, robust, and highly available, leveraging the core features of ActiveMQ Artemis clustering.

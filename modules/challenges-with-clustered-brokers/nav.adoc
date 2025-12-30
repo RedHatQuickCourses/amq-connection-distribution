@@ -1,0 +1,6 @@
+* xref:challenges-with-clustered-brokers.adoc[]
+** xref:uneven-connection-distribution-across-cluster-nodes.adoc[]
+** xref:bottlenecks-from-single-connection-points.adoc[]
+** xref:overhead-and-impact-of-message-redistribution.adoc[]
+** xref:reduced-cluster-throughput-in-specific-scenarios.adoc[]
+** xref:disk-paging-issues-for-high-volume-queues.adoc[]

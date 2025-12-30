@@ -1,0 +1,247 @@
+#  Deploying ActiveMQ Artemis on OpenShift
+
+= Deploying ActiveMQ Artemis on OpenShift
+
+This module guides you through deploying an ActiveMQ Artemis cluster on OpenShift, leveraging the Red Hat AMQ Operator for streamlined management and High Availability (HA) configuration. By the end, you'll understand how to set up a resilient messaging backbone, evenly distribute client connections, and prepare client applications to interact with your clustered brokers.
+
+OpenShift, Red Hat's enterprise Kubernetes platform, provides a robust environment for deploying containerized applications like ActiveMQ Artemis. It offers capabilities such as automated deployment, scaling, self-healing, and service discovery, which are crucial for maintaining high availability and operational efficiency for a critical component like a Message Oriented Middleware (MOM).
+
+== The Role of the Red Hat AMQ Operator
+
+Deploying and managing complex stateful applications like ActiveMQ Artemis clusters on Kubernetes can be intricate. The Red Hat AMQ Operator simplifies this process significantly. An Operator is a method of packaging, deploying, and managing a Kubernetes application. It extends the Kubernetes API to create, configure, and manage instances of complex applications on behalf of a Kubernetes user.
+
+The Red Hat AMQ Operator encapsulates the operational knowledge required to deploy and maintain ActiveMQ Artemis, handling tasks such as:
+*   Provisioning broker instances
+*   Configuring clustering and high availability
+*   Managing persistent storage
+*   Automating scaling and upgrades
+
+By utilizing the Operator, administrators can deploy ActiveMQ Artemis clusters using simple, declarative `Custom Resources` (CRs), rather than manually configuring individual pods, services, and other Kubernetes primitives.
+
+=== Hands-on Activity: Installing the Red Hat AMQ Operator
+
+To begin, you need to install the Red Hat AMQ Operator in your OpenShift cluster. This is typically done via the OperatorHub, a catalog of certified Operators.
+
+.Procedure:
+.   Log in to your OpenShift console.
+.   Navigate to the *OperatorHub* under the *Operators* section.
+.   Search for "Red Hat AMQ Operator".
+.   Select the Operator and click *Install*.
+.   Choose the desired installation mode (e.g., "A specific namespace" and select a namespace like `broker-namespace` or "All namespaces on the cluster").
+.   Click *Install* to provision the Operator.
+
+Once installed, the Operator will be ready to watch for `ActiveMQArtemis` custom resources and manage your broker deployments.
+
+== Configuring ActiveMQArtemis Custom Resources for Clustering
+
+With the Red Hat AMQ Operator installed, you can now define your ActiveMQ Artemis cluster using an `ActiveMQArtemis` Custom Resource. This CR acts as a blueprint for the Operator, instructing it on how to deploy and configure the broker instances, including their cluster settings, network configuration, and other operational parameters.
+
+As highlighted in the context, a common challenge with clustered brokers is uneven connection distribution, leading to bottlenecks and reduced throughput if applications connect to a single broker instance. While ActiveMQ Artemis itself can mitigate this through message redistribution, this introduces overhead. To address this proactively, we aim to deploy a two-node cluster and evenly distribute messages across its members from the client connection perspective.
+
+The following `ActiveMQArtemis` custom resource defines a basic cluster:
+
+```asciidoc
+[source,yaml]
+----
+apiVersion: broker.amq.io/v1beta1
+kind: ActiveMQArtemis
+metadata:
+  name: broker
+  namespace: broker # Ensure this namespace exists and the Operator is watching it
+spec:
+  acceptors:
+    - bindToAllInterfaces: true
+      connectionsAllowed: -1
+      expose: true
+      name: broker
+      port: 61617
+      sslEnabled: true
+      sslSecret: tls # Reference to an OpenShift Secret containing TLS certificates
+  addressSettings:
+    addressSetting:
+      - match: '#' # Default settings for all addresses
+        # Further address settings can be added here
+----
+
+Let's break down the key elements of this `ActiveMQArtemis` CR:
+
+*   **`apiVersion: broker.amq.io/v1beta1`**: Specifies the API version for the custom resource, indicating it's managed by the Red Hat AMQ Operator.
+*   **`kind: ActiveMQArtemis`**: Identifies this as an ActiveMQ Artemis broker deployment.
+*   **`metadata.name: broker`**: Assigns a name to this broker instance. The Operator will use this name as a base for related OpenShift resources (e.g., `broker-ss-0`, `broker-ss-1` for a two-node cluster).
+*   **`metadata.namespace: broker`**: Specifies the OpenShift namespace where the broker will be deployed. Ensure the Operator is installed to manage resources in this namespace.
+*   **`spec.acceptors`**: Configures the network listeners for the broker.
+    *   **`bindToAllInterfaces: true`**: Allows the acceptor to listen on all available network interfaces within the pod.
+    *   **`connectionsAllowed: -1`**: Allows an unlimited number of connections (default behavior for most deployments).
+    *   **`expose: true`**: Instructs the Operator to create an OpenShift Service for this acceptor, making it discoverable within the cluster.
+    *   **`name: broker`**: A unique name for this acceptor.
+    *   **`port: 61617`**: The network port on which the broker will listen for client connections. This is the standard port for OpenWire/AMQP/STOMP/MQTT protocols in Artemis.
+    *   **`sslEnabled: true`**: Enables SSL/TLS encryption for client connections on this acceptor, a critical security measure for production environments.
+    *   **`sslSecret: tls`**: References an OpenShift `Secret` named `tls` which must contain the necessary TLS certificates (`tls.crt`, `tls.key`) and optionally the CA certificate (`ca.crt`) for securing communication.
+*   **`spec.addressSettings`**: Defines policies for addresses (queues and topics).
+    *   **`addressSetting`**: An array allowing multiple specific address settings.
+    *   **`match: '#'`**: A wildcard setting that applies to all addresses if no more specific match is found. This is a crucial starting point for defining default behaviors.
+
+By default, when you create an `ActiveMQArtemis` Custom Resource without explicitly specifying the number of replicas, the Red Hat AMQ Operator often defaults to a single instance or handles replication automatically based on other configurations. For a two-node cluster as mentioned in the context, the Operator is designed to manage high availability and scale, often implicitly creating multiple pods for HA or by specifying a `deploymentPlan.size` (which is not in this specific context snippet, but is a common field). For the purpose of this deployment, we assume the Operator manages a clustered setup based on its default HA behavior when a CR is applied.
+
+=== Hands-on Activity: Creating the ActiveMQArtemis Custom Resource
+
+.Procedure:
+.   Save the YAML content provided above into a file named `broker-cluster.yaml`.
+.   Ensure you have configured the `tls` secret in the `broker` namespace if `sslEnabled` is true. You can create a self-signed one for testing or use an actual one.
+    ```bash
+    oc create secret tls tls --cert=path/to/your/tls.crt --key=path/to/your/tls.key -n broker
+    ```
+.   Apply the custom resource to your OpenShift cluster:
+    ```bash
+    oc apply -f broker-cluster.yaml -n broker
+    ```
+
+The Operator will now create the necessary `StatefulSet`, `Pods`, and other resources to deploy your ActiveMQ Artemis cluster. You can monitor its progress using `oc get pods -n broker` and `oc describe activemqartemis broker -n broker`.
+
+== Exposing the Cluster with an OpenShift Service
+
+Once the ActiveMQ Artemis pods are running, you need a stable way for clients inside the OpenShift cluster to connect to them. An OpenShift `Service` provides a consistent network endpoint that load-balances traffic across the available broker pods.
+
+The context mentions creating a new `Service` targeting both pods:
+
+```asciidoc
+[source,yaml]
+----
+apiVersion: v1
+kind: Service
+metadata:
+  name: broker-service
+spec:
+  selector:
+    app: broker # This selector must match the label applied to your broker pods
+  ports:
+    - protocol: TCP
+      port: 61617 # The port clients will connect to on the service
+      targetPort: 61617 # The port on the broker pods that the service will forward traffic to
+----
+
+Key aspects of this `Service` definition:
+
+*   **`metadata.name: broker-service`**: The name of the service, which will be used for DNS resolution within the cluster (e.g., `broker-service.broker.svc.cluster.local`).
+*   **`spec.selector.app: broker`**: This is crucial. It tells the `Service` to route traffic to any pod that has the label `app: broker`. The Red Hat AMQ Operator typically applies this label to the ActiveMQ Artemis pods it creates based on the `metadata.name` of the `ActiveMQArtemis` CR.
+*   **`spec.ports`**: Defines the ports exposed by the service.
+    *   **`protocol: TCP`**: Specifies the network protocol.
+    *   **`port: 61617`**: The port number on which the `Service` itself listens for incoming connections.
+    *   **`targetPort: 61617`**: The port on the actual broker pods that the `Service` will forward connections to. This matches the `port` defined in the `acceptors` section of the `ActiveMQArtemis` CR.
+
+This `Service` enables internal cluster clients to connect to `broker-service:61617` without needing to know the individual IP addresses or names of the broker pods. The `Service` will automatically distribute connections among the available and healthy broker pods.
+
+=== Hands-on Activity: Creating the Cluster Service
+
+.Procedure:
+.   Save the `Service` YAML content into a file named `broker-service.yaml`.
+.   Apply the service to your OpenShift cluster:
+    ```bash
+    oc apply -f broker-service.yaml -n broker
+    ```
+.   Verify the service is created and has endpoints:
+    ```bash
+    oc get svc broker-service -n broker
+    oc describe svc broker-service -n broker # Check the 'Endpoints' field
+    ```
+
+== Enabling External Access and Load Balancing with an OpenShift Route
+
+For clients *outside* the OpenShift cluster to connect to your ActiveMQ Artemis brokers, you need an OpenShift `Route`. A `Route` exposes a service at a host name, so external clients can reach it. More importantly, we can leverage Route annotations to achieve client-side load balancing.
+
+The context states: "We can then create a route with annotation `haproxy.router.openshift.io/balance`=`roundrobin` with this service which will enable the routing of the incoming in round robin fashion." This is key to distributing initial client connections evenly across the cluster members, addressing the "uneven connection distribution" challenge.
+
+Here's an example `Route` YAML that incorporates the `roundrobin` load balancing annotation:
+
+```asciidoc
+[source,yaml]
+----
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: broker-route
+  namespace: broker
+  annotations:
+    haproxy.router.openshift.io/balance: roundrobin # Important for even distribution
+spec:
+  to:
+    kind: Service
+    name: broker-service # Targets the service we created earlier
+  port:
+    targetPort: 61617 # The port exposed by the service
+  tls:
+    termination: passthrough # Assumes TLS is handled by Artemis itself
+    insecureEdgeTerminationPolicy: Redirect
+----
+
+Explanation of the `Route` components:
+
+*   **`apiVersion: route.openshift.io/v1`**: Standard API version for OpenShift Routes.
+*   **`kind: Route`**: Specifies this is an OpenShift Route resource.
+*   **`metadata.name: broker-route`**: The name of the route. This will form part of the external URL (e.g., `broker-route-broker.apps-crc.testing`).
+*   **`metadata.annotations.haproxy.router.openshift.io/balance: roundrobin`**: This critical annotation instructs the OpenShift router (which often uses HAProxy) to distribute incoming client connections to the `broker-service` pods in a round-robin fashion. This ensures that new client connections are spread across your ActiveMQ Artemis cluster nodes, preventing a single point of entry bottleneck.
+*   **`spec.to.name: broker-service`**: Specifies that this `Route` targets the `broker-service` we created earlier.
+*   **`spec.port.targetPort: 61617`**: The port on the target `Service` that the `Route` will forward traffic to.
+*   **`spec.tls.termination: passthrough`**: Given that `sslEnabled: true` was set in the `ActiveMQArtemis` CR, `passthrough` termination is used. This means the router simply passes the encrypted traffic directly to the backend broker pod, allowing Artemis to handle the TLS handshake.
+*   **`spec.tls.insecureEdgeTerminationPolicy: Redirect`**: Redirects HTTP traffic to HTTPS if an insecure connection is attempted.
+
+=== Hands-on Activity: Creating the OpenShift Route
+
+.Procedure:
+.   Save the `Route` YAML content into a file named `broker-route.yaml`.
+.   Apply the route to your OpenShift cluster:
+    ```bash
+    oc apply -f broker-route.yaml -n broker
+    ```
+.   Verify the route is created and get its host URL:
+    ```bash
+    oc get route broker-route -n broker
+    ```
+    Note down the `HOST/PORT` value from the output, as this will be your client connection URL. It will look something like `broker-route-broker.apps-crc.testing`.
+
+== Client Connection Configuration for Clustered Artemis
+
+With the cluster deployed, exposed via a `Service`, and accessible externally via a `Route` with `roundrobin` load balancing, the final step is to configure your client applications to connect.
+
+The context provides an example using Quarkus:
+
+```properties
+quarkus.artemis.url=(tcp://broker-route.apps-crc.testing:443)?useTopologyForLoadBalancing=false;sslEnabled=true;trustStorePath=/keys/keystore.jks;trustStorePassword=password;verifyHost=false;failoverOnInitialConnection=true&reconnectAttempts=3&callTimeout=2000&retryInterval=5000
+quarkus.artemis.username=admin
+quarkus.artemis.password=admin
+```
+
+Let's dissect this client connection URL:
+
+*   **`(tcp://broker-route.apps-crc.testing:443)`**: This is the primary connection endpoint.
+    *   `tcp://`: Specifies the TCP protocol.
+    *   `broker-route.apps-crc.testing`: This is the host provided by your OpenShift `Route`. Note that the port is `443`, which is the default HTTPS port for OpenShift Routes, even if the internal target port is `61617`. The router handles this translation.
+*   **`useTopologyForLoadBalancing=false`**: This is a critical parameter for clients connecting via an external load balancer (like the OpenShift `Route` with `roundrobin`).
+    *   If set to `true` (the default for Artemis clients), the client would try to discover all brokers in the cluster and then load-balance its messages across them, or failover if the initial connection fails.
+    *   When set to `false`, the client primarily relies on the initial connection point (the `Route` in this case) to distribute connections. It prevents the client from trying to build its own internal view of the cluster topology based on broker-advertised URLs, which can be problematic when brokers are behind a router that doesn't expose internal network details. This ensures the `roundrobin` behavior of the OpenShift Route is honored for initial connections.
+*   **`sslEnabled=true`**: Indicates that the client should use SSL/TLS for communication, matching the `sslEnabled: true` configuration on the Artemis acceptor.
+*   **`trustStorePath=/keys/keystore.jks`**: Specifies the path to the client's Trust Store, which contains the certificates of trusted CAs, allowing the client to verify the broker's identity.
+*   **`trustStorePassword=password`**: The password for the Trust Store.
+*   **`verifyHost=false`**: Disables host name verification for testing purposes. In production, this should ideally be `true` with a properly configured `trustStore` and broker certificate.
+*   **`failoverOnInitialConnection=true`**: Enables client-side failover logic. If the initial connection attempt fails, the client will try to reconnect.
+*   **`reconnectAttempts=3`**: The number of times the client will attempt to reconnect.
+*   **`callTimeout=2000`**: The timeout in milliseconds for synchronous calls.
+*   **`retryInterval=5000`**: The delay in milliseconds between reconnection attempts.
+
+The `admin` username and password would correspond to credentials configured within the ActiveMQ Artemis broker (e.g., via the `spec.securitySettings` in the `ActiveMQArtemis` CR or by using OpenShift secrets for authentication).
+
+By configuring the client in this manner, you ensure that:
+1.  Clients connect securely to the cluster.
+2.  Initial connections are load-balanced by the OpenShift Router across available broker nodes.
+3.  The client is resilient to temporary network glitches or broker restarts thanks to failover and reconnect settings.
+
+=== Hands-on Activity: Configuring a Client Application
+
+.Procedure:
+.   Create a sample producer or consumer application (e.g., a simple Quarkus application).
+.   Locate its `application.properties` or equivalent configuration file.
+.   Add the provided connection URL and credentials, adapting the `broker-route.apps-crc.testing:443` part to match your actual OpenShift Route host.
+.   Ensure your application has access to the specified `keystore.jks` (e.g., by mounting it as a `ConfigMap` or `Secret` into your client application pod).
+.   Deploy and run your client application on OpenShift or locally. It will now connect to and interact with your clustered ActiveMQ Artemis environment.
+
+This comprehensive deployment strategy ensures that your ActiveMQ Artemis cluster on OpenShift is not only highly available and scalable but also robustly accessible and load-balanced for your client applications.

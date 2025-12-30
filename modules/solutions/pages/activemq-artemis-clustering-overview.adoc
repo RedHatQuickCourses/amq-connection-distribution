@@ -1,0 +1,84 @@
+#  ActiveMQ Artemis clustering overview
+
+= ActiveMQ Artemis Clustering Overview
+
+In modern distributed systems, resilience and scalability are paramount. Message Oriented Middleware (MOM) plays a critical role in achieving these goals by decoupling services and enabling asynchronous communication. ActiveMQ Artemis, as a high-performance, next-generation messaging broker, extends these capabilities through its robust clustering features.
+
+== Why ActiveMQ Artemis Clustering?
+
+In enterprise environments, a xref:message-oriented-middleware-introduction.adoc#_role_of_mom_in_distributed_systems[single broker instance represents a single point of failure]. If that broker goes offline, critical business operations that rely on message exchange would halt, leading to service disruption and potential data loss. ActiveMQ Artemis directly addresses this challenge through its powerful clustering capabilities.
+
+Clustering transforms a collection of independent broker instances into a cohesive, highly available, and scalable messaging system. It allows you to distribute the messaging load across multiple nodes and ensures that your messaging infrastructure can withstand failures without interrupting service.
+
+== Key Features of ActiveMQ Artemis Clustering
+
+ActiveMQ Artemis clustering provides several core features that ensure high availability, load distribution, and fault tolerance:
+
+=== High Availability (HA) and Automatic Failover
+
+High Availability is a cornerstone of ActiveMQ Artemis clustering. It ensures that messaging services remain continuously operational, even if a broker node fails.
+
+*   **Primary-Backup Architecture**: Within a cluster, brokers can be configured in primary-backup pairs. A primary broker actively processes messages, while its backup stands by, mirroring the primary's state.
+*   **Automatic Failover**: If a primary broker fails due to hardware issues, software crashes, or network partitioning, the backup broker immediately and automatically takes over (failover). This process is designed to be seamless, ensuring zero downtime for critical business operations. Clients connected to the failed primary are automatically reconnected to the new primary, often without application-level intervention.
+*   **Shared Storage or Replication**: HA can be achieved using shared storage (where primary and backup share the same persistent store) or by replicating data between nodes, ensuring that the backup always has the most up-to-date state.
+
+=== Server-Side Message Load Balancing
+
+Efficient distribution of message load across cluster members is vital for performance and preventing bottlenecks. ActiveMQ Artemis implements intelligent server-side load balancing.
+
+*   **Broker Awareness**: Brokers within an Artemis cluster are aware of each other's state and the consumers connected to them.
+*   **Intelligent Message Routing**: If a producer connects to a broker node that does not have a matching consumer for the messages it's sending, the cluster can intelligently route those messages to another node that *does* have one or more active consumers. This prevents messages from accumulating unnecessarily on an underutilized broker while other brokers are actively processing.
+*   **Reduced Redistribution Overhead**: While message redistribution between nodes is possible (configured via `redistribution-delay`), intelligent routing minimizes the need for it. Excessive redistribution can introduce significant overhead and reduce overall cluster throughput, potentially forcing high-volume queues to page pending messages to disk. Server-side load balancing helps avoid these scenarios.
+
+=== Scaling with Competing Consumers
+
+To handle increasing message volumes and processing demands, ActiveMQ Artemis clustering supports the concept of competing consumers.
+
+*   **Dynamic Scalability**: You can dynamically scale up the number of consumer instances for a specific queue. As new consumers come online, Artemis automatically detects them.
+*   **Automatic Message Distribution**: Messages from the queue are then load-balanced across all available consumer instances. This ensures that the message processing throughput increases linearly with the number of consumers.
+*   **No Producer Code Changes**: Critically, this scaling can be achieved without requiring any changes to the producer application's code, simplifying application development and maintenance.
+
+== Conceptual Hands-On: Declaring an ActiveMQ Artemis Cluster
+
+While a full deployment involves numerous steps, understanding how an ActiveMQ Artemis cluster is *declared* is fundamental. When deploying on platforms like OpenShift or Kubernetes, the Red Hat AMQ Operator simplifies this process by allowing you to define your cluster configuration using an `ActiveMQArtemis` Custom Resource (CR).
+
+Let's look at a simplified example of how you might declare a broker instance that will be part of a cluster using a Custom Resource Definition (CRD). This CRD defines the desired state of your broker, and the Operator takes care of provisioning and managing it.
+
+.Defining a Basic ActiveMQ Artemis Broker Instance for Clustering
+[source,yaml]
+----
+apiVersion: broker.amq.io/v1beta1
+kind: ActiveMQArtemis
+metadata:
+  name: broker-cluster-node-1 # Unique name for this broker instance
+  namespace: broker           # Namespace where the broker will be deployed
+spec:
+  # Acceptor configuration defines how clients connect to this broker
+  acceptors:
+    - bindToAllInterfaces: true
+      connectionsAllowed: -1 # Allow unlimited connections
+      expose: true           # Expose this acceptor outside the cluster
+      name: broker           # Name of the acceptor
+      port: 61617            # The port for client connections (e.g., AMQP, OpenWire)
+      sslEnabled: true       # Enable SSL for secure connections
+      sslSecret: tls         # Reference to a Kubernetes Secret containing TLS certificates
+
+  # Address settings define how messages are handled for specific addresses/queues
+  addressSettings:
+    addressSetting:
+      - match: '#' # Apply these settings to all addresses
+        # Further settings for message expiry, delivery, etc. can be added here
+  
+  # Clustering specific configuration would be added here
+  # For instance, defining other cluster members, or discovery mechanisms.
+  # The Operator often handles much of the peer discovery and clustering setup automatically
+  # when multiple ActiveMQArtemis CRs are deployed in the same namespace.
+----
+
+In this example:
+
+1.  We define an `ActiveMQArtemis` custom resource with a unique `name`.
+2.  The `spec` section details the broker's configuration, including `acceptors` (how clients connect) and `addressSettings` (message routing rules).
+3.  When multiple such `ActiveMQArtemis` resources are deployed within the same namespace, the Red Hat AMQ Operator orchestrates them into a cluster, managing the underlying network configuration and broker-to-broker communication necessary for features like server-side load balancing and high availability.
+
+By utilizing the Operator and Custom Resources, the complexities of setting up and managing a multi-node ActiveMQ Artemis cluster are significantly reduced, allowing you to focus on application logic rather than infrastructure management.
