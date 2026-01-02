@@ -187,48 +187,92 @@
 </aside>
 <article class="doc">
 <h1 class="page">Benefits of asynchronous communication</h1>
-<div class="listingblock">
-<div class="content">
-<pre class="highlightjs highlight"><code class="language-asciidoc hljs" data-lang="asciidoc">=== Benefits of Asynchronous Communication
-
-Asynchronous communication is a fundamental paradigm in modern distributed systems, particularly those leveraging Message Oriented Middleware (MOM) like ActiveMQ Artemis. It allows different parts of a system to communicate without requiring immediate, simultaneous interaction, leading to significant advantages over traditional synchronous communication patterns (e.g., direct HTTP/REST calls).
-
-The core principle behind asynchronous communication is the decoupling of senders (producers) from receivers (consumers). Instead of a direct, blocking call, messages are placed into an intermediary—a message broker—which then delivers them to consumers at an appropriate time. This approach underpins the resilience, scalability, and responsiveness of complex microservices architectures.
-
-Let's explore the key benefits:
-
-==== 1. Decoupling and Loose Coupling
-
-Asynchronous communication inherently promotes *loose coupling* between services. xref:mom-introduction.adoc#_decoupling_producer_consumer[As highlighted in the introduction to MOM], the core value proposition of ActiveMQ Artemis lies in separating the Producer (the application sending data) from the Consumer (the application processing data).
-
-*   **Independent Operation:** Producers and consumers do not need to be aware of each other's network locations, operational status, or even implementation details. A producer can confidently send a message even if the consumer is temporarily offline; the message will be stored by the broker until the consumer becomes available.
-*   **Reduced Dependencies:** This independence means changes in one service's internal implementation or deployment strategy are less likely to impact others, fostering easier development, deployment, and maintenance of individual microservices.
-*   **Enhanced Scalability:** Services can be scaled independently. You can add more consumer instances to handle increased load without altering producers, or vice-versa, allowing for more granular resource management and efficient scaling strategies.
-
-==== 2. Enhanced Resilience and Reliability
-
-One of the most critical benefits of asynchronous communication, especially when backed by a robust MOM, is its ability to build highly resilient and reliable systems.
-
-*   **Protection Against Cascading Failures:** Unlike direct HTTP/REST calls, where a failure in one service can rapidly cascade and bring down interconnected services, MOM introduces a crucial layer of resilience. If a consumer service goes down, the message is not lost.
-*   **Guaranteed Message Delivery:** The message broker persists messages safely until the consumer recovers and processes them, "guaranteeing eventual consistency and high reliability." This eliminates the risk of data loss due to transient service unavailability or network issues.
-*   **Fault Tolerance:** By abstracting the communication layer, the entire system becomes more tolerant to individual component failures. If a single consumer instance fails, other instances can seamlessly pick up the slack, or the message can be redelivered once the instance recovers.
-
-==== 3. Improved System Response Times (Fire and Forget)
-
-Asynchronous communication patterns can drastically improve the perceived performance and responsiveness of applications, particularly for end-users.
-
-*   **Non-Blocking Operations:** With the "Fire and Forget" pattern, the producer sends a message to the queue and immediately returns a success response to the end user. Crucially, it *does not wait* for the actual data processing to finish. The producer's responsibility ends once the message is successfully handed over to the broker.
-*   **Reduced User Latency:** This non-blocking behavior significantly reduces the response time experienced by the end-user, as they don't have to wait for the entire end-to-end process to complete. For example, in an e-commerce order placement, the user gets an order confirmation instantly, while the actual fulfillment process (inventory update, payment processing, shipping notification) happens asynchronously in the background.
-
-==== 4. Traffic Smoothing and Load Leveling
-
-Asynchronous messaging systems act as a crucial buffer against fluctuating loads, ensuring stable system performance.
-
-*   **Shock Absorber Effect:** This architecture effectively acts as a "shock absorber." If the producer application experiences a sudden, intense spike in traffic (e.g., during Black Friday sales or a viral marketing event), it pushes messages into the queue at its maximum capacity.
-*   **Sustainable Processing:** The queue holds this buffer, allowing consumers to process the backlog at a sustainable pace without crashing the system due to sudden overwhelming demand. This prevents system overloads and ensures consistent service delivery, even during peak times.
-*   **Resource Optimization:** By smoothing out traffic, resources can be provisioned more efficiently. Instead of provisioning for worst-case peak loads, systems can be designed to handle average loads, with the queue providing the necessary elasticity to absorb and manage temporary surges.
-
-These benefits collectively make asynchronous communication, powered by robust Message Oriented Middleware like ActiveMQ Artemis, an indispensable component for building scalable, resilient, and responsive distributed systems that can meet the demands of modern enterprise applications.</code></pre>
+<div class="sect2">
+<h3 id="_benefits_of_asynchronous_communication"><a class="anchor" href="#_benefits_of_asynchronous_communication"></a>Benefits of Asynchronous Communication</h3>
+<div class="paragraph">
+<p>Asynchronous communication is a fundamental paradigm in modern distributed systems, particularly those leveraging Message Oriented Middleware (MOM) like ActiveMQ Artemis. It allows different parts of a system to communicate without requiring immediate, simultaneous interaction, leading to significant advantages over traditional synchronous communication patterns (e.g., direct HTTP/REST calls).</p>
+</div>
+<div class="paragraph">
+<p>The core principle behind asynchronous communication is the decoupling of senders (producers) from receivers (consumers). Instead of a direct, blocking call, messages are placed into an intermediary—a message broker—which then delivers them to consumers at an appropriate time. This approach underpins the resilience, scalability, and responsiveness of complex microservices architectures.</p>
+</div>
+<div class="paragraph">
+<p>Let&#8217;s explore the key benefits:</p>
+</div>
+<div class="sect3">
+<h4 id="_1_decoupling_and_loose_coupling"><a class="anchor" href="#_1_decoupling_and_loose_coupling"></a>1. Decoupling and Loose Coupling</h4>
+<div class="paragraph">
+<p>Asynchronous communication inherently promotes <strong>loose coupling</strong> between services. <a href="#mom-introduction.adoc#_decoupling_producer_consumer" class="xref unresolved">As highlighted in the introduction to MOM</a>, the core value proposition of ActiveMQ Artemis lies in separating the Producer (the application sending data) from the Consumer (the application processing data).</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>Independent Operation:</strong> Producers and consumers do not need to be aware of each other&#8217;s network locations, operational status, or even implementation details. A producer can confidently send a message even if the consumer is temporarily offline; the message will be stored by the broker until the consumer becomes available.</p>
+</li>
+<li>
+<p><strong>Reduced Dependencies:</strong> This independence means changes in one service&#8217;s internal implementation or deployment strategy are less likely to impact others, fostering easier development, deployment, and maintenance of individual microservices.</p>
+</li>
+<li>
+<p><strong>Enhanced Scalability:</strong> Services can be scaled independently. You can add more consumer instances to handle increased load without altering producers, or vice-versa, allowing for more granular resource management and efficient scaling strategies.</p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_2_enhanced_resilience_and_reliability"><a class="anchor" href="#_2_enhanced_resilience_and_reliability"></a>2. Enhanced Resilience and Reliability</h4>
+<div class="paragraph">
+<p>One of the most critical benefits of asynchronous communication, especially when backed by a robust MOM, is its ability to build highly resilient and reliable systems.</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>Protection Against Cascading Failures:</strong> Unlike direct HTTP/REST calls, where a failure in one service can rapidly cascade and bring down interconnected services, MOM introduces a crucial layer of resilience. If a consumer service goes down, the message is not lost.</p>
+</li>
+<li>
+<p><strong>Guaranteed Message Delivery:</strong> The message broker persists messages safely until the consumer recovers and processes them, "guaranteeing eventual consistency and high reliability." This eliminates the risk of data loss due to transient service unavailability or network issues.</p>
+</li>
+<li>
+<p><strong>Fault Tolerance:</strong> By abstracting the communication layer, the entire system becomes more tolerant to individual component failures. If a single consumer instance fails, other instances can seamlessly pick up the slack, or the message can be redelivered once the instance recovers.</p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_3_improved_system_response_times_fire_and_forget"><a class="anchor" href="#_3_improved_system_response_times_fire_and_forget"></a>3. Improved System Response Times (Fire and Forget)</h4>
+<div class="paragraph">
+<p>Asynchronous communication patterns can drastically improve the perceived performance and responsiveness of applications, particularly for end-users.</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>Non-Blocking Operations:</strong> With the "Fire and Forget" pattern, the producer sends a message to the queue and immediately returns a success response to the end user. Crucially, it <strong>does not wait</strong> for the actual data processing to finish. The producer&#8217;s responsibility ends once the message is successfully handed over to the broker.</p>
+</li>
+<li>
+<p><strong>Reduced User Latency:</strong> This non-blocking behavior significantly reduces the response time experienced by the end-user, as they don&#8217;t have to wait for the entire end-to-end process to complete. For example, in an e-commerce order placement, the user gets an order confirmation instantly, while the actual fulfillment process (inventory update, payment processing, shipping notification) happens asynchronously in the background.</p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_4_traffic_smoothing_and_load_leveling"><a class="anchor" href="#_4_traffic_smoothing_and_load_leveling"></a>4. Traffic Smoothing and Load Leveling</h4>
+<div class="paragraph">
+<p>Asynchronous messaging systems act as a crucial buffer against fluctuating loads, ensuring stable system performance.</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>Shock Absorber Effect:</strong> This architecture effectively acts as a "shock absorber." If the producer application experiences a sudden, intense spike in traffic (e.g., during Black Friday sales or a viral marketing event), it pushes messages into the queue at its maximum capacity.</p>
+</li>
+<li>
+<p><strong>Sustainable Processing:</strong> The queue holds this buffer, allowing consumers to process the backlog at a sustainable pace without crashing the system due to sudden overwhelming demand. This prevents system overloads and ensures consistent service delivery, even during peak times.</p>
+</li>
+<li>
+<p><strong>Resource Optimization:</strong> By smoothing out traffic, resources can be provisioned more efficiently. Instead of provisioning for worst-case peak loads, systems can be designed to handle average loads, with the queue providing the necessary elasticity to absorb and manage temporary surges.</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>These benefits collectively make asynchronous communication, powered by robust Message Oriented Middleware like ActiveMQ Artemis, an indispensable component for building scalable, resilient, and responsive distributed systems that can meet the demands of modern enterprise applications.</p>
+</div>
 </div>
 </div>
 <nav class="pagination">
