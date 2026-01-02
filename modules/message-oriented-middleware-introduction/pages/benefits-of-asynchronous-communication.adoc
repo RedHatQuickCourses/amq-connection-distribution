@@ -1,6 +1,5 @@
 #  Benefits of asynchronous communication
 
-```asciidoc
 === Benefits of Asynchronous Communication
 
 Asynchronous communication is a fundamental paradigm in modern distributed systems, particularly those leveraging Message Oriented Middleware (MOM) like ActiveMQ Artemis. It allows different parts of a system to communicate without requiring immediate, simultaneous interaction, leading to significant advantages over traditional synchronous communication patterns (e.g., direct HTTP/REST calls).
@@ -41,4 +40,3 @@ Asynchronous messaging systems act as a crucial buffer against fluctuating loads
 *   **Resource Optimization:** By smoothing out traffic, resources can be provisioned more efficiently. Instead of provisioning for worst-case peak loads, systems can be designed to handle average loads, with the queue providing the necessary elasticity to absorb and manage temporary surges.
 
 These benefits collectively make asynchronous communication, powered by robust Message Oriented Middleware like ActiveMQ Artemis, an indispensable component for building scalable, resilient, and responsive distributed systems that can meet the demands of modern enterprise applications.
-```
