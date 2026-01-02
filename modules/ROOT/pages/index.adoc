@@ -1,14 +1,13 @@
-=  ActiveMQ Artemis Clustering and High Availability
+=  Client specific challenges in Clustered Brokers
 :navtitle: Home
 
 == Introduction
 
-Course Title:  ActiveMQ Artemis Clustering and High Availability
+Course Title:  Client specific challenges in Clustered Brokers
 
-Description:
-Course description FIXME
+Description: 
 
-Duration: FIXME hours
+Duration: 1 hours
 
 == Topics covered in this course
 
@@ -17,7 +16,7 @@ Duration: FIXME hours
 
 *  Challenges with clustered brokers
 
-*  Solutions
+*  Solutions to those challenges
 
 *  Code Examples
 
@@ -27,6 +26,6 @@ Duration: FIXME hours
 
 This course assumes that you have the following prior experience:
 
-* Course or experience...
-* Course or experience...
-* Course or experience...
+* Understanding of a basic message brokers such as ActiveMQ Artemis
+* Understanding of OpenShift
+* Understanding of Quarkus and Spring Boot
