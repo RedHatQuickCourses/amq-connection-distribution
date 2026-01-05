@@ -24,3 +24,5 @@ When messages are paged to disk, their retrieval and processing become dependent
 . **Potential for Disk Wear:** For systems with high and sustained paging, the constant read/write operations can contribute to accelerated wear on physical disk drives or SSDs.
 
 Effectively mitigating the risk of high-volume queues paging messages to disk involves strategies that ensure messages are consumed as efficiently as they are produced, ideally without needing costly intra-cluster redistribution. This typically involves optimizing client-side load balancing to distribute messages evenly across multiple brokers and their respective queues, thereby preventing any single queue from becoming a bottleneck.
+
+```
