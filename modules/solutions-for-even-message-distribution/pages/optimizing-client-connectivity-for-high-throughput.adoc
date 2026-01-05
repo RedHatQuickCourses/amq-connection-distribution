@@ -1,0 +1,149 @@
+#  Optimizing client connectivity for high throughput
+
+Here is the detailed educational content for "Optimizing client connectivity for high throughput" in Antora AsciiDoc format, focusing on the provided context.
+
+[role="doc-wrapper"]
+= Optimizing Client Connectivity for High Throughput
+
+This section delves into strategies for maximizing message throughput in an ActiveMQ Artemis cluster by optimizing how client applications connect and interact with the brokers.
+
+== Detailed Technical Explanation
+
+When working with Message-Oriented Middleware (MOM) like ActiveMQ Artemis, ensuring high throughput is critical for applications that handle large volumes of messages. A common pitfall that can severely limit performance, even in a clustered environment, stems from how client applications establish their connections.
+
+=== The Bottleneck: Single-Connection Clients
+
+As identified in the context, "an application typically establishes a single connection to a single broker, creating a bottleneck." Even with an ActiveMQ Artemis cluster deployed, if all client applications, particularly producers, connect exclusively to a single broker node, that node becomes a chokepoint. While the cluster is capable of mitigating this by redistributing messages between nodes (a mechanism often configured via a `redistribution-delay` setting), this inter-broker communication introduces significant overhead.
+
+Reliance on message redistribution has several negative consequences:
+
+*   **Reduced Overall Cluster Throughput:** The brokers spend resources forwarding messages internally rather than processing new incoming messages directly from clients. This decreases the effective message processing capacity of the entire cluster.
+*   **Disk Paging for High-Volume Queues:** In scenarios with high message volumes, if a single broker node is overloaded, it can be forced to page pending messages to disk. Disk I/O operations are significantly slower than in-memory processing, drastically increasing latency and further impacting throughput.
+
+The core challenge is to prevent this bottleneck by distributing the load *at the source* – that is, at the client application level – rather than relying on reactive measures within the cluster.
+
+=== The Solution: Client-Side Load Balancing
+
+To achieve optimal throughput and truly leverage the scalability of an ActiveMQ Artemis cluster, the strategy involves configuring client applications for client-side load balancing. Instead of connecting to a single broker, clients are configured to be aware of and establish connections across *multiple* members of the ActiveMQ Artemis cluster.
+
+Here's how client-side load balancing addresses the throughput challenges:
+
+*   **Direct Message Distribution:** When a client application is configured with a list of broker endpoints, its connection factory can intelligently distribute new connections (and thus, message production and consumption) across these available brokers. This ensures that messages are distributed evenly to different cluster nodes right from the producer, rather than being concentrated on one.
+*   **Elimination of Redistribution Overhead:** By distributing messages directly to multiple brokers, the need for the cluster to perform extensive internal message redistribution is significantly reduced or eliminated. This frees up broker resources to focus on processing messages from clients, leading to higher aggregate throughput.
+*   **Maximized Cluster Utilization:** Client-side load balancing ensures that all nodes in the ActiveMQ Artemis cluster are actively utilized for message processing, maximizing the total capacity and performance of your messaging infrastructure.
+*   **Enhanced Resilience:** While the primary focus here is throughput, an inherent benefit of connecting to multiple brokers is improved resilience. If one broker node becomes unavailable, the client application can seamlessly failover to another available node in the list, ensuring continuous operation.
+
+In essence, optimizing client connectivity for high throughput means shifting the responsibility of load distribution from the brokers (via redistribution) to the clients (via connection pooling and load balancing across known broker endpoints).
+
+== Hands-on Lab: Deploying and Interacting with an ActiveMQ Artemis Cluster for High Throughput
+
+This lab guides you through deploying a two-node ActiveMQ Artemis cluster and observing the principles of message distribution crucial for high throughput.
+
+=== Prerequisites
+
+*   An OpenShift environment with administrator privileges.
+*   `oc` CLI tool configured for your OpenShift cluster.
+
+=== Activity 1: Deploying a Two-Node ActiveMQ Artemis Cluster
+
+First, we will deploy the ActiveMQ Artemis cluster using the Red Hat AMQ Operator, as described in the context.
+
+. Create a new OpenShift project (if you haven't already):
++
+[source,bash,subs="attributes+"]
+----
+oc new-project broker
+----
+
+. Install the Red Hat AMQ Operator:
++
+Follow the standard procedure to install the AMQ Operator from the OpenShift OperatorHub into your `broker` namespace.
+
+. Deploy the ActiveMQ Artemis Cluster:
++
+Apply the following `ActiveMQArtemis` Custom Resource (CR) definition. This configuration creates a two-node cluster, exposing its services for client connections.
+
++
+[source,yaml,subs="attributes+"]
+----
+apiVersion: broker.amq.io/v1beta1
+kind: ActiveMQArtemis
+metadata:
+  name: broker
+  namespace: broker
+spec:
+  acceptors:
+    - bindToAllInterfaces: true
+      connectionsAllowed: -1
+      expose: true
+      name: broker
+      port: 61617
+      sslEnabled: true
+      sslSecret: tls
+  addressSettings:
+    addressSetting:
+      - match: '#'
+----
++
+Save the above content to a file named `broker-cluster.yaml` and apply it:
++
+[source,bash,subs="attributes+"]
+----
+oc apply -f broker-cluster.yaml
+----
++
+. Verify Cluster Deployment:
++
+Wait for the broker pods to be running. You should see two pods, typically named `broker-ss-0` and `broker-ss-1`.
++
+[source,bash,subs="attributes+"]
+----
+oc get pods -n broker
+----
++
+You should also verify that the services are exposed:
++
+[source,bash,subs="attributes+"]
+----
+oc get service -n broker
+----
++
+Look for services like `broker-hdls-svc` and `broker-amqp-all` (or similar depending on operator version and acceptor names).
+
+=== Activity 2: Observing Message Distribution and Cluster Behavior (Conceptual)
+
+This activity demonstrates how to observe message distribution. While we won't write specific client code here (as it's outside the provided context), we will discuss the *principles* and how to *verify* the outcome.
+
+. *Conceptual Client Setup for Sub-optimal Throughput:*
++
+Imagine you have a client application (e.g., a producer sending messages to a queue named `prices`) that is configured to connect *only* to one broker node, for instance, `broker-ss-0`. In this scenario, all messages would initially land on `broker-ss-0`.
+
+. *Conceptual Client Setup for Optimized Throughput:*
++
+Now, consider a client application configured for client-side load balancing. This client would be provided with a list of all broker endpoints in the cluster, such as `tcp://broker-ss-0.<cluster-svc>:61616,tcp://broker-ss-1.<cluster-svc>:61616`. When this client starts sending messages, it would distribute them across `broker-ss-0` and `broker-ss-1`.
+
+. *Observe Queue Statistics:*
++
+To verify the distribution, you can inspect the queue statistics on each broker pod. For example, to check the `prices` queue on `broker-ss-0` (or the node identified in the context as `e779f217-d741-11f0-906c-0a580ad9003a`):
++
+[source,bash,subs="attributes+"]
+----
+# Replace 'broker-ss-0' with the actual pod name if different
+oc exec broker-ss-0 -n broker -- /home/jboss/broker/bin/artemis queue stat --name prices
+----
++
+You would observe output similar to the one provided in the context:
++
+[source,text,subs="attributes+"]
+----
+Queue stats on node e779f217-d741-11f0-906c-0a580ad9003a,
+url=tcp://broker-ss-1.broker-hdls-svc.broker.svc.cluster.local:61616
+|NAME  |ADDRESS|CONSUMER|MESSAGE|MESSAGES|DELIVERING|MESSAGES|SCHEDULED|ROUTING|INTERNAL|
+|      |       | COUNT  | COUNT | ADDED  |  COUNT   | ACKED  |  COUNT  | TYPE  | false  |
+|prices|prices |   2    |   0   |  188   |    0     |  188   |    0    |ANYCAST| false  |
+----
++
+*   **Interpretation for Sub-optimal Throughput:** If your client was only connected to `broker-ss-0`, you would see a high `MESSAGES ADDED` count on `broker-ss-0` and potentially a much lower (or zero, if no redistribution has occurred yet) count on `broker-ss-1`. This indicates an uneven distribution.
+*   **Interpretation for Optimized Throughput:** When clients are configured for client-side load balancing, you would observe `MESSAGES ADDED` counts that are *roughly equal* across both `broker-ss-0` and `broker-ss-1`. This signifies that messages are being directly distributed to both nodes, utilizing the cluster's full capacity and reducing the need for costly inter-broker redistribution, leading to higher overall throughput.
+
+By deploying the cluster and conceptually understanding how client connectivity affects the `MESSAGES ADDED` metric on individual broker queues, you gain insight into optimizing your client applications for maximum ActiveMQ Artemis cluster throughput.

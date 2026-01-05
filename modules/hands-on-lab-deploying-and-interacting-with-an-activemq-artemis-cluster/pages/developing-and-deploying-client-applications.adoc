@@ -1,0 +1,431 @@
+#  Developing and deploying client applications
+
+= Developing and Deploying Client Applications for ActiveMQ Artemis Clusters
+
+This section focuses on designing and implementing client applications to effectively interact with a clustered ActiveMQ Artemis environment, ensuring optimal message distribution and high throughput. We will explore the critical client-side configurations and strategies, followed by a hands-on lab using Quarkus-based JMS clients.
+
+== Technical Deep Dive: Client-Side Connection Management for Clustered Messaging
+
+When connecting client applications to an ActiveMQ Artemis cluster, it's crucial to manage connections intelligently to achieve even message distribution and utilize the full capacity of all broker nodes. A common challenge is ensuring that client connections are spread across the cluster members, rather than concentrating on a single broker.
+
+=== The Role of `JmsPoolConnectionFactory`
+
+The `JmsPoolConnectionFactory` plays a pivotal role in managing client connections efficiently. It acts as a wrapper around the `ActiveMQConnectionFactory`, providing a pool of JMS connections that can be reused, reducing overhead and improving performance.
+
+Within the `JmsPoolConnectionFactory` configuration, several properties are essential for clustered deployments:
+
+*   `connectionFactory`: This property is set to an instance of `ActiveMQConnectionFactory`, which defines the actual connection details to the broker. The `url` passed to `ActiveMQConnectionFactory` specifies the connection endpoints, typically pointing to the OpenShift service that exposes the ActiveMQ Artemis cluster.
+*   `maxConnections`: This is a critical setting for client-side load balancing. As explicitly mentioned in the context, `maxConnections` "should be set equal to or more than the number of brokers." By configuring a sufficient number of maximum connections in the pool, the client application can establish multiple underlying connections, which the `ActiveMQConnectionFactory` (when configured for discovery or failover) will distribute across the available brokers in the cluster. This ensures that the client doesn't bottleneck on a single broker connection.
+*   `maxSessionsPerConnection`: This property controls the maximum number of JMS sessions that can be created for each pooled connection. Higher values allow a single connection to handle more concurrent operations.
+
+Let's look at the configuration for both producer and consumer connection factories from the provided context:
+
+.Producer `JmsPoolConnectionFactory` Configuration
+[source,java]
+----
+public JmsPoolConnectionFactory pcfProducer() throws Exception {
+    ActiveMQConnectionFactory activeMQConnectionFactory = new
+ActiveMQConnectionFactory(url); // <1>
+    JmsPoolConnectionFactory poolConnectionFactory = new
+JmsPoolConnectionFactory();
+
+    poolConnectionFactory.setConnectionFactory(activeMQConnectionFactory);
+    poolConnectionFactory.setMaxConnections(5);  //max connections
+should be set equal to or more than the number of brokers <2>
+    poolConnectionFactory.setMaxSessionsPerConnection(500);
+    return poolConnectionFactory;
+}
+----
+<1> The `url` variable would contain the connection string for your ActiveMQ Artemis cluster (e.g., `tcp://broker1:61616,tcp://broker2:61616`).
+<2> For a two-node cluster, setting `maxConnections` to `2` or more (e.g., `5` as shown) ensures multiple connections are established and distributed across the brokers.
+
+.Consumer `JmsPoolConnectionFactory` Configuration
+[source,java]
+----
+@Produces
+@Identifier("pcfConsumer")
+public JmsPoolConnectionFactory pcfConsumer() throws Exception {
+    ActiveMQConnectionFactory activeMQConnectionFactory = new
+ActiveMQConnectionFactory(url);
+    JmsPoolConnectionFactory poolConnectionFactory = new
+JmsPoolConnectionFactory();
+
+    poolConnectionFactory.setConnectionFactory(activeMQConnectionFactory);
+    // <1> maxConnections would also be configured here, similar to the producer
+    // <2> maxSessionsPerConnection would also be configured here
+    return poolConnectionFactory;
+}
+----
+<1> Although not explicitly shown in the `pcfConsumer` snippet, the `setMaxConnections` and `setMaxSessionsPerConnection` properties would be configured here, mirroring the producer's strategy to ensure balanced consumption. For consistency and optimal distribution, these values should be set appropriately.
+
+=== Strategic Consumer Deployment for Even Distribution
+
+Beyond just configuring the `JmsPoolConnectionFactory`, the consumer application's implementation strategy is key to ensuring messages are consumed evenly across all cluster members. The provided context highlights a critical approach:
+
+"The interesting part in the consumer application is that we're creating the same number of consumers as the number of max connections in the consumer connection factory. This way, all the connections (and by association, the consumers) will be created alternately on both brokers."
+
+This strategy ensures that if your `JmsPoolConnectionFactory` is configured with `maxConnections=N` (where `N` is typically >= number of brokers), your consumer application will actively attempt to establish `N` logical consumers. Since the underlying pooled connections are distributed across the brokers, these `N` consumers will, in turn, establish their sessions and receive messages from different broker instances. This directly contributes to higher throughput and better utilization of your cluster's resources.
+
+=== Quarkus Integration
+
+The client application code snippets in the context (`@ApplicationScoped`, `@Observes StartupEvent ev`, `@Observes ShutdownEvent ev`) indicate the use of Quarkus, a cloud-native Java framework. Quarkus simplifies the development of microservices, making it an excellent choice for client applications interacting with ActiveMQ Artemis on OpenShift. The `@Identifier` annotation (e.g., `@Identifier("pcfProducer")`) is a Quarkus/CDI feature for disambiguating multiple beans of the same type.
+
+== Hands-on Lab: Building and Deploying Quarkus JMS Clients
+
+This lab will guide you through creating two Quarkus applications: a message producer and a message consumer. These applications will interact with your previously deployed ActiveMQ Artemis cluster on OpenShift, demonstrating client-side connection management and message distribution.
+
+=== Prerequisites
+
+*   An OpenShift environment with the Red Hat AMQ Operator installed.
+*   A two-node ActiveMQ Artemis cluster deployed on OpenShift using the AMQ Operator.
+*   `oc` CLI tool configured and logged into your OpenShift cluster.
+*   Maven or Gradle installed.
+*   Java Development Kit (JDK) 11 or higher.
+
+=== Task 1: Create Quarkus Projects
+
+Start by creating two new Quarkus projects for your producer and consumer applications.
+
+.Procedure
+. Create a new Quarkus project for the producer:
++
+[source,bash]
+----
+quarkus create app org.example:artemis-producer --extension=quarkus-resteasy-reactive-jackson,quarkus-smallrye-health,quarkus-artemis-jms,quarkus-cdi
+cd artemis-producer
+----
+. Create a new Quarkus project for the consumer:
++
+[source,bash]
+----
+quarkus create app org.example:artemis-consumer --extension=quarkus-resteasy-reactive-jackson,quarkus-smallrye-health,quarkus-artemis-jms,quarkus-cdi
+cd artemis-consumer
+----
+
+=== Task 2: Implement the Producer Application
+
+You will create a `JmsPoolConnectionFactory` configuration and a `Producer` class that periodically sends messages to a queue.
+
+.Procedure
+. In `artemis-producer`, create a new Java class named `ProducerConfiguration.java` (e.g., in `src/main/java/org/example/ProducerConfiguration.java`) and add the following code:
++
+[source,java]
+----
+package org.example;
+
+import io.quarkus.runtime.StartupEvent;
+import io.smallrye.common.annotation.Identifier;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.event.Observes;
+import jakarta.enterprise.inject.Produces;
+import org.apache.activemq.artemis.jms.client.ActiveMQConnectionFactory;
+import org.messaginghub.pooled.jms.JmsPoolConnectionFactory;
+
+// <1> The connection URL for your ActiveMQ Artemis cluster
+// This will be configured via application.properties or OpenShift environment variables
+// For example: tcp://artemis-broker-0-svc-headless:61616,tcp://artemis-broker-1-svc-headless:61616
+// You would replace 'artemis' with the name of your ActiveMQArtemis CR.
+// A simpler connection to a single service that load-balances might be sufficient for demo, e.g.,
+// tcp://artemis-discovery:61616 (if using discovery service) or tcp://artemis-broker-client:61616
+// We will use a placeholder 'ARTEMIS_BROKER_URL' environment variable.
+public class ProducerConfiguration {
+
+    // Using an environment variable or Quarkus config property for the URL
+    // e.g., System.getenv("ARTEMIS_BROKER_URL") or @ConfigProperty(name = "artemis.broker.url") String url;
+    // For this lab, assume 'url' is provided via environment variable.
+    private String url = System.getenv("ARTEMIS_BROKER_URL");
+
+    @Produces
+    @Identifier("pcfProducer")
+    @ApplicationScoped // Ensure this is a CDI bean
+    public JmsPoolConnectionFactory pcfProducer() throws Exception {
+        ActiveMQConnectionFactory activeMQConnectionFactory = new ActiveMQConnectionFactory(url);
+        JmsPoolConnectionFactory poolConnectionFactory = new JmsPoolConnectionFactory();
+
+        poolConnectionFactory.setConnectionFactory(activeMQConnectionFactory);
+        poolConnectionFactory.setMaxConnections(5);  // max connections should be set equal to or more than the number of brokers
+        poolConnectionFactory.setMaxSessionsPerConnection(500);
+        return poolConnectionFactory;
+    }
+}
+----
+<1> The `url` variable must be dynamically set to the ActiveMQ Artemis cluster's client service URL. We will configure this when deploying to OpenShift.
+
+. Create a new Java class named `Producer.java` (e.g., in `src/main/java/org/example/Producer.java`) and add the following code:
++
+[source,java]
+----
+package org.example;
+
+import io.quarkus.runtime.ShutdownEvent;
+import io.quarkus.runtime.StartupEvent;
+import io.smallrye.common.annotation.Identifier;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.event.Observes;
+import jakarta.inject.Inject;
+import jakarta.jms.Connection;
+import jakarta.jms.JMSException;
+import jakarta.jms.MessageProducer;
+import jakarta.jms.Session;
+import jakarta.jms.TextMessage;
+import org.messaginghub.pooled.jms.JmsPoolConnectionFactory;
+
+import java.util.Random;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
+
+@ApplicationScoped
+public class Producer implements Runnable {
+
+    @Inject
+    @Identifier("pcfProducer")
+    JmsPoolConnectionFactory pcfProducer;
+
+    private final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
+    private final Random random = new Random();
+    private volatile int messageCount = 0;
+
+    void onStart(@Observes StartupEvent ev) {
+        // Schedule messages to be sent every 2 seconds
+        scheduler.scheduleAtFixedRate(this, 0L, 2L, TimeUnit.SECONDS);
+    }
+
+    void onStop(@Observes ShutdownEvent ev) {
+        scheduler.shutdownNow(); // Attempt to stop all actively executing tasks
+        try {
+            if (!scheduler.awaitTermination(5, TimeUnit.SECONDS)) {
+                System.err.println("Producer scheduler did not terminate cleanly.");
+            }
+        } catch (InterruptedException ex) {
+            Thread.currentThread().interrupt();
+        }
+    }
+
+    @Override
+    public void run() {
+        try (Connection connection = pcfProducer.createConnection(); // <1> Connection from the pool
+             Session session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE)) { // <2> Auto-acknowledge session
+            connection.start(); // Start the connection
+
+            var queue = session.createQueue("prices"); // <3> Target queue
+            MessageProducer producer = session.createProducer(queue);
+
+            String price = "price-" + random.nextInt(1000);
+            TextMessage message = session.createTextMessage(price);
+            producer.send(message); // <4> Send message
+            messageCount++;
+            System.out.println("Producer sent: " + price + " (Total: " + messageCount + ")");
+
+        } catch (JMSException ex) {
+            System.err.println("Error sending message: " + ex.getMessage());
+            // ex.printStackTrace(); // Uncomment for detailed stack trace if needed
+        }
+    }
+}
+----
+<1> A connection is obtained from the `JmsPoolConnectionFactory`. Due to `maxConnections` being > 1, this pooled connection may map to different underlying brokers over time.
+<2> A non-transacted session with auto-acknowledgement is created.
+<3> Messages will be sent to the `prices` queue.
+<4> A text message containing a random price is sent.
+
+=== Task 3: Implement the Consumer Application
+
+You will implement the `JmsPoolConnectionFactory` configuration for consumers and a `Consumer` class that creates multiple consumers to receive messages from the queue.
+
+.Procedure
+. In `artemis-consumer`, create a new Java class named `ConsumerConfiguration.java` (e.g., in `src/main/java/org/example/ConsumerConfiguration.java`) and add the following code:
++
+[source,java]
+----
+package org.example;
+
+import io.smallrye.common.annotation.Identifier;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.inject.Produces;
+import org.apache.activemq.artemis.jms.client.ActiveMQConnectionFactory;
+import org.messaginghub.pooled.jms.JmsPoolConnectionFactory;
+
+// Similar to ProducerConfiguration, the URL will be set via environment variable
+public class ConsumerConfiguration {
+
+    private String url = System.getenv("ARTEMIS_BROKER_URL");
+
+    @Produces
+    @Identifier("pcfConsumer")
+    @ApplicationScoped // Ensure this is a CDI bean
+    public JmsPoolConnectionFactory pcfConsumer() throws Exception {
+        ActiveMQConnectionFactory activeMQConnectionFactory = new ActiveMQConnectionFactory(url);
+        JmsPoolConnectionFactory poolConnectionFactory = new JmsPoolConnectionFactory();
+
+        poolConnectionFactory.setConnectionFactory(activeMQConnectionFactory);
+        poolConnectionFactory.setMaxConnections(5); // Important: Matching or exceeding number of brokers
+        poolConnectionFactory.setMaxSessionsPerConnection(500);
+        return poolConnectionFactory;
+    }
+}
+----
+
+. Create a new Java class named `Consumer.java` (e.g., in `src/main/java/org/example/Consumer.java`) and add the following code:
++
+[source,java]
+----
+package org.example;
+
+import io.quarkus.runtime.ShutdownEvent;
+import io.quarkus.runtime.StartupEvent;
+import io.smallrye.common.annotation.Identifier;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.event.Observes;
+import jakarta.inject.Inject;
+import jakarta.jms.Connection;
+import jakarta.jms.JMSException;
+import jakarta.jms.Session;
+import org.messaginghub.pooled.jms.JmsPoolConnectionFactory;
+
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicInteger;
+
+@ApplicationScoped
+public class Consumer implements Runnable {
+
+    @Inject
+    @Identifier("pcfConsumer")
+    JmsPoolConnectionFactory pcfConsumer;
+
+    private final ExecutorService scheduler = Executors.newSingleThreadExecutor();
+    private final AtomicInteger receivedMessages = new AtomicInteger(0);
+
+    void onStart(@Observes StartupEvent ev) {
+        scheduler.submit(this);
+    }
+
+    void onStop(@Observes ShutdownEvent ev) {
+        scheduler.shutdownNow(); // Attempt to stop all actively executing tasks
+        try {
+            if (!scheduler.awaitTermination(5, TimeUnit.SECONDS)) { // Added TimeUnit import for completion
+                System.err.println("Consumer scheduler did not terminate cleanly.");
+            }
+        } catch (InterruptedException ex) {
+            Thread.currentThread().interrupt();
+        }
+    }
+
+    @Override
+    public void run() {
+        try {
+            // <1> Critical: Create multiple consumers, matching maxConnections
+            for (int i=0; i < pcfConsumer.getMaxConnections(); i++) {
+                Connection connection = pcfConsumer.createConnection();
+                connection.start();
+                Session session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
+                var queue = session.createQueue("prices");
+                session.createConsumer(queue).setMessageListener(message -> { // <2> MessageListener for asynchronous consumption
+                    try {
+                        String text = message.getBody(String.class);
+                        System.out.println("Consumer received: " + text + " (Total: " + receivedMessages.incrementAndGet() + ")");
+                    } catch (JMSException ex) {
+                        System.err.println("Error processing message: " + ex.getMessage());
+                        // ex.printStackTrace(); // Uncomment for detailed stack trace if needed
+                    }
+                });
+            }
+        } catch (JMSException ex) {
+            System.err.println("Error creating consumer(s): " + ex.getMessage());
+            // ex.printStackTrace(); // Uncomment for detailed stack trace if needed
+        }
+    }
+}
+----
+<1> This loop is crucial for the client-side load balancing strategy. By creating `pcfConsumer.getMaxConnections()` consumers, the application ensures that multiple connections (and thus consumers) are established across the available brokers, distributing the message load.
+<2> Each consumer uses a `MessageListener` for asynchronous message processing.
+
+=== Task 4: Configure Broker Connection URL
+
+You need to obtain the client service URL for your ActiveMQ Artemis cluster deployed on OpenShift.
+
+.Procedure
+. Identify the name of your `ActiveMQArtemis` custom resource (CR). Let's assume it's `artemis`.
+. The AMQ Operator automatically creates various services. You'll typically use the client service for connecting applications. For a clustered deployment, there might be a discovery service or a direct client service that handles load balancing.
+. To find the service, run:
++
+[source,bash]
+----
+oc get services -n <your-openshift-project> | grep artemis-broker
+----
++
+You might see services like `artemis-broker-client`, `artemis-broker-discovery`, or headless services for individual brokers (e.g., `artemis-broker-0-svc-headless`).
++
+For this lab, we will use the client service exposed by the operator. If your cluster CR is `artemis`, the client service is typically named `artemis-broker-client`. The connection URL would be `tcp://artemis-broker-client:61616`.
+. Note down the full URL, e.g., `tcp://artemis-broker-client:61616`. You will use this as an environment variable for your client applications.
+
+=== Task 5: Build and Deploy to OpenShift
+
+Now, you will build your Quarkus applications as container images and deploy them to OpenShift.
+
+.Procedure
+. Build the producer application to create its OpenShift resources:
++
+[source,bash]
+----
+cd ../artemis-producer
+mvn clean package -Dquarkus.container-image.build=true -Dquarkus.container-image.group=<your-openshift-project> -Dquarkus.container-image.name=artemis-producer-app
+----
+. Deploy the producer application to OpenShift, setting the `ARTEMIS_BROKER_URL` environment variable:
++
+[source,bash]
+----
+oc new-app --image=<your-openshift-project>/artemis-producer-app:latest --name=producer-app -e ARTEMIS_BROKER_URL="tcp://artemis-broker-client:61616" -n <your-openshift-project>
+----
++
+Replace `<your-openshift-project>` with your actual OpenShift project name.
+
+. Build the consumer application:
++
+[source,bash]
+----
+cd ../artemis-consumer
+mvn clean package -Dquarkus.container-image.build=true -Dquarkus.container-image.group=<your-openshift-project> -Dquarkus.container-image.name=artemis-consumer-app
+----
+. Deploy the consumer application to OpenShift, also setting the `ARTEMIS_BROKER_URL`:
++
+[source,bash]
+----
+oc new-app --image=<your-openshift-project>/artemis-consumer-app:latest --name=consumer-app -e ARTEMIS_BROKER_URL="tcp://artemis-broker-client:61616" -n <your-openshift-project>
+----
+
+=== Task 6: Observe Message Distribution and Cluster Behavior
+
+Monitor the logs of your producer and consumer pods to observe message flow and confirm distribution.
+
+.Procedure
+. Wait for both `producer-app` and `consumer-app` pods to be running.
++
+[source,bash]
+----
+oc get pods -n <your-openshift-project>
+----
+. Tail the logs of the producer application:
++
+[source,bash]
+----
+oc logs -f $(oc get pod -l app=producer-app -o jsonpath='{.items[0].metadata.name}') -n <your-openshift-project>
+----
++
+You should see messages like `Producer sent: price-XXX`.
+
+. Tail the logs of the consumer application:
++
+[source,bash]
+----
+oc logs -f $(oc get pod -l app=consumer-app -o jsonpath='{.items[0].metadata.name}') -n <your-openshift-project>
+----
++
+You should see messages like `Consumer received: price-XXX`.
+
+. (Optional) Access the ActiveMQ Artemis management console:
++
+If you have exposed the management console for your ActiveMQ Artemis cluster, you can log in and observe the `prices` queue statistics. You should see messages accumulating and being consumed, and you can potentially monitor active connections to confirm that both broker nodes are handling client connections and message traffic. The number of connections from the client applications should reflect the `maxConnections` settings and be distributed across the broker nodes.
+
+This hands-on lab demonstrates how to develop and deploy client applications that effectively leverage ActiveMQ Artemis clustering for high-performance messaging by carefully configuring connection factories and implementing strategic consumer patterns.

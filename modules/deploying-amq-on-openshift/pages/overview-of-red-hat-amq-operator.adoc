@@ -1,0 +1,82 @@
+#  Overview of Red Hat AMQ Operator
+
+[[_overview_of_red_hat_amq_operator]]
+= Overview of Red Hat AMQ Operator
+
+[role="lead"]
+The Red Hat AMQ Operator plays a pivotal role in streamlining the deployment, management, and scaling of ActiveMQ Artemis message brokers within OpenShift and Kubernetes environments. It encapsulates the operational expertise required to run a robust messaging infrastructure, automating complex tasks and integrating seamlessly with the platform's native capabilities.
+
+== Understanding Kubernetes Operators
+
+Before delving into the specifics of the Red Hat AMQ Operator, it's crucial to grasp the fundamental concept of a Kubernetes Operator. An Operator is a method of packaging, deploying, and managing a Kubernetes-native application. It extends the Kubernetes API, allowing you to manage complex stateful applications using familiar Kubernetes objects and principles.
+
+Operators follow the https://kubernetes.io/docs/concepts/architecture/controller/[controller pattern^], where they continuously observe the cluster's current state and compare it to a desired state defined by a Custom Resource (CR). If a discrepancy is detected, the Operator takes the necessary actions to reconcile the actual state with the desired state. This declarative approach significantly simplifies the management of applications that require intricate configurations, lifecycle management, and operational logic.
+
+== The Role of the Red Hat AMQ Operator
+
+The Red Hat AMQ Operator is a specialized controller designed to manage ActiveMQ Artemis instances and clusters on OpenShift. It acts as an automation layer that understands how to deploy, configure, and maintain ActiveMQ Artemis brokers according to the specifications provided in an `ActiveMQArtemis` Custom Resource.
+
+When you interact with the AMQ Operator, you're not directly deploying pods or services. Instead, you declare your desired ActiveMQ Artemis cluster configuration through a `ActiveMQArtemis` Custom Resource. The Operator then translates this high-level declaration into all the necessary underlying Kubernetes resources, such as:
+
+*   **StatefulSets**: For stable, unique network identifiers and persistent storage for each broker node.
+*   **Services**: To provide stable network access to the broker nodes for internal and external clients.
+*   **ConfigMaps**: To store broker configuration files.
+*   **Routes/Ingress**: (Potentially) to expose broker services externally via OpenShift Routes.
+
+As highlighted in the provided context, deploying an ActiveMQ Artemis cluster involves defining an `ActiveMQArtemis` Custom Resource:
+
+```yaml
+apiVersion: broker.amq.io/v1beta1
+kind: ActiveMQArtemis
+metadata:
+  name: broker
+  namespace: broker
+spec:
+  acceptors:
+    - bindToAllInterfaces: true
+      connectionsAllowed: -1
+      expose: true
+      name: broker
+      port: 61617
+      sslEnabled: true
+      sslSecret: tls
+  addressSettings:
+    addressSetting:
+      - match: '#'
+      # ... further configuration details ...
+```
+
+This snippet illustrates how the `ActiveMQArtemis` CR allows you to configure essential aspects such as:
+
+*   **Acceptors**: Define network listeners, including ports (`61617`), whether to `expose: true` the service for client connections, and SSL/TLS settings (`sslEnabled: true`, `sslSecret: tls`).
+*   **Clustering**: The Operator handles the internal configuration required for brokers to form a cluster and communicate effectively, facilitating server-side load balancing and high availability (HA).
+
+== Benefits of Using the AMQ Operator for ActiveMQ Artemis Deployment
+
+Leveraging the Red Hat AMQ Operator for deploying ActiveMQ Artemis on OpenShift provides significant advantages:
+
+*   **Automated Deployment and Lifecycle Management**: The Operator automates the entire process of deploying and managing ActiveMQ Artemis, from initial setup to ongoing operations like scaling, updates, and failover. This automation reduces manual effort and minimizes the risk of human error.
+*   **Declarative Configuration**: By defining the desired state of your ActiveMQ Artemis cluster in a Custom Resource, you ensure consistent and repeatable deployments across different environments. The Operator continuously works to maintain this declared state.
+*   **Enhanced Operational Efficiency**: The Operator abstracts away the complexities of managing ActiveMQ Artemis on Kubernetes, allowing operations teams to focus on higher-level tasks rather than low-level infrastructure details.
+*   **Native Kubernetes Integration**: It fully utilizes OpenShift's native capabilities such as self-healing, scaling, and declarative management, contributing to a highly robust and resilient messaging platform.
+*   **Simplified High Availability (HA)**: The Operator simplifies the deployment of ActiveMQ Artemis clusters with built-in high availability, a critical feature for enterprise environments to ensure continuous service availability and zero downtime in case of broker failures, as mentioned in the broader context.
+*   **Security Integration**: Facilitates secure communication by integrating with OpenShift's secrets management, allowing easy configuration of SSL/TLS for encrypted client connections, as evidenced by `sslSecret: tls` in the example CR.
+
+== Hands-on Activity: Exploring the OperatorHub for AMQ Broker
+
+Before we proceed with the actual installation of the Red Hat AMQ Operator, it's beneficial to familiarize ourselves with where and how Operators are made available within OpenShift.
+
+. **Objective:** Understand how to locate and review the Red Hat AMQ Broker Operator in the OpenShift OperatorHub.
+. **Prerequisites:**
+    *   Access to an OpenShift cluster.
+    *   The `oc` command-line interface (CLI) configured and authenticated with your OpenShift cluster.
+
+. **Steps:**
+    1.  **Log in to the OpenShift Web Console:** Open your web browser and navigate to your OpenShift cluster's web console URL. Log in with your credentials.
+    2.  **Navigate to OperatorHub:** In the left-hand navigation pane, click on *Operators* and then select *OperatorHub*.
+    3.  **Search for AMQ Broker:** In the "Filter by keyword" search box, type `AMQ Broker`.
+    4.  **Inspect the Operator:** You should see a tile for "Red Hat Integration - AMQ Broker". Click on this tile to view its details.
+    5.  **Review Operator Information:** Examine the "Overview" tab for a description of the Operator, its capabilities, and the "Supported Versions" tab to see which ActiveMQ Artemis versions it supports. Also, take a moment to look at the "YAML" tab to get a sense of the subscription configuration, though we won't be applying it yet.
+    6.  **Understand Installation Options (without installing):** Notice the "Install" button. Clicking this typically presents options for installation mode (e.g., install in all namespaces or a specific namespace) and update channel. *For this activity, we are only observing; do not click 'Install' at this point, as the actual installation will be covered in the next topic.*
+
+This activity provides a foundational understanding of the Red Hat AMQ Operator's availability and basic information within the OpenShift ecosystem, setting the stage for its deployment.

@@ -1,0 +1,230 @@
+#  Configuring client connection factories for multiple brokers
+
+[[configuring-client-connection-factories-for-multiple-brokers]]
+= Configuring Client Connection Factories for Multiple Brokers
+
+To ensure efficient and balanced message distribution across an ActiveMQ Artemis cluster, especially in high-throughput scenarios, client applications must be configured to intelligently interact with multiple broker instances. Modern application frameworks often scale connections on demand, which can lead to connection disparity and uneven message distribution if not properly managed.
+
+== The Challenge of Client-Side Connection Disparity
+
+When an ActiveMQ Artemis cluster, for instance, a two-node cluster configured via an `ActiveMQArtemis` Custom Resource with `size: 2`, is deployed, each broker operates independently. While this provides high availability, clients connecting directly to these brokers without proper load-balancing mechanisms can inadvertently create an imbalance.
+
+As noted in the context, "Since the brokers generally handle the connection independently, it creates a connection disparity between the two nodes and by association, the same disparity leaks into consumers." This means some brokers might receive significantly more connections and messages than others, leading to bottlenecks and potential performance degradation on overloaded nodes. This issue is particularly pronounced with transient consumers or applications that frequently establish and tear down connections.
+
+== Solution: Connection Pooling with `JmsPoolConnectionFactory`
+
+To overcome connection disparity and achieve even message distribution, it's crucial to employ a robust connection pooling mechanism on the client side. The `JmsPoolConnectionFactory`, provided by the `pooled-jms` library from MessagingHub, is an effective solution for this. It wraps the underlying `ActiveMQConnectionFactory`, managing a pool of JMS connections and sessions to optimize resource usage and facilitate load balancing across multiple brokers.
+
+The key to using `JmsPoolConnectionFactory` effectively for cluster distribution lies in configuring it with an appropriate `maxConnections` value. This value should be set *equal to or greater than the number of brokers in your cluster*. This ensures that the pool can establish and manage connections to all available broker instances, allowing for more balanced distribution of client connections and, subsequently, messages.
+
+For example, if you have a two-node cluster, setting `poolConnectionFactory.setMaxConnections(2)` or higher is recommended. The provided context explicitly states, "//max connections should be set equal to or more than the number of brokers".
+
+== Configuring the Broker URLs for High Availability
+
+The `quarkus.artemis.url` property is used to specify the connection string for the ActiveMQ Artemis brokers. For a clustered setup, this URL should list all broker endpoints, separated by commas, and include parameters for high availability (HA) and client-side load balancing.
+
+For example, a typical configuration for a two-node cluster might look like this:
+
+```properties
+quarkus.artemis.url=amqp://broker-0-svc-headless.amq-artemis.svc:61617,amqp://broker-1-svc-headless.amq-artemis.svc:61617?ha=true&retryInterval=5000&connectionLoadBalancingPolicy=RANDOM&reconnectAttempts=3&callTimeout=2000&retryInterval=5000
+quarkus.artemis.username=admin
+quarkus.artemis.password=admin
+```
+
+Here:
+
+*   `amqp://broker-0-svc-headless.amq-artemis.svc:61617,amqp://broker-1-svc-headless.amq-artemis.svc:61617`: Specifies the addresses of the two broker services in the cluster.
+*   `ha=true`: Enables high availability, allowing the client to failover to another broker if the primary connection is lost.
+*   `connectionLoadBalancingPolicy=RANDOM`: Instructs the client to randomly select a broker from the list for new connections, promoting better distribution. Other policies like `ROUND_ROBIN` are also available depending on the ActiveMQ Artemis client version.
+*   `reconnectAttempts`, `callTimeout`, `retryInterval`: These parameters define the client's reconnection behavior and timeouts, crucial for maintaining connectivity in dynamic environments.
+
+== Hands-on Activity: Configuring Producer Connection Factory
+
+This section demonstrates how to configure a producer-specific `JmsPoolConnectionFactory` within a Quarkus application. This approach ensures that producers leverage connection pooling and distribute their load across the cluster effectively.
+
+.Prerequisites
+Ensure your Quarkus project includes the `pooled-jms` library dependency (e.g., `org.messaginghub:pooled-jms`).
+
+.Configure `quarkus.properties`
+Add the following configuration to your `src/main/resources/application.properties` or a similar configuration file:
+
+```properties
+quarkus.artemis.url=amqp://broker-0-svc-headless.amq-artemis.svc:61617,amqp://broker-1-svc-headless.amq-artemis.svc:61617?ha=true&retryInterval=5000&connectionLoadBalancingPolicy=RANDOM&reconnectAttempts=3&callTimeout=2000&retryInterval=5000
+quarkus.artemis.username=admin
+quarkus.artemis.password=admin
+```
+
+.Create a Producer Connection Factory Configuration
+Implement a class, for example, `MyConfig`, to produce an `ActiveMQConnectionFactory` wrapped in a `JmsPoolConnectionFactory`. This factory will be specifically identified for producers using the `@Identifier("pcfProducer")` annotation, allowing for separate configuration from consumer connection factories.
+
+[source,java]
+----
+import io.smallrye.common.annotation.Identifier;
+import jakarta.enterprise.inject.Produces;
+import jakarta.inject.Singleton;
+import org.apache.activemq.artemis.jms.client.ActiveMQConnectionFactory;
+import org.eclipse.microprofile.config.inject.ConfigProperty;
+import org.messaginghub.pooled.jms.JmsPoolConnectionFactory;
+
+@Singleton
+public class MyConfig {
+
+    @ConfigProperty(name = "quarkus.artemis.url")
+    String url;
+
+    @ConfigProperty(name = "quarkus.artemis.username")
+    String username;
+
+    @ConfigProperty(name = "quarkus.artemis.password")
+    String password;
+
+    @Produces
+    @Identifier("pcfProducer") // <1>
+    public JmsPoolConnectionFactory createProducerJmsPoolConnectionFactory() {
+        // Instantiate the underlying ActiveMQConnectionFactory with cluster URLs
+        ActiveMQConnectionFactory activeMQConnectionFactory = new ActiveMQConnectionFactory(url, username, password);
+
+        // Wrap it in JmsPoolConnectionFactory for connection management
+        JmsPoolConnectionFactory poolConnectionFactory = new JmsPoolConnectionFactory();
+        poolConnectionFactory.setConnectionFactory(activeMQConnectionFactory);
+        poolConnectionFactory.setMaxConnections(5); // <2>
+        poolConnectionFactory.setMaxSessionsPerConnection(1); // <3>
+
+        return poolConnectionFactory;
+    }
+}
+----
+<1> The `@Identifier("pcfProducer")` annotation makes this specific `JmsPoolConnectionFactory` instance injectable by name for producer components, ensuring separation of concerns.
+<2> `setMaxConnections(5)` explicitly configures the maximum number of connections the pool will manage. For a two-node cluster, a value of 2 or more is required to allow connections to both brokers. Setting it higher (e.g., 5) provides flexibility and can accommodate more concurrent operations across the cluster.
+<3> `setMaxSessionsPerConnection(1)` configures each connection in the pool to provide a single session. This can be useful for controlling resource usage and managing session-level transaction boundaries.
+
+.Injecting the Producer Connection Factory
+Producer components can now inject this specific connection factory using the `@Identifier` annotation:
+
+[source,java]
+----
+import io.quarkus.runtime.ShutdownEvent;
+import io.quarkus.runtime.StartupEvent;
+import io.smallrye.common.annotation.Identifier;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.event.Observes;
+import jakarta.inject.Inject;
+import org.messaginghub.pooled.jms.JmsPoolConnectionFactory;
+
+import java.util.Random;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
+
+@ApplicationScoped
+public class MyProducer {
+
+    @Inject
+    @Identifier("pcfProducer") // <1>
+    JmsPoolConnectionFactory producerConnectionFactory;
+
+    private final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
+
+    void onStart(@Observes StartupEvent ev) {
+        // Start a scheduled task to send messages
+        scheduler.scheduleWithFixedDelay(this::sendMessage, 0L, 5L, TimeUnit.SECONDS);
+    }
+
+    void onStop(@Observes ShutdownEvent ev) {
+        scheduler.shutdown();
+    }
+
+    private void sendMessage() {
+        try (jakarta.jms.Connection connection = producerConnectionFactory.createConnection();
+             jakarta.jms.Session session = connection.createSession(false, jakarta.jms.Session.AUTO_ACKNOWLEDGE)) {
+            connection.start();
+            jakarta.jms.Queue queue = session.createQueue("myQueue");
+            jakarta.jms.MessageProducer producer = session.createProducer(queue);
+            String messageText = "Hello from producer " + new Random().nextInt(10000);
+            jakarta.jms.TextMessage message = session.createTextMessage(messageText);
+            producer.send(message);
+            System.out.println("Sent message: " + messageText);
+        } catch (jakarta.jms.JMSException ex) {
+            System.err.println("Error sending message: " + ex.getMessage());
+            ex.printStackTrace();
+        }
+    }
+}
+----
+<1> The producer component explicitly requests the `JmsPoolConnectionFactory` identified as "pcfProducer", ensuring it uses the correctly configured pooled connection factory for optimal cluster interaction.
+
+== Configuring Consumer Connection Factory for Even Distribution
+
+Similar to producers, consumer applications should also utilize a `JmsPoolConnectionFactory`. The strategy for consumers is to create the same number of consumers as the `maxConnections` set in their connection factory, or at least a number sufficient to balance across brokers. This ensures that all connections (and associated consumers) are created alternately on both brokers, leading to an even distribution of message consumption across the cluster.
+
+This way, as stated in the context, "all the connections (and by association, the consumers) will be created alternately on both brokers."
+
+[source,java]
+----
+import io.quarkus.runtime.ShutdownEvent;
+import io.quarkus.runtime.StartupEvent;
+import io.smallrye.common.annotation.Identifier;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.event.Observes;
+import jakarta.inject.Inject;
+import jakarta.jms.Connection;
+import jakarta.jms.MessageConsumer;
+import jakarta.jms.Queue;
+import jakarta.jms.Session;
+import jakarta.jms.TextMessage;
+import org.messaginghub.pooled.jms.JmsPoolConnectionFactory;
+
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+
+@ApplicationScoped
+public class Consumer {
+
+    @Inject
+    @Identifier("ccfConsumer") // <1> Assuming a separately configured consumer connection factory
+    JmsPoolConnectionFactory consumerConnectionFactory;
+
+    private ExecutorService consumerExecutor;
+
+    void onStart(@Observes StartupEvent ev) {
+        // Create multiple consumers to distribute load across broker connections
+        // The number of consumers should ideally match or exceed the number of brokers (or maxConnections)
+        int numberOfConsumers = consumerConnectionFactory.getMaxConnections(); // <2>
+        consumerExecutor = Executors.newFixedThreadPool(numberOfConsumers);
+
+        for (int i = 0; i < numberOfConsumers; i++) {
+            final int consumerId = i;
+            consumerExecutor.submit(() -> {
+                try (Connection connection = consumerConnectionFactory.createConnection();
+                     Session session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE)) {
+                    connection.start();
+                    Queue queue = session.createQueue("myQueue");
+                    MessageConsumer consumer = session.createConsumer(queue);
+
+                    System.out.println("Consumer " + consumerId + " started on broker: " + connection.getClientID());
+
+                    while (true) { // Keep consumer alive
+                        TextMessage message = (TextMessage) consumer.receive(5000); // Receive with timeout
+                        if (message != null) {
+                            System.out.println("Consumer " + consumerId + " received: " + message.getText());
+                        }
+                    }
+                } catch (Exception ex) {
+                    System.err.println("Consumer " + consumerId + " encountered an error: " + ex.getMessage());
+                    // Consider logging the full stack trace for debugging
+                }
+            });
+        }
+    }
+
+    void onStop(@Observes ShutdownEvent ev) {
+        if (consumerExecutor != null) {
+            consumerExecutor.shutdownNow(); // Attempt to stop consumers gracefully
+        }
+    }
+}
+----
+<1> A separate `@Identifier` (e.g., "ccfConsumer") is used to define and inject the consumer-specific pooled connection factory. This would typically be defined in `MyConfig` similar to `pcfProducer`.
+<2> By creating a number of consumer threads equal to `getMaxConnections()` of the pooled factory, the application actively attempts to establish connections to each available broker in the cluster, ensuring that messages are consumed evenly from all instances.
+
+By implementing these configurations, client applications can effectively leverage ActiveMQ Artemis clustering, ensuring high performance, fault tolerance, and an even distribution of messaging load across all broker instances.

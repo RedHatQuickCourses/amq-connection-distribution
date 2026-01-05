@@ -1,0 +1,146 @@
+#  Exposing broker services for client connections
+
+= Exposing Broker Services for Client Connections
+
+To enable client applications to connect and interact with an ActiveMQ Artemis cluster deployed on OpenShift, it is essential to expose the broker services. This allows external clients, running outside the OpenShift cluster's internal network, to establish connections for sending and receiving messages.
+
+== Technical Explanation: The Need for Exposed Services
+
+In an OpenShift environment, pods and services are typically isolated within the cluster's network. For client applications to reach the ActiveMQ Artemis brokers, a mechanism must be in place to expose these internal services externally. The Red Hat AMQ Operator simplifies this process by allowing direct configuration within the `ActiveMQArtemis` Custom Resource (CR).
+
+Each ActiveMQ Artemis broker within a cluster operates independently, capable of serving clients. When an `ActiveMQArtemis` CR is configured with `size: 2` (as indicated in the context), two broker pods are created, forming a cluster. Each of these brokers is configured with "acceptors" that listen for incoming client connections on specific ports.
+
+The context states:
+"`This will create two broker pods in a cluster where each can serve the clients independently and this create a problem for the clients especially when the consumer is not long lasting or disconnects frequently.`"
+
+This independent handling by each broker can lead to a *connection disparity* across the cluster nodes. Modern application frameworks, such as Spring Boot or Quarkus, often manage connections on demand. If client applications connect primarily to a single broker (due to default load-balancing policies or transient connections), that broker might accumulate a disproportionate number of connections and, consequently, a higher volume of messages.
+
+Consider the queue statistics from two different broker nodes in the cluster (as provided in the context):
+
+[source,text]
+----
+>>> Queue stats on node e779f217-d741-11f0-906c-0a580ad9003a,
+url=tcp://broker-ss-1.broker-hdls-svc.broker.svc.cluster.local:61616
+|NAME  |ADDRESS|CONSUMER|MESSAGE|MESSAGES|DELIVERING|MESSAGES|SCHEDULED|ROUTING|INTERNAL|
+|      |       | COUNT  | COUNT | ADDED  |  COUNT   | ACKED  |  COUNT  | TYPE  |        |
+|prices|prices |   2    |   0   |  188   |    0     |  188   |    0    |ANYCAST| false  |
+----
+And for another node:
+[source,text]
+----
+>>> Queue stats on node da5317e0-d741-11f0-aa76-0a580ad90038,
+url=tcp://broker-ss-0:61616
+|NAME  |ADDRESS|CONSUMER|MESSAGE|MESSAGES|DELIVERING|MESSAGES|SCHEDULED|ROUTING|INTERNAL|
+|      |       | COUNT  | COUNT | ADDED  |  COUNT   | ACKED  |  COUNT  | TYPE  |        |
+|prices|prices |   3    |   0   |  210   |    0     |  210   |    0    |ANYCAST| false  |
+----
+
+These statistics illustrate that even with a simple `prices` queue, one node (`da5317e0-d741-11f0-aa76-0a580ad90038`) has 3 consumers and has processed 210 messages, while the other (`e779f217-d741-11f0-906c-0a580ad9003a`) has 2 consumers and handled 188 messages. This difference, though small here, can become significant under high load and contribute to uneven resource utilization and potential bottlenecks, especially when client-side load balancing is not explicitly configured.
+
+To expose broker services for client connections, the `acceptors` section within the `ActiveMQArtemis` CR is used. This section defines how the broker listens for connections. Key parameters include:
+
+*   `name`: A unique identifier for the acceptor.
+*   `port`: The port number on which the broker listens. Standard AMQP/Artemis ports are often used (e.g., 61616 for OpenWire, 61617 for AMQP).
+*   `expose`: A boolean flag (`true` or `false`) that dictates whether OpenShift should create a Route or LoadBalancer Service (depending on the cluster configuration) to expose this port externally.
+*   `sslEnabled`: A boolean flag to enable SSL/TLS encryption for the connection.
+*   `sslSecret`: The name of the Kubernetes `Secret` that contains the TLS certificate and private key for secure connections.
+*   `connectionsAllowed`: The maximum number of client connections allowed for this acceptor. A value of `-1` means unlimited connections.
+
+By setting `expose: true`, the AMQ Operator automatically provisions the necessary OpenShift resources to make the broker's acceptor accessible from outside the cluster, typically via a hostname and port.
+
+== Hands-on Activity: Configuring and Exposing Broker Services
+
+This activity demonstrates how to configure the `ActiveMQArtemis` Custom Resource to expose broker services, including secure connections, for client access.
+
+=== Step 1: Define an Acceptor in the ActiveMQArtemis CR
+
+You will modify your `ActiveMQArtemis` Custom Resource to include an `acceptor` configuration that exposes the broker service. This configuration will enable secure connections (SSL/TLS) for clients.
+
+.Create or update an `ActiveMQArtemis` Custom Resource (CR) with the following `acceptors` section. If you already have a CR, integrate this section into it.
++
+[source,yaml]
+----
+apiVersion: broker.amq.io/v1beta1
+kind: ActiveMQArtemis
+metadata:
+  name: my-broker
+spec:
+  deploymentPlan:
+    size: 2 # Ensure a clustered deployment
+    image: placeholder # Replace with actual image if needed
+    persistenceEnabled: false # For demonstration purposes, or true for production
+    journalType: nio
+    managementRBACEnabled: true
+    jolokiaAgentEnabled: false
+    requireLogin: false
+  addressSettings:
+    addressSetting:
+      - match: '#'
+        redistributionDelay: 0
+  console:
+    expose: true # Expose the management console
+  acceptors: # This section defines how clients connect
+    - name: broker # Name of the acceptor
+      port: 61617 # Port for client connections (e.g., AMQP)
+      expose: true # Set to true to expose this acceptor externally
+      sslEnabled: true # Enable SSL/TLS for secure connections
+      sslSecret: tls # Reference to the Kubernetes Secret containing TLS certs
+      connectionsAllowed: -1 # Allow unlimited connections
+----
+
+.Explanation of the `acceptors` configuration:
+*   The `broker` acceptor will listen on port `61617`.
+*   `expose: true` ensures that OpenShift will create a service and route (or LoadBalancer) to make `my-broker` accessible from outside the cluster.
+*   `sslEnabled: true` and `sslSecret: tls` mandate that clients connect using SSL/TLS, using the certificates provided in the `tls` Kubernetes secret. You must ensure a `Secret` named `tls` exists in the same namespace, containing the appropriate `tls.crt` and `tls.key`.
+*   `connectionsAllowed: -1` allows an unlimited number of client connections to this specific acceptor.
+
+=== Step 2: Apply the Configuration
+
+Apply the updated `ActiveMQArtemis` CR to your OpenShift cluster.
+
+.Apply the YAML file using `oc apply`:
++
+[source,bash]
+----
+oc apply -f <your-artemis-cr-file>.yaml
+----
+
+.The Red Hat AMQ Operator will detect the changes in the CR and perform the following actions:
+*   Ensure the two broker pods are running (if `size: 2`).
+*   Configure each broker with the specified `acceptor` on port `61617`.
+*   Create an OpenShift `Service` and potentially a `Route` (for HTTP/HTTPS, or a LoadBalancer service for TCP) to expose the `broker` acceptor externally.
+
+=== Step 3: Verify the Exposed Services
+
+After applying the CR, verify that the services have been exposed correctly and obtain the external connection details.
+
+.Check the services created by the Operator:
++
+[source,bash]
+----
+oc get svc -l app.kubernetes.io/name=my-broker
+----
++
+You should see services related to `my-broker`, including the headless service (`-hdls-svc`) and potentially a `Service` or `Route` exposing the `broker` acceptor on port 61617.
+
+.Check the routes created (if using OpenShift Routes):
++
+[source,bash]
+----
+oc get route -l app.kubernetes.io/name=my-broker
+----
++
+Look for routes associated with the `broker` acceptor. These routes will provide the external hostname that clients can use to connect. The AMQ Operator often creates specific routes for each exposed acceptor, typically following a naming convention like `<broker-name>-<acceptor-name>`.
+
+.Example Output (Routes):
++
+[source,text]
+----
+NAME                HOST/PORT                                   PATH   SERVICES            PORT       TERMINATION   WILDCARD
+my-broker-broker    my-broker-broker-broker.apps.example.com           my-broker-hdls-svc  61617      passthrough   None
+my-broker-console   my-broker-console-broker.apps.example.com          my-broker-hdls-svc  webconsole passthrough   None
+----
++
+In this example, `my-broker-broker.apps.example.com` is the external hostname clients would use to connect securely on port 61617.
+
+With the broker services exposed, client applications can now connect to the ActiveMQ Artemis cluster. The next challenge is to ensure these client connections are balanced across all available broker nodes to achieve even message distribution and optimal performance.

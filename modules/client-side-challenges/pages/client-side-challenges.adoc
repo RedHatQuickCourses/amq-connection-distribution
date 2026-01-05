@@ -1,0 +1,10 @@
+#  Client-Side Challenges
+
+=== Client-Side Challenges
+
+Client-side interactions with an ActiveMQ Artemis cluster can present several challenges, impacting performance and message distribution:
+
+*   **Bottlenecks from Single Connection:** Connecting a single client to only one broker can create performance bottlenecks and limit throughput.
+*   **Impact of Default Load Balancing:** Default client load-balancing policies may not evenly distribute connections or messages, leading to inefficient use of cluster resources and reduced overall throughput due to message redistribution.
+*   **Connection Disparity:** Modern application frameworks, which scale connections on demand, can create a disparity in connections between broker nodes, especially when consumers are not long-lasting or disconnect frequently. This disparity can extend to consumers, leading to uneven message processing.
+*   **Risk of Paging Messages:** High-volume queues, particularly when messages are not evenly distributed, face the risk of paging messages to disk, which can degrade performance.

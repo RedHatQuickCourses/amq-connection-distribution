@@ -1,0 +1,6 @@
+* xref:introduction-to-activemq-artemis.adoc[]
+** xref:understanding-message-oriented-middleware-mom.adoc[]
+** xref:core-features-and-benefits-of-activemq-artemis.adoc[]
+** xref:decoupling-producers-and-consumers.adoc[]
+** xref:asynchronous-communication-patterns.adoc[]
+** xref:traffic-smoothing-and-competing-consumers.adoc[]

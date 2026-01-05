@@ -1,0 +1,6 @@
+* xref:hands-on-lab-deploying-and-interacting-with-an-activemq-artemis-cluster.adoc[]
+** xref:setting-up-the-openshift-environment-for-amq-deployment.adoc[]
+** xref:deploying-a-two-node-activemq-artemis-cluster-using-the-operator.adoc[]
+** xref:developing-and-deploying-client-applications.adoc[]
+** xref:observing-message-distribution-and-cluster-behavior.adoc[]
+** xref:testing-failover-scenarios-and-ha-capabilities.adoc[]

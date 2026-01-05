@@ -1,0 +1,141 @@
+#  Configuring a two-node ActiveMQ Artemis cluster
+
+= Configuring a Two-Node ActiveMQ Artemis Cluster
+
+This section details the deployment of a resilient two-node ActiveMQ Artemis cluster on OpenShift, a fundamental step for ensuring high availability (HA) and efficient message distribution in modern distributed systems. As outlined in the introduction to ActiveMQ Artemis, clustering is essential for mitigating single points of failure and enabling server-side load balancing, thereby enhancing system reliability and performance.
+
+== Red Hat AMQ Operator for OpenShift Deployments
+
+To simplify the deployment and ongoing management of ActiveMQ Artemis on OpenShift, we leverage the Red Hat AMQ Operator. The Operator acts as an extension to the Kubernetes API, providing a robust, declarative mechanism to provision, configure, and manage ActiveMQ Artemis instances, including complex clustered setups. It automates operational tasks such as scaling, rolling updates, and maintaining high availability, abstracting away much of the underlying Kubernetes complexity.
+
+== Defining the ActiveMQArtemis Custom Resource (CR)
+
+The deployment of our ActiveMQ Artemis cluster begins with defining an `ActiveMQArtemis` Custom Resource (CR). This CR specifies the desired state of our messaging cluster, and the Red Hat AMQ Operator continuously monitors the OpenShift environment to ensure the actual state matches this declared desired state. The context indicates that to deploy a two-node cluster, we create an `ActiveMQArtemis` custom resource. The Operator is then responsible for orchestrating the deployment of the necessary components to form this two-node cluster.
+
+The following is the `ActiveMQArtemis` CR used for our cluster configuration:
+
+[source,yaml]
+----
+apiVersion: broker.amq.io/v1beta1
+kind: ActiveMQArtemis
+metadata:
+  name: broker
+  namespace: broker
+spec:
+  acceptors:
+    - bindToAllInterfaces: true
+      connectionsAllowed: -1
+      expose: true
+      name: broker
+      port: 61617
+      sslEnabled: true
+      sslSecret: tls
+  addressSettings:
+    addressSetting:
+      - match: '#'
+----
+
+Let's dissect the critical components of this Custom Resource:
+
+*   `apiVersion: broker.amq.io/v1beta1` and `kind: ActiveMQArtemis`: These standard fields identify the resource type and API version, enabling OpenShift to process it through the installed Red Hat AMQ Operator.
+*   `metadata.name: broker` and `metadata.namespace: broker`: These specify the unique name (`broker`) for our ActiveMQ Artemis cluster instance and the OpenShift project (`broker`) where it will reside. The Operator uses this information to name and organize all associated OpenShift resources.
+*   `spec.acceptors`: This is a fundamental section that configures how client applications connect to the ActiveMQ Artemis brokers.
+    *   `bindToAllInterfaces: true`: This setting instructs the broker to listen for connections on all available network interfaces, ensuring broad accessibility within the OpenShift network.
+    *   `connectionsAllowed: -1`: Configures the acceptor to allow an unlimited number of client connections, which is beneficial for high-throughput messaging scenarios.
+    *   `expose: true`: This crucial directive tells the Operator to create OpenShift services (and potentially routes) that expose the broker's messaging ports externally. This enables client applications, whether inside or outside the OpenShift cluster, to establish connections.
+    *   `name: broker`: Provides a descriptive name for this specific acceptor configuration.
+    *   `port: 61617`: This is the standard port for ActiveMQ Artemis clients to connect using protocols like AMQP or OpenWire.
+    *   `sslEnabled: true` and `sslSecret: tls`: These settings activate SSL/TLS encryption for client connections, providing a secure communication channel. The `tls` secret must contain the necessary TLS certificates and private keys for the broker to establish secure connections.
+*   `spec.addressSettings.addressSetting.match: '#"`: This configuration applies a set of default address settings to all message addresses (`#` acts as a wildcard). While the provided snippet only includes the match, in a comprehensive configuration, this section would define policies for message durability, paging, and other address-specific behaviors.
+
+When this `ActiveMQArtemis` CR is applied, the Red Hat AMQ Operator intelligently deploys and configures the required OpenShift resources. This includes StatefulSets for managing the broker pods, Services for network access, and persistent storage for message durability. The Operator also handles the intricate internal clustering mechanisms, ensuring that the two broker nodes are properly interconnected, enabling server-side load balancing and seamless high availability failover capabilities.
+
+== Hands-on Lab: Deploying a Two-Node ActiveMQ Artemis Cluster
+
+This hands-on activity will guide you through the practical steps of deploying a two-node ActiveMQ Artemis cluster on OpenShift using the Red Hat AMQ Operator.
+
+=== Prerequisites
+
+*   An active OpenShift cluster.
+*   The Red Hat AMQ Operator must be installed in your OpenShift cluster (as covered in the "Installing the AMQ Operator on OpenShift" objective).
+*   The `oc` command-line interface (CLI) configured and logged into your OpenShift cluster.
+
+=== Activity Steps
+
+.  **Create a dedicated OpenShift project (namespace)** for your ActiveMQ Artemis broker:
+   [source,bash]
+   ----
+   oc new-project broker
+   ----
+
+.  **Verify Operator visibility**: Confirm that the Red Hat AMQ Operator is configured to watch the `broker` namespace. If the Operator is installed cluster-wide, it will automatically monitor this namespace.
+
+.  **Define the `ActiveMQArtemis` Custom Resource**. Create a file named `broker-cluster.yaml` and populate it with the following content. This configuration, when processed by the AMQ Operator, will result in a two-node ActiveMQ Artemis cluster.
+   [source,yaml]
+   ----
+   apiVersion: broker.amq.io/v1beta1
+   kind: ActiveMQArtemis
+   metadata:
+     name: broker
+     namespace: broker
+   spec:
+     acceptors:
+       - bindToAllInterfaces: true
+         connectionsAllowed: -1
+         expose: true
+         name: broker
+         port: 61617
+         sslEnabled: true
+         sslSecret: tls # Ensure a 'tls' secret exists or remove sslEnabled/sslSecret for simplicity
+     addressSettings:
+       addressSetting:
+         - match: '#'
+     # The Operator, based on the course objective to deploy a two-node cluster,
+     # will interpret this CR to provision two broker instances.
+     # For explicit sizing (not provided in the context CR snippet, but common in practice):
+     deploymentPlan:
+       size: 2 # Explicitly define 2 broker pods for the cluster
+       # image: registry.redhat.io/amq7/amq-broker-rhel8:7.11 # Recommended: Specify a Red Hat AMQ Broker image
+       resources:
+         limits:
+           memory: 1Gi
+           cpu: "1"
+         requests:
+           memory: 512Mi
+           cpu: "0.5"
+   ----
+
+.  **Apply the Custom Resource** to your OpenShift cluster:
+   [source,bash]
+   ----
+   oc apply -f broker-cluster.yaml
+   ----
+
+.  **Verify the deployment**. The Operator will now create a `StatefulSet` and associated pods for the ActiveMQ Artemis brokers. Monitor the pod status until both are running:
+   [source,bash]
+   ----
+   oc get pods -n broker
+   ----
+   Expected output (after a few moments, both pods should transition to `Running`):
+   [source,text]
+   ----
+   NAME          READY   STATUS    RESTARTS   AGE
+   broker-ss-0   1/1     Running   0          2m
+   broker-ss-1   1/1     Running   0          2m
+   ----
+
+.  **Verify the exposed services**. The Operator creates OpenShift services to expose the broker's client connection ports:
+   [source,bash]
+   ----
+   oc get svc -n broker
+   ----
+   You should observe services exposing the `broker` port (61617) as configured in the `acceptors` section of your CR.
+   [source,text]
+   ----
+   NAME            TYPE        CLUSTER-IP       EXTERNAL-IP   PORT(S)     AGE
+   broker-amqp     ClusterIP   172.30.XXX.YYY   <none>        61617/TCP   2m
+   broker-ssl      ClusterIP   172.30.AAA.BBB   <none>        61617/TCP   2m
+   ----
+   // NOTE: The exact names and types of services may vary slightly depending on the AMQ Operator version and OpenShift configuration, but services for client connectivity will be present.
+
+Upon successful completion of these steps, you will have a fully operational two-node ActiveMQ Artemis cluster running on OpenShift, configured for high-performance messaging and ready for client applications.

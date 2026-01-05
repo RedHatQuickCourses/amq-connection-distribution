@@ -1,24 +1,27 @@
-=  Client specific challenges in Clustered Brokers
+=  ActiveMQ Artemis Clustering for High-Performance Messaging
 :navtitle: Home
 
 == Introduction
 
-Course Title:  Client specific challenges in Clustered Brokers
+Course Title:  ActiveMQ Artemis Clustering for High-Performance Messaging
 
-Description: 
+Description:
+Course description FIXME
 
-Duration: 1 hours
+Duration: FIXME hours
 
 == Topics covered in this course
 
 
-*  Message Oriented Middleware Introduction
+*  Introduction to ActiveMQ Artemis
 
-*  Challenges with clustered brokers
+*  Client-Side Challenges
 
-*  Solutions to those challenges
+*  Deploying AMQ on OpenShift
 
-*  Code Examples
+*  Solutions for Even Message Distribution
+
+*  Hands-on Lab: Deploying and Interacting with an ActiveMQ Artemis Cluster
 
 
 
@@ -26,6 +29,6 @@ Duration: 1 hours
 
 This course assumes that you have the following prior experience:
 
-* Understanding of a basic message brokers such as ActiveMQ Artemis
-* Understanding of OpenShift
-* Understanding of Quarkus and Spring Boot
+* Course or experience...
+* Course or experience...
+* Course or experience...

@@ -1,0 +1,32 @@
+#  Impact of default client load-balancing policies
+
+= Impact of Default Client Load-Balancing Policies
+
+When developing client applications to interact with an ActiveMQ Artemis cluster, it's crucial to understand how client connections are typically established and the implications of default behaviors, especially concerning message distribution and overall system performance.
+
+== The Problem: Client-Side Bottlenecks
+
+By default, when a client application connects to a Java Message Service (JMS) broker cluster like ActiveMQ Artemis, standard connection mechanisms do not inherently guarantee an even distribution of connections across all cluster members. Instead, without explicit configuration of a connection pool or a sophisticated load-balancing policy, an application will typically establish a *single connection to a single broker*.
+
+image::images/single-client-single-broker.png[Single Client, Single Broker Connection, 600, 400]
+_Figure 1: A typical client-broker connection scenario without explicit load balancing, illustrating a single connection forming a bottleneck._
+
+This behavior creates a significant *bottleneck* at the client side. Even if the ActiveMQ Artemis cluster itself is composed of multiple robust nodes designed for high availability and scalability, the client's inability to leverage the full capacity of the cluster from a connection perspective can severely limit application throughput and introduce inefficiencies.
+
+=== Consequences of Uneven Client Distribution
+
+The primary consequences of this default client connection behavior manifest in several critical areas:
+
+. *Over-reliance on Message Redistribution*:
+  When messages from a client land predominantly on one broker node, but consumers are distributed across other nodes (or are only attached to a different node), the ActiveMQ Artemis cluster attempts to mitigate this imbalance. It does so through a mechanism called *message redistribution*, often configured via `redistribution-delay`. This process involves the brokers moving messages between nodes to ensure they reach their intended consumers. While this feature prevents message loss and ensures delivery, it comes at a significant cost.
+
+. *Significant Overhead*:
+  The act of moving messages between broker nodes within the cluster introduces considerable overhead. Each message transferred incurs network latency, CPU cycles for routing, and memory operations on both the sending and receiving brokers. This internal cluster traffic can consume valuable resources that would otherwise be used for processing new incoming messages or delivering messages to actual consumers.
+
+. *Reduced Overall Cluster Throughput*:
+  The overhead from message redistribution directly translates to a reduction in the *overall cluster throughput*. The cluster spends a portion of its capacity managing internal message flows rather than maximizing the rate at which new messages can be accepted and delivered to client consumers. This diminishes the very purpose of deploying a scalable cluster.
+
+. *Risk of High-Volume Queues Paging Messages to Disk*:
+  In scenarios where a single broker node receives a disproportionately high volume of messages due to uneven client connections, and subsequently has to redistribute many of these messages, the queues on that broker can become overloaded. If the rate of incoming messages and internal redistribution exceeds the broker's memory capacity, high-volume queues are forced to *page pending messages to disk*. Disk operations are orders of magnitude slower than in-memory operations, leading to drastic performance degradation, increased latency, and a much lower message processing rate for the affected queues and the entire application. This can turn an otherwise fast messaging system into a bottleneck for the entire enterprise solution.
+
+These challenges highlight the necessity for explicit client-side strategies to ensure messages are distributed evenly across cluster members, optimizing resource utilization and maximizing the performance benefits of an ActiveMQ Artemis cluster.

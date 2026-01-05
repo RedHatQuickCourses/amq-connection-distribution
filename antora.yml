@@ -1,16 +1,18 @@
 name: amq-connection-distribution
-title:  ActiveMQ Artemis Clustering and High Availability
+title:  ActiveMQ Artemis Clustering for High-Performance Messaging
 version: 1.0.0
 nav:
 - modules/ROOT/nav.adoc
 - modules/LABENV/nav.adoc
 
-- modules/message-oriented-middleware-introduction/nav.adoc
+- modules/introduction-to-activemq-artemis/nav.adoc
 
-- modules/challenges-with-clustered-brokers/nav.adoc
+- modules/client-side-challenges/nav.adoc
 
-- modules/solutions/nav.adoc
+- modules/deploying-amq-on-openshift/nav.adoc
 
-- modules/code-examples/nav.adoc
+- modules/solutions-for-even-message-distribution/nav.adoc
+
+- modules/hands-on-lab-deploying-and-interacting-with-an-activemq-artemis-cluster/nav.adoc
 
 - modules/appendix/nav.adoc

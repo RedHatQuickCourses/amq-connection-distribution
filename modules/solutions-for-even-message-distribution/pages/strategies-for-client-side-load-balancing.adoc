@@ -1,0 +1,81 @@
+#  Strategies for client-side load balancing
+
+= Strategies for Client-Side Load Balancing
+
+ActiveMQ Artemis clusters provide powerful server-side capabilities for High Availability (HA) and message redistribution. Brokers are aware of each other and can intelligently route messages to nodes with matching consumers. However, relying solely on server-side redistribution, particularly in high-volume scenarios, can introduce significant overhead and reduce overall cluster throughput. This section explores strategies for client-side load balancing to ensure efficient and even distribution of messages directly from producers to cluster members, mitigating common bottlenecks.
+
+== Detailed Technical Explanation
+
+When a client application interacts with an ActiveMQ Artemis cluster, a common pitfall is establishing a single connection to a single broker instance. While the cluster can internally move messages between nodes if a producer connects to a broker without a matching consumer (configured via `redistribution-delay`), this process is resource-intensive. Messages must first arrive at one broker, then be streamed across the network to another, consuming network bandwidth and CPU cycles on both brokers. This reliance on message redistribution reduces overall cluster throughput and can force high-volume queues to page pending messages to disk, significantly impacting performance and latency.
+
+The goal of client-side load balancing is to distribute messages as close to the source as possible – at the producer client itself. Instead of sending all messages to a single broker and relying on the cluster to redistribute them, clients are configured to be aware of multiple brokers within the cluster. This allows the client application to distribute its outgoing messages across different cluster nodes directly, often using a round-robin or random distribution policy.
+
+Key benefits of implementing client-side load balancing include:
+
+*   **Even Message Distribution**: Messages are distributed uniformly across all active broker nodes, preventing any single node from becoming a bottleneck.
+*   **Increased Throughput**: By bypassing server-side message redistribution, the overall throughput of the cluster is significantly enhanced, as brokers can focus on processing local messages rather than forwarding them.
+*   **Reduced Resource Contention**: Less reliance on inter-broker message movement frees up CPU, memory, and network resources on the brokers.
+*   **Preventing Disk Paging**: High-volume queues are less likely to accumulate large backlogs on a single broker, reducing the risk of messages being paged to disk.
+*   **Enhanced Scalability**: Clients can seamlessly leverage the full capacity of a scaled-out cluster, contributing directly to horizontal scalability.
+
+The core strategy involves configuring the client's connection factory to include the network addresses of multiple brokers in the cluster. Modern messaging client libraries (like JMS, AMQP clients for ActiveMQ Artemis) are designed to interpret such configurations and implement internal load-balancing logic. When a client establishes a connection, it uses the provided list of broker URLs to intelligently select a broker for sending messages, thereby distributing the load.
+
+== Hands-on Activity: Configuring Client Connection Factories for Even Message Distribution
+
+This activity demonstrates how to conceptually configure a client application to connect to multiple brokers in an ActiveMQ Artemis cluster, enabling client-side load balancing. While specific client code will vary based on the programming language and messaging protocol (e.g., JMS, AMQP), the underlying principle of providing multiple broker endpoints remains consistent.
+
+=== Objective
+
+Configure a client application's connection factory to distribute messages across a two-node ActiveMQ Artemis cluster deployed on OpenShift.
+
+=== Scenario
+
+You have deployed a two-node ActiveMQ Artemis cluster on OpenShift using the `ActiveMQArtemis` Custom Resource (CR). The brokers are exposed via a headless service, and their individual pod services are reachable. For a two-node cluster named `broker` in the `broker` namespace, the service endpoints would typically follow the pattern:
+*   `broker-ss-0.broker-hdls-svc.broker.svc.cluster.local`
+*   `broker-ss-1.broker-hdls-svc.broker.svc.cluster.local`
+
+From the `ActiveMQArtemis` CR configuration, we know the acceptor port is `61617` and `sslEnabled: true`. This implies that connections should be made over SSL to port 61617.
+
+=== Steps
+
+.  **Identify Broker Endpoints**:
+    Based on the OpenShift deployment and the `ActiveMQArtemis` Custom Resource, determine the full connection URLs for each broker in your cluster. Given a two-node cluster named `broker` in the `broker` namespace, and the acceptor configuration (`port: 61617`, `sslEnabled: true`), the URLs would be:
+
+    *   `ssl://broker-ss-0.broker-hdls-svc.broker.svc.cluster.local:61617`
+    *   `ssl://broker-ss-1.broker-hdls-svc.broker.svc.cluster.local:61617`
+
+.  **Configure the Client Connection Factory**:
+    In your client application, instead of providing a single broker URL, provide a comma-separated list of all known broker URLs to the connection factory. The client library will then handle the distribution logic.
+
+    While the exact syntax varies, here's a conceptual example using a generic client configuration pattern:
+
+    ```text
+    // Conceptual Configuration for a Messaging Client (e.g., Java JMS, AMQP client)
+
+    // Define the full list of broker URLs for client-side load balancing
+    String brokerUrls = "ssl://broker-ss-0.broker-hdls-svc.broker.svc.cluster.local:61617," +
+                        "ssl://broker-ss-1.broker-hdls-svc.broker.svc.cluster.local:61617";
+
+    // Initialize your connection factory with the list of URLs
+    // (e.g., ActiveMQConnectionFactory in JMS, or AMQP ConnectionFactory)
+    ConnectionFactory connectionFactory = new MyMessagingConnectionFactory(brokerUrls);
+
+    // Create a connection and session
+    Connection connection = connectionFactory.createConnection();
+    Session session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
+
+    // Create a producer
+    MessageProducer producer = session.createProducer(queueDestination);
+
+    // Messages sent by this producer will be load-balanced across the
+    // brokers specified in brokerUrls.
+    ```
+
+.  **Explanation of Client Behavior**:
+    When the client application creates a connection using this `connectionFactory`, the underlying messaging library will typically implement a client-side load-balancing policy. Common policies include:
+
+    *   **Round-Robin**: Each new connection or message is directed to the next broker in the list sequentially.
+    *   **Random**: A broker is chosen randomly from the list for each new connection or message.
+    *   **Failover**: The client will try to connect to the first broker, and if it fails, it will attempt the next one in the list, ensuring resilience. When combined with load balancing, it means it will balance *and* failover.
+
+    By configuring `brokerUrls` with multiple endpoints, the client ensures that producers establish connections to different cluster members, or send messages to different members within existing connections, thereby distributing the load evenly and directly, rather than relying on the cluster's internal message redistribution mechanisms. This approach is crucial for optimizing client connectivity for high throughput and ensuring efficient utilization of your ActiveMQ Artemis cluster.

@@ -1,0 +1,13 @@
+#  Deploying AMQ on OpenShift
+
+=== Deploying AMQ on OpenShift
+
+To deploy an ActiveMQ Artemis cluster on OpenShift:
+
+*   **Install the Red Hat AMQ Operator**: This operator simplifies the deployment and management of AMQ Artemis instances on OpenShift.
+*   **Create an `ActiveMQArtemis` Custom Resource (CR)**:
+    *   This CR defines the desired state of the ActiveMQ Artemis broker, including its configuration.
+    *   For a two-node cluster, the CR specifies the cluster's configuration, such as acceptors and address settings (as shown in the provided `broker.amq.io/v1beta1` example).
+*   **Expose Broker Services**:
+    *   A Kubernetes `Service` (e.g., `broker-service`) is created to target the broker pods, making the broker accessible within the OpenShift cluster.
+    *   A `Route` can then be created on top of this service, enabling external access and providing client-side load balancing (e.g., using `haproxy.router.openshift.io/balance="roundrobin"` for even message distribution).

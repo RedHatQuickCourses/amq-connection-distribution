@@ -1,5 +1,5 @@
 site:
-  title:  ActiveMQ Artemis Clustering and High Availability
+  title:  ActiveMQ Artemis Clustering for High-Performance Messaging
   start_page: amq-connection-distribution::index.adoc
 
 content:

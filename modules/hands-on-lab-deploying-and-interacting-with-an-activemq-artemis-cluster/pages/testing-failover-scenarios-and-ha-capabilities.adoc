@@ -1,0 +1,94 @@
+#  Testing failover scenarios and HA capabilities
+
+= Testing Failover Scenarios and HA Capabilities
+
+== Understanding High Availability and Failover in ActiveMQ Artemis Clusters
+
+In enterprise environments, the reliability of messaging infrastructure is paramount. A single broker instance, no matter how robust, represents a single point of failure. ActiveMQ Artemis addresses this critical concern through its clustering capabilities, specifically implementing High Availability (HA) and Failover mechanisms.
+
+The core concept of High Availability in an ActiveMQ Artemis cluster, as stated in the provided context, is: "In a clustered setup, if a primary broker fails, a backup broker can immediately take over (Failover), ensuring zero downtime for critical business operations." This mechanism is crucial for maintaining continuous service and data integrity in distributed systems.
+
+When a primary broker, which is actively serving client connections and processing messages, experiences a failure (e.g., a hardware failure, network partition, or unexpected shutdown), the failover process is initiated. A designated backup broker, which has been in a passive or standby mode, detecting the primary's failure, takes over its role. This takeover is designed to be seamless, with minimal disruption to the clients.
+
+From a client's perspective, well-configured client applications will automatically detect the loss of connection to the failed primary broker and subsequently reconnect to the newly active backup broker. This transparent reconnection ensures that producers can continue sending messages and consumers can resume processing messages without significant interruption or data loss. The messaging system remains operational, upholding the principle of eventual consistency and high reliability that Message-Oriented Middleware (MOM) aims to provide.
+
+This capability is a cornerstone for systems requiring constant uptime and protection against service interruptions, preventing the cascading failures that can occur in tightly coupled systems.
+
+== Lab Activity: Demonstrating Cluster Failover
+
+This lab activity will guide you through simulating a broker failure in your deployed ActiveMQ Artemis cluster on OpenShift and observing the failover process. This will demonstrate the cluster's High Availability (HA) capabilities and how client applications seamlessly recover.
+
+=== Prerequisites
+
+Ensure you have:
+
+*   An OpenShift environment with the Red Hat AMQ Operator installed.
+*   A two-node ActiveMQ Artemis cluster deployed using an `ActiveMQArtemis` Custom Resource, as configured in previous lab activities.
+*   Client applications (producers and consumers) deployed and actively interacting with the cluster, configured to connect to multiple brokers (as per "Configuring client connection factories for multiple brokers").
+
+=== Steps
+
+1.  **Monitor Initial Cluster State and Client Activity**
+
+    a.  Open your OpenShift console or use the `oc` CLI to list the pods for your ActiveMQ Artemis cluster. You should see two broker pods running (e.g., `broker-ss-0`, `broker-ss-1`).
+
+        ```bash
+        oc get pods -n <your-project> -l app.kubernetes.io/name=activemq-artemis-broker
+        ```
+
+    b.  Ensure your client applications (producers and consumers) are running and actively sending/receiving messages. Observe their logs to confirm they are connected and processing messages.
+
+        ```bash
+        oc logs -f <your-producer-pod-name> -n <your-project>
+        oc logs -f <your-consumer-pod-name> -n <your-project>
+        ```
+
+    c.  You can also inspect the queue statistics on one of the brokers. The context provides an example of queue stats, showing messages being processed. Pick one of your broker pods and port-forward to its management port (usually 8161 for the web console or 61616 for AMQP if you prefer a client tool). For instance, using `oc exec` to get internal queue stats:
+
+        ```bash
+        # Example using oc exec to get queue stats from within a broker pod
+        oc exec -it broker-ss-0 -n <your-project> -- /bin/bash -c "head -n 20 /opt/amq/broker/log/artemis.log | grep -i 'queue stats'"
+        ```
+        (Note: The actual command to get live queue stats from within the broker might vary depending on the AMQ Artemis version and configuration, but the intent is to show that messages are being handled by both brokers.)
+
+2.  **Simulate a Primary Broker Failure**
+
+    a.  Identify one of your broker pods to simulate its failure. For this example, let's target `broker-ss-0`.
+
+    b.  Delete the pod for `broker-ss-0`. This action will simulate an unexpected failure of that broker instance. The OpenShift StatefulSet controller will automatically attempt to recreate it.
+
+        ```bash
+        oc delete pod broker-ss-0 -n <your-project>
+        ```
+
+    c.  Immediately list the pods again to observe the status change:
+
+        ```bash
+        oc get pods -n <your-project> -l app.kubernetes.io/name=activemq-artemis-broker
+        ```
+        You should see `broker-ss-0` terminating and then a new pod with the same name starting up. `broker-ss-1` should remain running.
+
+3.  **Observe Client Failover and Continued Operation**
+
+    a.  **Check Client Logs:** Revisit the logs of your producer and consumer client applications.
+        *   You should observe messages indicating a connection loss to the failed broker (`broker-ss-0`).
+        *   Crucially, you should then see messages indicating that the clients have successfully reconnected to the remaining active broker (`broker-ss-1`).
+        *   Producers should continue sending messages, and consumers should continue receiving them, demonstrating that the applications have gracefully failed over.
+        *   There should be no prolonged interruption or error state, confirming the "zero downtime" aspect from the client's perspective for critical operations.
+
+        ```bash
+        oc logs -f <your-producer-pod-name> -n <your-project>
+        oc logs -f <your-consumer-pod-name> -n <your-project>
+        ```
+
+    b.  **Verify Message Continuity:** Ensure that messages continue to flow through the cluster without significant loss. If you had a counter in your consumer, verify it continues to increment.
+
+    c.  **Observe Cluster Recovery:** Watch the `oc get pods` output until the `broker-ss-0` pod is back to a `Running` state. Once it restarts, it will rejoin the cluster, potentially taking on the role of a backup broker or becoming active if `broker-ss-1` was the original primary.
+
+        ```bash
+        oc get pods -w -n <your-project> -l app.kubernetes.io/name=activemq-artemis-broker
+        ```
+
+=== Conclusion
+
+By successfully completing this lab, you have witnessed ActiveMQ Artemis's High Availability and Failover capabilities in action. You observed how a client application seamlessly reconnects to an available broker after a primary broker failure, ensuring continuous messaging operations and demonstrating the resilience provided by clustering. This mitigation of a "single point of failure" is a key benefit of deploying ActiveMQ Artemis in a clustered configuration.

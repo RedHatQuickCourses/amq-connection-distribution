@@ -1,0 +1,171 @@
+#  Bottlenecks from single connection to a single broker
+
+= Bottlenecks from Single Connection to a Single Broker
+
+ifndef::ROOT_ATTRIBUTES[]
+:imagesdir: ../assets/images
+:page-layout: lab
+endif::[]
+
+++++
+<div class="open-in-terminal" title="Open in Terminal"></div>
+++++
+
+Modern messaging systems like ActiveMQ Artemis are designed to provide robust, high-performance, and decoupled communication. However, the benefits of a powerful broker cluster can be undermined by inefficient client-side connectivity patterns, specifically the common practice of establishing a single connection to a single broker. This pattern can introduce significant bottlenecks, even in a highly available and scalable cluster.
+
+== Understanding the Bottleneck from Single Connections
+
+A common client-side challenge in message-oriented middleware (MOM) environments, particularly with clustered brokers, arises when an application establishes a single connection to a single broker within the cluster. This seemingly innocuous approach creates a critical bottleneck, severely limiting the application's ability to fully leverage the distributed processing power of the ActiveMQ Artemis cluster.
+
+=== The Root Cause: Connection Disparity
+
+Modern application frameworks, such as Spring Boot or Quarkus, are designed to "create and scale connection on demand." While this provides flexibility, if not managed correctly in a clustered environment, it can lead to problems. When a cluster is configured, such as the described two-node ActiveMQ Artemis cluster, "each can serve the clients independently." However, if client applications, by default, gravitate towards connecting to just one of these independent broker instances, it results in an uneven distribution of workload.
+
+Since "the brokers generally handle the connection independently," a client establishing a single connection to, for example, `broker-ss-0` means all messages from and to that client will funnel through that specific broker node. This creates a "connection disparity between the two nodes," where one broker node might be heavily loaded with client connections and message traffic, while other nodes in the cluster remain underutilized. This disparity then "leaks into consumers," meaning consumers connected to the overutilized broker experience higher load and potentially slower processing, while consumers on less utilized brokers may sit idle.
+
+=== Impact on Cluster Throughput and Performance
+
+The consequences of this single-connection bottleneck are substantial:
+
+*   **Reduced Overall Cluster Throughput:** The heavily loaded broker becomes a bottleneck, effectively capping the total message processing capacity of the entire cluster for those clients. Even if other brokers have ample resources, the work cannot be efficiently distributed.
+*   **Overhead of Message Redistribution:** While ActiveMQ Artemis clusters *can* mitigate uneven distribution by "moving messages between nodes (configured via `redistribution-delay`)," this process is not a primary solution for client-side load balancing. Relying on message redistribution "introduces significant overhead" within the cluster. This internal movement of messages consumes network bandwidth, CPU cycles, and memory that could otherwise be used for processing new messages.
+*   **Paging Messages to Disk:** In high-volume scenarios where message redistribution is heavily relied upon, the increased overhead can become so severe that it "can force high-volume queues to page pending messages to disk." Paging messages to disk introduces considerable latency, drastically degrading performance and potentially leading to service degradation or outages.
+
+In essence, a single connection to a single broker prevents the client from truly participating in a high-performance, load-balanced messaging architecture, turning a distributed system into a single point of congestion.
+
+== Hands-on Activity: Deploying a Cluster and Observing Initial State
+
+This activity focuses on deploying a two-node ActiveMQ Artemis cluster on OpenShift and observing the initial state of its queues. This setup will serve as the baseline to understand the challenges of uneven distribution before implementing client-side load-balancing strategies. While we won't actively create a bottleneck in this step, observing the message counts on individual nodes after some initial message production will implicitly highlight the potential for disparity that leads to such bottlenecks.
+
+=== Prerequisites
+
+*   An OpenShift cluster with the Red Hat AMQ Operator installed.
+*   `oc` command-line tool configured to connect to your OpenShift cluster.
+
+=== Step 1: Deploy a Two-Node ActiveMQ Artemis Cluster
+
+First, we will deploy a simple two-node ActiveMQ Artemis cluster using the provided Custom Resource (CR) definition.
+
+.Create a new project for the broker:
++
+[source,bash,subs="attributes+"]
+----
+oc new-project broker
+----
+
+.Define the `ActiveMQArtemis` Custom Resource:
++
+Create a file named `broker-cluster.yaml` with the following content:
++
+[source,yaml]
+----
+apiVersion: broker.amq.io/v1beta1
+kind: ActiveMQArtemis
+metadata:
+  name: broker
+  namespace: broker
+spec:
+  acceptors:
+    - bindToAllInterfaces: true
+      connectionsAllowed: -1
+      expose: true
+      name: broker
+      port: 61617
+      sslEnabled: true
+      sslSecret: tls
+  addressSettings:
+    addressSetting:
+      - match: '#'
+        redistributionDelay: 0
+  console:
+    expose: true
+  deploymentPlan:
+    image: placeholder
+    jolokiaAgentEnabled: false
+    journalType: nio
+    managementRBACEnabled: true
+    messageMigration: false
+    persistenceEnabled: false
+    requireLogin: false
+    size: 2
+----
+
+.Apply the Custom Resource to deploy the cluster:
++
+[source,bash,subs="attributes+"]
+----
+oc apply -f broker-cluster.yaml
+----
+
+.Verify the deployment:
++
+Monitor the pods until both broker instances are in a `Running` state:
++
+[source,bash,subs="attributes+"]
+----
+oc get pods -n broker
+----
++
+You should see output similar to this, indicating two pods (`broker-ss-0` and `broker-ss-1`) are ready:
++
+[source,text]
+----
+NAME           READY   STATUS    RESTARTS   AGE
+broker-ss-0    1/1     Running   0          2m
+broker-ss-1    1/1     Running   0          2m
+----
+
+=== Step 2: Observe Queue Statistics on Individual Nodes
+
+Once the cluster is deployed, we can inspect the queue statistics on each node. For this demonstration, we'll assume some messages (e.g., to a `prices` queue) have been sent by an unmanaged client connection to illustrate the potential for disparity.
+
+.Retrieve queue statistics from `broker-ss-0`:
++
+Execute the following command to query the `prices` queue statistics on the first broker node:
++
+[source,bash,subs="attributes+"]
+----
+oc exec broker-ss-0 -- /home/jboss/amq-broker/bin/artemis queue stat --url tcp://broker-ss-0:61616 --clustered --user admin --password admin --queueName prices
+----
++
+Expected output (example from context):
++
+[source,text]
+----
+Connection brokerURL = tcp://broker-ss-0:61616
+****************************************************************************************************
+>>> Queue stats on node da5317e0-d741-11f0-aa76-0a580ad90038,
+url=tcp://broker-ss-0:61616
+|NAME  
+|ADDRESS|CONSUMER|MESSAGE|MESSAGES|DELIVERING|MESSAGES|SCHEDULED|ROUTING|INTERNAL|
+|      |       | COUNT  | COUNT | ADDED  |  COUNT   | ACKED  |  COUNT  | TYPE  |        |
+|prices|prices |   3    |   0   |  210   |    0     |  210   |    0    |ANYCAST| false  |
+----
+
+.Retrieve queue statistics from `broker-ss-1`:
++
+Now, query the `prices` queue statistics on the second broker node. Note the different URL used to target the specific headless service for `broker-ss-1`:
++
+[source,bash,subs="attributes+"]
+----
+oc exec broker-ss-0 -- /home/jboss/amq-broker/bin/artemis queue stat --url tcp://broker-ss-1.broker-hdls-svc.broker.svc.cluster.local:61616 --clustered --user admin --password admin --queueName prices
+----
++
+Expected output (example from context):
++
+[source,text]
+----
+****************************************************
+>>> Queue stats on node e779f217-d741-11f0-906c-0a580ad9003a,
+url=tcp://broker-ss-1.broker-hdls-svc.broker.svc.cluster.local:61616
+|NAME
+|ADDRESS|CONSUMER|MESSAGE|MESSAGES|DELIVERING|MESSAGES|SCHEDULED|ROUTING|INTERNAL|
+|      |       | COUNT  | COUNT | ADDED  |  COUNT   | ACKED  |  COUNT  | TYPE  |        |
+|prices|prices |   2    |   0   |  188   |    0     |  188   |    0    |ANYCAST| false  |
+----
+
+.Analyze the observation:
++
+Compare the `MESSAGES ADDED` and `CONSUMER COUNT` values for the `prices` queue on both `broker-ss-0` and `broker-ss-1`. You'll likely observe a difference (e.g., `broker-ss-0` showing 210 messages added with 3 consumers, versus `broker-ss-1` showing 188 messages added with 2 consumers). This disparity, even if slight, demonstrates the fundamental problem: without explicit client-side strategies to distribute connections and messages, one broker can receive a disproportionately higher load, creating the conditions for a bottleneck.
+
+This initial observation sets the stage for understanding why client-side load balancing is crucial for achieving high-performance messaging in ActiveMQ Artemis clusters. The subsequent content will explore how to overcome these client-side challenges.

@@ -1,0 +1,96 @@
+#  Observing message distribution and cluster behavior
+
+= Observing Message Distribution and Cluster Behavior
+
+This section delves into understanding how messages are distributed across an ActiveMQ Artemis cluster and how to observe its behavior. By default, client applications often establish a single connection to a single broker instance, which can lead to inefficient message distribution and create performance bottlenecks.
+
+== Detailed Technical Explanation
+
+When working with an ActiveMQ Artemis cluster, it's crucial to understand how messages are routed and distributed among its members. The primary goal of a cluster is to provide high availability, scalability, and improved throughput by distributing the workload. However, achieving an *even* distribution of messages across all cluster nodes is not always automatic and requires careful client configuration.
+
+=== Client Connection Challenges and Bottlenecks
+
+A common challenge arises because, by default, client applications typically establish a single connection to a single broker within the cluster. This single connection acts as a bottleneck, as all messages from that client will flow through this one broker, regardless of other available nodes in the cluster. This behavior is often due to the client's default load-balancing policies or the lack of specific configuration to connect to multiple brokers.
+
+The consequences of this single-point connection include:
+
+*   **Uneven Message Distribution**: Messages from a given client may predominantly land on one broker, leaving other cluster members underutilized.
+*   **Reduced Cluster Throughput**: Even though the cluster has multiple nodes, the overall throughput can be limited by the capacity of the single broker receiving the majority of the traffic.
+*   **High-Volume Queues Paging to Disk**: If a particular broker receives a disproportionate volume of messages for a specific queue, it might be forced to page pending messages to disk. This process, while ensuring reliability, significantly degrades performance and increases latency.
+
+=== Message Redistribution and its Overhead
+
+ActiveMQ Artemis clusters do possess a mechanism called *message redistribution* to mitigate uneven distribution. If a consumer is only attached to Broker B, but messages land on Broker A, the cluster can automatically bridge that message from A to B to ensure it gets processed. This is typically configured via `redistribution-delay`.
+
+However, relying solely on message redistribution to balance the load introduces significant overhead. Moving messages between nodes consumes network bandwidth, CPU cycles, and adds latency. This process effectively reduces the overall cluster throughput, making it less efficient than having messages initially distributed evenly by the client. The goal, therefore, is to optimize client-side connectivity to distribute messages as evenly as possible *before* they even land on a broker, minimizing the need for server-side redistribution.
+
+== Hands-on Activity: Observing Initial Message Distribution
+
+In this lab, we will deploy a two-node ActiveMQ Artemis cluster on OpenShift and then simulate client activity to observe how messages are initially distributed without explicit client-side load balancing. This will highlight the challenges discussed above.
+
+=== Prerequisites
+
+*   An OpenShift cluster with the Red Hat AMQ Operator installed.
+*   An `ActiveMQArtemis` Custom Resource named `broker` deployed in the `broker` namespace, configured as a two-node cluster (as per the "Deploying AMQ on OpenShift" objective).
+*   Access to the `oc` command-line tool, configured to connect to your OpenShift cluster.
+*   Client applications (producer/consumer) that can connect to the deployed cluster. For this activity, we assume you have a basic producer application capable of sending messages to a queue (e.g., `prices` queue).
+
+=== Steps to Observe Message Distribution
+
+.  **Verify Cluster Deployment**:
+    Ensure that your two-node ActiveMQ Artemis cluster is up and running in OpenShift. You should see two broker pods.
+
+    ```bash
+    oc get pods -n broker -l app.kubernetes.io/name=broker
+    ```
+
+    Example output:
+    ```
+    NAME           READY   STATUS    RESTARTS   AGE
+    broker-ss-0    1/1     Running   0          5m
+    broker-ss-1    1/1     Running   0          5m
+    ```
+
+.  **Run a Producer Application**:
+    Start your producer application to send a significant number of messages to a designated queue (e.g., `prices` queue) in your cluster. Ensure your producer connects using the default client configuration, which typically targets a single broker service.
+
+    [NOTE]
+    The exact command to run your producer will depend on your application. For demonstration, assume it's running.
+
+.  **Access Broker Pods and Check Queue Statistics**:
+    You need to inspect the queue statistics on *each* broker pod to see where messages have landed. You can do this by executing a command within each pod. We will use `oc exec` to run the `artemis` CLI tool (or an equivalent JMX query) to get queue details.
+
+    *   **Check `broker-ss-0` pod:**
+
+        ```bash
+        oc exec -it broker-ss-0 -n broker -- /home/jboss/amq-broker/bin/artemis queue stat --verbose --user admin --password password
+        ```
+        (Replace `admin` and `password` with your broker's credentials if different).
+
+    *   **Check `broker-ss-1` pod:**
+
+        ```bash
+        oc exec -it broker-ss-1 -n broker -- /home/jboss/amq-broker/bin/artemis queue stat --verbose --user admin --password password
+        ```
+        (Replace `admin` and `password` with your broker's credentials if different).
+
+.  **Analyze the Output**:
+    Observe the output from both commands. You are particularly interested in the `MESSAGE COUNT` and `MESSAGES ADDED` columns for your target queue (e.g., `prices`).
+
+    Example output snippet (similar to context) for one broker, showing messages:
+    ```
+    ****************************************************
+    >>> Queue stats on node e779f217-d741-11f0-906c-0a580ad9003a,
+    url=tcp://broker-ss-1.broker-hdls-svc.broker.svc.cluster.local:61616
+    |NAME  |ADDRESS|CONSUMER|MESSAGE|MESSAGES|DELIVERING|MESSAGES|SCHEDULED|ROUTING|INTERNAL|
+    |      |       | COUNT  | COUNT | ADDED  |  COUNT   | ACKED  |  COUNT  | TYPE  |        |
+    |prices|prices |   0    |   188 |  188   |    0     |  0     |    0    |ANYCAST| false  |
+    ```
+
+    [NOTE]
+    You might observe that one broker has received the majority or even all of the messages (`MESSAGES ADDED` and `MESSAGE COUNT` are high), while the other broker shows significantly fewer or zero messages for the same queue. This demonstrates the uneven distribution that occurs when clients connect without an explicit load-balancing policy.
+
+.  **Run Consumer Application (Optional)**:
+    If you also run consumers, you can observe how they interact with the distributed messages. For instance, if consumers are attached only to the broker that received fewer messages, you might see evidence of message redistribution occurring in the broker logs or through the `DELIVERING COUNT` increasing on the initially unpopulated broker.
+
+By completing this hands-on activity, you will have directly observed the default behavior of clients connecting to an ActiveMQ Artemis cluster, confirming the uneven message distribution and the potential for bottlenecks as described in the technical explanation. This sets the stage for implementing client-side load balancing strategies to achieve optimal message distribution and cluster throughput.

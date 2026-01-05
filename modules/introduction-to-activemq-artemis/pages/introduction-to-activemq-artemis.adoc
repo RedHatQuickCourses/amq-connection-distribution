@@ -1,0 +1,15 @@
+#  Introduction to ActiveMQ Artemis
+
+=== Introduction to ActiveMQ Artemis
+
+ActiveMQ Artemis is a next-generation Message-Oriented Middleware (MOM) designed for high-performance and low-latency messaging.
+
+Key features and benefits:
+
+*   **Message-Oriented Middleware (MOM):** Serves as the backbone for modern distributed systems, enabling loose coupling and independent scaling of microservices through asynchronous communication.
+*   **Performance:** Built on a non-blocking I/O architecture for extreme performance and low latency.
+*   **Protocol Agnostic:** Supports various protocols like AMQP, MQTT, STOMP, and OpenWire without translation layers.
+*   **Decoupling Producers and Consumers:** Separates the application sending data (Producer) from the application processing data (Consumer), allowing for the "Fire and Forget" pattern to reduce end-user latency.
+*   **Asynchronous Communication:** Facilitates reliable communication where producers don't wait for message processing.
+*   **Traffic Smoothing:** Acts as a "shock absorber," buffering messages during traffic spikes, allowing consumers to process at a sustainable pace.
+*   **Competing Consumers:** Enables dynamic scaling of consumer instances, with Artemis automatically load-balancing messages across them to increase throughput.

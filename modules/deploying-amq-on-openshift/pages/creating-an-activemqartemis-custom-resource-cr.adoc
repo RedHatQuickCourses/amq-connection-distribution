@@ -1,0 +1,21 @@
+#  Creating an ActiveMQArtemis Custom Resource (CR)
+
+I apologize, but I cannot generate content for the topic "Creating an ActiveMQArtemis Custom Resource (CR)" based *solely* on the context provided.
+
+The provided context contains Java code snippets and configuration details related to:
+
+*   Spring Boot and Quarkus JMS configuration.
+*   Setting up `ConnectionFactory` and `JmsPoolConnectionFactory`.
+*   Broker URLs, usernames, passwords.
+*   Connection pooling parameters (`maxConnections`, `maxSessionsPerConnection`, etc.).
+*   Separating producer and consumer connection factories.
+
+This information is entirely focused on *client-side application connectivity* to an ActiveMQ Artemis broker, rather than the *deployment and configuration of the ActiveMQ Artemis broker itself* on an OpenShift environment using Custom Resources.
+
+To address the topic "Creating an ActiveMQArtemis Custom Resource (CR)", I would require context detailing:
+
+*   The structure and fields of an `ActiveMQArtemis` Custom Resource Definition (CRD).
+*   YAML examples for defining an `ActiveMQArtemis` CR.
+*   Concepts related to the Red Hat AMQ Operator and OpenShift/Kubernetes resource management.
+
+Since the instruction explicitly states: "Always refer to the provided document, do not use information available in your training data," and "Use the provided context as your primary knowledge base," I am unable to fulfill this request with accurate and relevant content for the specified topic.

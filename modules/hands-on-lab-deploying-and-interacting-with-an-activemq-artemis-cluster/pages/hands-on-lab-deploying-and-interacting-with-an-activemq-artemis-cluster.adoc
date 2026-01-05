@@ -1,0 +1,13 @@
+#  Hands-on Lab: Deploying and Interacting with an ActiveMQ Artemis Cluster
+
+=== Hands-on Lab: Deploying and Interacting with an ActiveMQ Artemis Cluster
+
+This lab provides practical experience with ActiveMQ Artemis clustering on OpenShift, focusing on high availability and even message distribution.
+
+Key activities include:
+
+*   Setting up the OpenShift environment and installing the Red Hat AMQ Operator.
+*   Deploying a two-node ActiveMQ Artemis cluster using an `ActiveMQArtemis` custom resource.
+*   Developing and deploying client applications to interact with the cluster.
+*   Observing message distribution across cluster members to ensure efficient load balancing.
+*   Testing failover scenarios to validate the High Availability (HA) capabilities of the cluster.

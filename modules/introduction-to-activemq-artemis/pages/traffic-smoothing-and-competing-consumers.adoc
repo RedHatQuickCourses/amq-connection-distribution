@@ -1,0 +1,27 @@
+#  Traffic smoothing and competing consumers
+
+```asciidoc
+[[traffic-smoothing-and-competing-consumers]]
+= Traffic Smoothing and Competing Consumers
+
+In the realm of high-performance messaging with ActiveMQ Artemis, ensuring that systems can gracefully handle fluctuating loads and process messages efficiently is paramount. Two key architectural patterns, traffic smoothing and competing consumers, address these challenges by providing robust mechanisms for managing message flow and scaling message processing.
+
+== Traffic Smoothing
+
+Traffic smoothing is a critical capability within ActiveMQ Artemis that enables an application to act as a resilient "shock absorber" against sudden and significant spikes in message production. This pattern is essential for maintaining system stability and preventing downstream consumer applications from being overwhelmed.
+
+As described in the provided context, when a producer application experiences a sudden surge in traffic—for instance, during a high-demand event like "Black Friday sales"—it can generate a massive volume of messages very quickly. Instead of directly bombarding consumers with this sudden influx, the producer pushes all these messages into an ActiveMQ Artemis queue.
+
+The queue then serves as a buffer, temporarily holding this backlog of messages. This buffering allows consumers to process the messages at a controlled, sustainable pace that matches their processing capacity, rather than the producer's potentially much higher output rate. By decoupling the producer's fluctuating speed from the consumer's consistent processing speed, traffic smoothing prevents system crashes, performance degradation, and ensures that all messages are eventually processed reliably, even under peak load conditions. It effectively levels out the message flow, providing a steady stream to consumers despite erratic production rates.
+
+== Competing Consumers
+
+The competing consumers pattern is a powerful strategy for horizontally scaling message processing and increasing throughput in ActiveMQ Artemis. This pattern allows multiple instances of a consumer application to simultaneously process messages from the *same* queue, effectively distributing the workload and accelerating the overall message consumption rate.
+
+To handle increased load, you can dynamically scale up the number of consumer instances. When multiple consumers are connected to a single queue, ActiveMQ Artemis automatically load-balances messages across them. Each message from the queue is delivered to *only one* of the available competing consumers. This ensures that work is distributed efficiently and messages are processed in parallel.
+
+A significant advantage of this approach is that it leads to a nearly linear increase in throughput as more consumer instances are added. Furthermore, this scaling can be achieved without requiring any changes to the producer application's code. Producers continue to send messages to the queue as usual, completely unaware of how many consumers are actively processing those messages. ActiveMQ Artemis intelligently manages the distribution, ensuring that messages are evenly spread across the competing consumers to maximize processing capacity and clear message backlogs quickly.
+
+[NOTE]
+The practical implications of traffic smoothing and the efficient distribution of messages via competing consumers will be observed during the "Hands-on Lab: Deploying and Interacting with an ActiveMQ Artemis Cluster." In this lab, you will deploy a multi-node cluster and develop client applications that simulate message production and consumption, allowing you to witness how ActiveMQ Artemis manages message flow and load distribution under varying conditions.
+```

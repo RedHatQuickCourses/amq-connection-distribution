@@ -1,0 +1,5 @@
+* xref:client-side-challenges.adoc[]
+** xref:bottlenecks-from-single-connection-to-a-single-broker.adoc[]
+** xref:impact-of-default-client-load-balancing-policies.adoc[]
+** xref:reduced-cluster-throughput-due-to-message-redistribution.adoc[]
+** xref:risk-of-high-volume-queues-paging-messages-to-disk.adoc[]
