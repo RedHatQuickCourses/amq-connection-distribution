@@ -2,7 +2,6 @@
 
 Here is the detailed educational content for "Understanding Message-Oriented Middleware (MOM)" in Antora AsciiDoc format, leveraging only the provided context.
 
-```asciidoc
 = Understanding Message-Oriented Middleware (MOM)
 
 Message-Oriented Middleware (MOM) forms the fundamental backbone of modern distributed systems, acting as a critical enabler for microservices architectures. It provides a robust and scalable method for different applications and services to communicate with each other, even if they are developed using different programming languages, run on different platforms, or are deployed independently.
@@ -39,5 +38,3 @@ MOM brings several significant advantages to distributed systems, addressing com
 === Summary
 
 Message-Oriented Middleware is indispensable for building robust, scalable, and resilient distributed applications. By facilitating loose coupling, asynchronous communication, and reliable message delivery, MOM enables microservices to operate independently yet cooperatively, forming the foundation for highly performant and fault-tolerant systems.
-
-```

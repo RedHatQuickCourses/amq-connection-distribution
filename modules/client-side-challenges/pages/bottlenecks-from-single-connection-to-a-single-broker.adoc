@@ -47,16 +47,16 @@ This activity focuses on deploying a two-node ActiveMQ Artemis cluster on OpenSh
 First, we will deploy a simple two-node ActiveMQ Artemis cluster using the provided Custom Resource (CR) definition.
 
 .Create a new project for the broker:
-+
+
 [source,bash,subs="attributes+"]
 ----
 oc new-project broker
 ----
 
 .Define the `ActiveMQArtemis` Custom Resource:
-+
+
 Create a file named `broker-cluster.yaml` with the following content:
-+
+
 [source,yaml]
 ----
 apiVersion: broker.amq.io/v1beta1
@@ -91,23 +91,23 @@ spec:
 ----
 
 .Apply the Custom Resource to deploy the cluster:
-+
+
 [source,bash,subs="attributes+"]
 ----
 oc apply -f broker-cluster.yaml
 ----
 
 .Verify the deployment:
-+
+
 Monitor the pods until both broker instances are in a `Running` state:
-+
+
 [source,bash,subs="attributes+"]
 ----
 oc get pods -n broker
 ----
-+
+
 You should see output similar to this, indicating two pods (`broker-ss-0` and `broker-ss-1`) are ready:
-+
+
 [source,text]
 ----
 NAME           READY   STATUS    RESTARTS   AGE
@@ -120,16 +120,16 @@ broker-ss-1    1/1     Running   0          2m
 Once the cluster is deployed, we can inspect the queue statistics on each node. For this demonstration, we'll assume some messages (e.g., to a `prices` queue) have been sent by an unmanaged client connection to illustrate the potential for disparity.
 
 .Retrieve queue statistics from `broker-ss-0`:
-+
+
 Execute the following command to query the `prices` queue statistics on the first broker node:
-+
+
 [source,bash,subs="attributes+"]
 ----
 oc exec broker-ss-0 -- /home/jboss/amq-broker/bin/artemis queue stat --url tcp://broker-ss-0:61616 --clustered --user admin --password admin --queueName prices
 ----
-+
+
 Expected output (example from context):
-+
+
 [source,text]
 ----
 Connection brokerURL = tcp://broker-ss-0:61616
@@ -143,16 +143,16 @@ url=tcp://broker-ss-0:61616
 ----
 
 .Retrieve queue statistics from `broker-ss-1`:
-+
+
 Now, query the `prices` queue statistics on the second broker node. Note the different URL used to target the specific headless service for `broker-ss-1`:
-+
+
 [source,bash,subs="attributes+"]
 ----
 oc exec broker-ss-0 -- /home/jboss/amq-broker/bin/artemis queue stat --url tcp://broker-ss-1.broker-hdls-svc.broker.svc.cluster.local:61616 --clustered --user admin --password admin --queueName prices
 ----
-+
+
 Expected output (example from context):
-+
+
 [source,text]
 ----
 ****************************************************
@@ -165,7 +165,7 @@ url=tcp://broker-ss-1.broker-hdls-svc.broker.svc.cluster.local:61616
 ----
 
 .Analyze the observation:
-+
+
 Compare the `MESSAGES ADDED` and `CONSUMER COUNT` values for the `prices` queue on both `broker-ss-0` and `broker-ss-1`. You'll likely observe a difference (e.g., `broker-ss-0` showing 210 messages added with 3 consumers, versus `broker-ss-1` showing 188 messages added with 2 consumers). This disparity, even if slight, demonstrates the fundamental problem: without explicit client-side strategies to distribute connections and messages, one broker can receive a disproportionately higher load, creating the conditions for a bottleneck.
 
 This initial observation sets the stage for understanding why client-side load balancing is crucial for achieving high-performance messaging in ActiveMQ Artemis clusters. The subsequent content will explore how to overcome these client-side challenges.

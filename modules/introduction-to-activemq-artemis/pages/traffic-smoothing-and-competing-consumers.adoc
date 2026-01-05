@@ -1,6 +1,5 @@
 #  Traffic smoothing and competing consumers
 
-```asciidoc
 [[traffic-smoothing-and-competing-consumers]]
 = Traffic Smoothing and Competing Consumers
 
@@ -24,4 +23,3 @@ A significant advantage of this approach is that it leads to a nearly linear inc
 
 [NOTE]
 The practical implications of traffic smoothing and the efficient distribution of messages via competing consumers will be observed during the "Hands-on Lab: Deploying and Interacting with an ActiveMQ Artemis Cluster." In this lab, you will deploy a multi-node cluster and develop client applications that simulate message production and consumption, allowing you to witness how ActiveMQ Artemis manages message flow and load distribution under varying conditions.
-```

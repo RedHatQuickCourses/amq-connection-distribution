@@ -33,6 +33,7 @@ spec:
   addressSettings:
     addressSetting:
       - match: '#'
+        redistributionDelay: 0      
 ----
 
 Let's dissect the critical components of this Custom Resource:

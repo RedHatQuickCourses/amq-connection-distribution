@@ -1,14 +1,15 @@
-=  ActiveMQ Artemis Clustering for High-Performance Messaging
+=  ActiveMQ Artemis Client Side Challenges and their Solutions
 :navtitle: Home
 
 == Introduction
 
-Course Title:  ActiveMQ Artemis Clustering for High-Performance Messaging
+Course Title:  ActiveMQ Artemis Client Side Challenges and their Solutions
 
 Description:
-Course description FIXME
+ActiveMQ Artemis Client Side Challenges and their Solutions
 
-Duration: FIXME hours
+
+Duration: 1 hour
 
 == Topics covered in this course
 
@@ -29,6 +30,6 @@ Duration: FIXME hours
 
 This course assumes that you have the following prior experience:
 
-* Course or experience...
-* Course or experience...
-* Course or experience...
+* Understanding of ActiveMQ Artemis
+* Understanding of OpenShift
+* Understanding of Quarkus or Spring Boot
