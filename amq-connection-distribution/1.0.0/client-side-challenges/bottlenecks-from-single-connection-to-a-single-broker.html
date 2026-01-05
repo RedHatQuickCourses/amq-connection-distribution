@@ -271,22 +271,15 @@
 <div class="paragraph">
 <p>First, we will deploy a simple two-node ActiveMQ Artemis cluster using the provided Custom Resource (CR) definition.</p>
 </div>
-<div class="paragraph">
-<div class="title">Create a new project for the broker:</div>
-<p>+</p>
-</div>
 <div class="listingblock">
+<div class="title">Create a new project for the broker:</div>
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc new-project broker</code></pre>
 </div>
 </div>
 <div class="paragraph">
 <div class="title">Define the <code>ActiveMQArtemis</code> Custom Resource:</div>
-<p>+
-Create a file named <code>broker-cluster.yaml</code> with the following content:</p>
-</div>
-<div class="paragraph">
-<p>+</p>
+<p>Create a file named <code>broker-cluster.yaml</code> with the following content:</p>
 </div>
 <div class="listingblock">
 <div class="content">
@@ -321,22 +314,15 @@ spec:
     size: 2</code></pre>
 </div>
 </div>
-<div class="paragraph">
-<div class="title">Apply the Custom Resource to deploy the cluster:</div>
-<p>+</p>
-</div>
 <div class="listingblock">
+<div class="title">Apply the Custom Resource to deploy the cluster:</div>
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc apply -f broker-cluster.yaml</code></pre>
 </div>
 </div>
 <div class="paragraph">
 <div class="title">Verify the deployment:</div>
-<p>+
-Monitor the pods until both broker instances are in a <code>Running</code> state:</p>
-</div>
-<div class="paragraph">
-<p>+</p>
+<p>Monitor the pods until both broker instances are in a <code>Running</code> state:</p>
 </div>
 <div class="listingblock">
 <div class="content">
@@ -344,11 +330,7 @@ Monitor the pods until both broker instances are in a <code>Running</code> state
 </div>
 </div>
 <div class="paragraph">
-<p>+
-You should see output similar to this, indicating two pods (<code>broker-ss-0</code> and <code>broker-ss-1</code>) are ready:</p>
-</div>
-<div class="paragraph">
-<p>+</p>
+<p>You should see output similar to this, indicating two pods (<code>broker-ss-0</code> and <code>broker-ss-1</code>) are ready:</p>
 </div>
 <div class="listingblock">
 <div class="content">
@@ -365,11 +347,7 @@ broker-ss-1    1/1     Running   0          2m</code></pre>
 </div>
 <div class="paragraph">
 <div class="title">Retrieve queue statistics from <code>broker-ss-0</code>:</div>
-<p>+
-Execute the following command to query the <code>prices</code> queue statistics on the first broker node:</p>
-</div>
-<div class="paragraph">
-<p>+</p>
+<p>Execute the following command to query the <code>prices</code> queue statistics on the first broker node:</p>
 </div>
 <div class="listingblock">
 <div class="content">
@@ -377,11 +355,7 @@ Execute the following command to query the <code>prices</code> queue statistics 
 </div>
 </div>
 <div class="paragraph">
-<p>+
-Expected output (example from context):</p>
-</div>
-<div class="paragraph">
-<p>+</p>
+<p>Expected output (example from context):</p>
 </div>
 <div class="listingblock">
 <div class="content">
@@ -397,11 +371,7 @@ url=tcp://broker-ss-0:61616
 </div>
 <div class="paragraph">
 <div class="title">Retrieve queue statistics from <code>broker-ss-1</code>:</div>
-<p>+
-Now, query the <code>prices</code> queue statistics on the second broker node. Note the different URL used to target the specific headless service for <code>broker-ss-1</code>:</p>
-</div>
-<div class="paragraph">
-<p>+</p>
+<p>Now, query the <code>prices</code> queue statistics on the second broker node. Note the different URL used to target the specific headless service for <code>broker-ss-1</code>:</p>
 </div>
 <div class="listingblock">
 <div class="content">
@@ -409,11 +379,7 @@ Now, query the <code>prices</code> queue statistics on the second broker node. N
 </div>
 </div>
 <div class="paragraph">
-<p>+
-Expected output (example from context):</p>
-</div>
-<div class="paragraph">
-<p>+</p>
+<p>Expected output (example from context):</p>
 </div>
 <div class="listingblock">
 <div class="content">
@@ -428,8 +394,7 @@ url=tcp://broker-ss-1.broker-hdls-svc.broker.svc.cluster.local:61616
 </div>
 <div class="paragraph">
 <div class="title">Analyze the observation:</div>
-<p>+
-Compare the <code>MESSAGES ADDED</code> and <code>CONSUMER COUNT</code> values for the <code>prices</code> queue on both <code>broker-ss-0</code> and <code>broker-ss-1</code>. You&#8217;ll likely observe a difference (e.g., <code>broker-ss-0</code> showing 210 messages added with 3 consumers, versus <code>broker-ss-1</code> showing 188 messages added with 2 consumers). This disparity, even if slight, demonstrates the fundamental problem: without explicit client-side strategies to distribute connections and messages, one broker can receive a disproportionately higher load, creating the conditions for a bottleneck.</p>
+<p>Compare the <code>MESSAGES ADDED</code> and <code>CONSUMER COUNT</code> values for the <code>prices</code> queue on both <code>broker-ss-0</code> and <code>broker-ss-1</code>. You&#8217;ll likely observe a difference (e.g., <code>broker-ss-0</code> showing 210 messages added with 3 consumers, versus <code>broker-ss-1</code> showing 188 messages added with 2 consumers). This disparity, even if slight, demonstrates the fundamental problem: without explicit client-side strategies to distribute connections and messages, one broker can receive a disproportionately higher load, creating the conditions for a bottleneck.</p>
 </div>
 <div class="paragraph">
 <p>This initial observation sets the stage for understanding why client-side load balancing is crucial for achieving high-performance messaging in ActiveMQ Artemis clusters. The subsequent content will explore how to overcome these client-side challenges.</p>

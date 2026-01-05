@@ -203,36 +203,54 @@
 </aside>
 <article class="doc">
 <h1 class="page">Risk of high-volume queues paging messages to disk</h1>
-<div class="listingblock">
-<div class="content">
-<pre class="highlightjs highlight"><code class="language-asciidoc hljs" data-lang="asciidoc">= Risk of High-Volume Queues Paging Messages to Disk
-
-Understanding the underlying mechanisms of message queuing is crucial for building robust and performant messaging systems. While ActiveMQ Artemis excels at buffering messages and smoothing traffic, high message volumes under specific conditions can lead to a phenomenon known as "paging messages to disk," which significantly impacts performance.
-
-== Detailed Technical Explanation: Paging Messages to Disk
-
-ActiveMQ Artemis, like other Message-Oriented Middleware (MOMs), manages incoming messages in memory for rapid access by consumers. This in-memory storage acts as a high-speed buffer, essential for the "Traffic Smoothing" pattern where sudden spikes in producer traffic are absorbed by the queue, allowing consumers to process the backlog at a sustainable pace.
-
-However, this in-memory buffer is finite. When the rate at which producers send messages consistently outpaces the rate at which consumers process them, messages accumulate in the queues. If this accumulation exceeds the broker's configured memory limits for a particular queue or address, ActiveMQ Artemis must take action to prevent an out-of-memory condition and maintain the broker's stability. The solution is to *page* these pending messages from volatile RAM to persistent storage (disk).
-
-The provided context highlights a key scenario where this risk intensifies:
-
-*   **Client-Side Bottlenecks:** As stated in the context, "an application typically establishes a single connection to a single broker, creating a bottleneck." This single point of entry can quickly become overwhelmed by high message volumes, causing messages to back up on that specific broker or queue, even if other brokers in a cluster might have capacity.
-*   **Inefficient Message Redistribution in Clusters:** While ActiveMQ Artemis clusters offer server-side load balancing and can move messages between nodes (via `redistribution-delay` configuration), the context explicitly warns: "Reliance on message redistribution reduces overall cluster throughput and can force high-volume queues to page pending messages to disk." This indicates that if messages are not efficiently distributed to consumers at the point of entry and instead require significant internal cluster redistribution, the overhead involved can contribute to queues swelling beyond their memory capacity. The process of moving messages between nodes consumes resources and adds latency, making it harder for the system to keep up with high ingress rates.
-
-When messages are paged to disk, their retrieval and processing become dependent on disk I/O operations, which are orders of magnitude slower than memory access. This transition from memory to disk has several critical implications:
-
-. **Significant Performance Degradation:** The primary consequence is a drastic reduction in throughput and an increase in message latency. Disk access introduces unavoidable delays, slowing down message delivery to consumers.
-. **Increased Resource Utilization:** Paging operations consume additional CPU cycles for disk I/O management and can put stress on the underlying storage subsystem.
-. **Reduced System Responsiveness:** Under severe paging conditions, the broker can become less responsive, potentially affecting other operations and the overall stability of the messaging system.
-. **Potential for Disk Wear:** For systems with high and sustained paging, the constant read/write operations can contribute to accelerated wear on physical disk drives or SSDs.
-
-Effectively mitigating the risk of high-volume queues paging messages to disk involves strategies that ensure messages are consumed as efficiently as they are produced, ideally without needing costly intra-cluster redistribution. This typically involves optimizing client-side load balancing to distribute messages evenly across multiple brokers and their respective queues, thereby preventing any single queue from becoming a bottleneck.</code></pre>
+<h1 id="_risk_of_high_volume_queues_paging_messages_to_disk" class="sect0"><a class="anchor" href="#_risk_of_high_volume_queues_paging_messages_to_disk"></a>Risk of High-Volume Queues Paging Messages to Disk</h1>
+<div class="paragraph">
+<p>Understanding the underlying mechanisms of message queuing is crucial for building robust and performant messaging systems. While ActiveMQ Artemis excels at buffering messages and smoothing traffic, high message volumes under specific conditions can lead to a phenomenon known as "paging messages to disk," which significantly impacts performance.</p>
 </div>
+<div class="sect1">
+<h2 id="_detailed_technical_explanation_paging_messages_to_disk"><a class="anchor" href="#_detailed_technical_explanation_paging_messages_to_disk"></a>Detailed Technical Explanation: Paging Messages to Disk</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>ActiveMQ Artemis, like other Message-Oriented Middleware (MOMs), manages incoming messages in memory for rapid access by consumers. This in-memory storage acts as a high-speed buffer, essential for the "Traffic Smoothing" pattern where sudden spikes in producer traffic are absorbed by the queue, allowing consumers to process the backlog at a sustainable pace.</p>
 </div>
-<div class="listingblock">
-<div class="content">
-<pre class="highlightjs highlight"><code class="language-none hljs"></code></pre>
+<div class="paragraph">
+<p>However, this in-memory buffer is finite. When the rate at which producers send messages consistently outpaces the rate at which consumers process them, messages accumulate in the queues. If this accumulation exceeds the broker&#8217;s configured memory limits for a particular queue or address, ActiveMQ Artemis must take action to prevent an out-of-memory condition and maintain the broker&#8217;s stability. The solution is to <strong>page</strong> these pending messages from volatile RAM to persistent storage (disk).</p>
+</div>
+<div class="paragraph">
+<p>The provided context highlights a key scenario where this risk intensifies:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>Client-Side Bottlenecks:</strong> As stated in the context, "an application typically establishes a single connection to a single broker, creating a bottleneck." This single point of entry can quickly become overwhelmed by high message volumes, causing messages to back up on that specific broker or queue, even if other brokers in a cluster might have capacity.</p>
+</li>
+<li>
+<p><strong>Inefficient Message Redistribution in Clusters:</strong> While ActiveMQ Artemis clusters offer server-side load balancing and can move messages between nodes (via <code>redistribution-delay</code> configuration), the context explicitly warns: "Reliance on message redistribution reduces overall cluster throughput and can force high-volume queues to page pending messages to disk." This indicates that if messages are not efficiently distributed to consumers at the point of entry and instead require significant internal cluster redistribution, the overhead involved can contribute to queues swelling beyond their memory capacity. The process of moving messages between nodes consumes resources and adds latency, making it harder for the system to keep up with high ingress rates.</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>When messages are paged to disk, their retrieval and processing become dependent on disk I/O operations, which are orders of magnitude slower than memory access. This transition from memory to disk has several critical implications:</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p><strong>Significant Performance Degradation:</strong> The primary consequence is a drastic reduction in throughput and an increase in message latency. Disk access introduces unavoidable delays, slowing down message delivery to consumers.</p>
+</li>
+<li>
+<p><strong>Increased Resource Utilization:</strong> Paging operations consume additional CPU cycles for disk I/O management and can put stress on the underlying storage subsystem.</p>
+</li>
+<li>
+<p><strong>Reduced System Responsiveness:</strong> Under severe paging conditions, the broker can become less responsive, potentially affecting other operations and the overall stability of the messaging system.</p>
+</li>
+<li>
+<p><strong>Potential for Disk Wear:</strong> For systems with high and sustained paging, the constant read/write operations can contribute to accelerated wear on physical disk drives or SSDs.</p>
+</li>
+</ol>
+</div>
+<div class="paragraph">
+<p>Effectively mitigating the risk of high-volume queues paging messages to disk involves strategies that ensure messages are consumed as efficiently as they are produced, ideally without needing costly intra-cluster redistribution. This typically involves optimizing client-side load balancing to distribute messages evenly across multiple brokers and their respective queues, thereby preventing any single queue from becoming a bottleneck.</p>
+</div>
 </div>
 </div>
 <nav class="pagination">
