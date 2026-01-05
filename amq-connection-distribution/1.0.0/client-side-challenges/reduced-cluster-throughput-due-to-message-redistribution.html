@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Reduced cluster throughput due to message redistribution :: ActiveMQ Artemis Clustering for High-Performance Messaging</title>
+    <link rel="prev" href="impact-of-default-client-load-balancing-policies.html">
+    <link rel="next" href="risk-of-high-volume-queues-paging-messages-to-disk.html">
+    <meta name="generator" content="Antora 3.1.3">
+    <link rel="stylesheet" href="../../../_/css/site.css">
+    <script>var uiRootPath = '../../../_'</script>
+  </head>
+  <body class="article">
+<header class="header">
+  <nav class="navbar">
+    <div class="navbar-brand">
+      <a class="navbar-item" href="https://www.redhat.com" target="_blank"><img src="../../../_/img/redhat-logo.png" height="40px" alt="Red Hat"></a>
+      <a class="navbar-item" style="font-size: 24px; color: white" href="../../..">ActiveMQ Artemis Clustering for High-Performance Messaging</a>
+      <button class="navbar-burger" data-target="topbar-nav">
+        <span></span>
+        <span></span>
+        <span></span>
+      </button>
+    </div>
+    <div id="topbar-nav" class="navbar-menu">
+      <div class="navbar-end">
+        <a class="navbar-item" href="https://github.com/RedHatQuickCourses/REPLACEREPONAME/issues" target="_blank">Report Issues</a>
+      </div>
+    </div>
+  </nav>
+</header>
+<div class="body">
+<div class="nav-container" data-component="amq-connection-distribution" data-version="1.0.0">
+  <aside class="nav">
+    <div class="panels">
+<div class="nav-panel-menu is-active" data-panel="menu">
+  <nav class="nav-menu">
+    <h3 class="title"><a href="../index.html">ActiveMQ Artemis Clustering for High-Performance Messaging</a></h3>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="../index.html">Home</a>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../introduction-to-activemq-artemis/introduction-to-activemq-artemis.html">Introduction to ActiveMQ Artemis</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../introduction-to-activemq-artemis/understanding-message-oriented-middleware-mom.html">Understanding Message-Oriented Middleware (MOM)</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../introduction-to-activemq-artemis/core-features-and-benefits-of-activemq-artemis.html">Core features and benefits of ActiveMQ Artemis</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../introduction-to-activemq-artemis/decoupling-producers-and-consumers.html">Decoupling Producers and Consumers</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../introduction-to-activemq-artemis/asynchronous-communication-patterns.html">Asynchronous communication patterns</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../introduction-to-activemq-artemis/traffic-smoothing-and-competing-consumers.html">Traffic smoothing and competing consumers</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="client-side-challenges.html">Client-Side Challenges</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="bottlenecks-from-single-connection-to-a-single-broker.html">Bottlenecks from single connection to a single broker</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="impact-of-default-client-load-balancing-policies.html">Impact of default client load-balancing policies</a>
+  </li>
+  <li class="nav-item is-current-page" data-depth="2">
+    <a class="nav-link" href="reduced-cluster-throughput-due-to-message-redistribution.html">Reduced cluster throughput due to message redistribution</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="risk-of-high-volume-queues-paging-messages-to-disk.html">Risk of high-volume queues paging messages to disk</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../deploying-amq-on-openshift/deploying-amq-on-openshift.html">Deploying AMQ on OpenShift</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../deploying-amq-on-openshift/overview-of-red-hat-amq-operator.html">Overview of Red Hat AMQ Operator</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../deploying-amq-on-openshift/installing-the-amq-operator-on-openshift.html">Installing the AMQ Operator on OpenShift</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../deploying-amq-on-openshift/creating-an-activemqartemis-custom-resource-cr.html">Creating an ActiveMQArtemis Custom Resource (CR)</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../deploying-amq-on-openshift/configuring-a-two-node-activemq-artemis-cluster.html">Configuring a two-node ActiveMQ Artemis cluster</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../deploying-amq-on-openshift/exposing-broker-services-for-client-connections.html">Exposing broker services for client connections</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../solutions-for-even-message-distribution/solutions-for-even-message-distribution.html">Solutions for Even Message Distribution</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../solutions-for-even-message-distribution/strategies-for-client-side-load-balancing.html">Strategies for client-side load balancing</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../solutions-for-even-message-distribution/configuring-client-connection-factories-for-multiple-brokers.html">Configuring client connection factories for multiple brokers</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../solutions-for-even-message-distribution/techniques-to-distribute-messages-evenly-across-cluster-members.html">Techniques to distribute messages evenly across cluster members</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../solutions-for-even-message-distribution/optimizing-client-connectivity-for-high-throughput.html">Optimizing client connectivity for high throughput</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../hands-on-lab-deploying-and-interacting-with-an-activemq-artemis-cluster/hands-on-lab-deploying-and-interacting-with-an-activemq-artemis-cluster.html">Hands-on Lab: Deploying and Interacting with an ActiveMQ Artemis Cluster</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../hands-on-lab-deploying-and-interacting-with-an-activemq-artemis-cluster/setting-up-the-openshift-environment-for-amq-deployment.html">Setting up the OpenShift environment for AMQ deployment</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../hands-on-lab-deploying-and-interacting-with-an-activemq-artemis-cluster/deploying-a-two-node-activemq-artemis-cluster-using-the-operator.html">Deploying a two-node ActiveMQ Artemis cluster using the Operator</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../hands-on-lab-deploying-and-interacting-with-an-activemq-artemis-cluster/developing-and-deploying-client-applications.html">Developing and deploying client applications</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../hands-on-lab-deploying-and-interacting-with-an-activemq-artemis-cluster/observing-message-distribution-and-cluster-behavior.html">Observing message distribution and cluster behavior</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../hands-on-lab-deploying-and-interacting-with-an-activemq-artemis-cluster/testing-failover-scenarios-and-ha-capabilities.html">Testing failover scenarios and HA capabilities</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+</ul>
+  </nav>
+</div>
+<div class="nav-panel-explore" data-panel="explore">
+  <div class="context">
+    <span class="title">ActiveMQ Artemis Clustering for High-Performance Messaging</span>
+    <span class="version">1.0.0</span>
+  </div>
+  <ul class="components">
+    <li class="component is-current">
+      <a class="title" href="../index.html">ActiveMQ Artemis Clustering for High-Performance Messaging</a>
+      <ul class="versions">
+        <li class="version is-current is-latest">
+          <a href="../index.html">1.0.0</a>
+        </li>
+      </ul>
+    </li>
+  </ul>
+</div>
+    </div>
+  </aside>
+</div>
+<main class="article">
+<div class="toolbar" role="navigation">
+<button class="nav-toggle"></button>
+  <a href="../index.html" class="home-link"></a>
+<nav class="breadcrumbs" aria-label="breadcrumbs">
+  <ul>
+    <li><a href="../index.html">ActiveMQ Artemis Clustering for High-Performance Messaging</a></li>
+    <li><a href="client-side-challenges.html">Client-Side Challenges</a></li>
+    <li><a href="reduced-cluster-throughput-due-to-message-redistribution.html">Reduced cluster throughput due to message redistribution</a></li>
+  </ul>
+</nav>
+</div>
+  <div class="content">
+<aside class="toc sidebar" data-title="Contents" data-levels="2">
+  <div class="toc-menu"></div>
+</aside>
+<article class="doc">
+<h1 class="page">Reduced cluster throughput due to message redistribution</h1>
+<div id="preamble">
+<div class="sectionbody">
+<div class="paragraph">
+<p>This content is provided in Antora AsciiDoc format.</p>
+</div>
+</div>
+</div>
+<h1 id="reduced-throughput-message-redistribution" class="sect0"><a class="anchor" href="#reduced-throughput-message-redistribution"></a>Reduced Cluster Throughput Due to Message Redistribution</h1>
+<div class="paragraph">
+<p>In an ActiveMQ Artemis cluster, ensuring optimal performance and message throughput is paramount. While the cluster architecture inherently provides mechanisms for high availability and fault tolerance, certain configurations and client behaviors can inadvertently lead to performance bottlenecks. One such significant challenge arises from the reliance on message redistribution, which can severely impact overall cluster throughput.</p>
+</div>
+<div class="sect1">
+<h2 id="_understanding_message_redistribution_in_activemq_artemis"><a class="anchor" href="#_understanding_message_redistribution_in_activemq_artemis"></a>Understanding Message Redistribution in ActiveMQ Artemis</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>ActiveMQ Artemis clusters are designed to be intelligent and resilient. A key feature is "Message Redistribution," which ensures that messages eventually reach their intended consumers even if they initially land on a broker without an attached consumer.</p>
+</div>
+<div class="paragraph">
+<p>When a producer sends a message to a destination (e.g., a queue) in an ActiveMQ Artemis cluster, that message typically lands on one of the available broker nodes. Ideally, a consumer for that destination would be connected to the <strong>same</strong> broker node to process the message directly. However, if a consumer is exclusively connected to <code>Broker B</code>, but the message happens to land on <code>Broker A</code>, the cluster will automatically "bridge" or redistribute that message from <code>Broker A</code> to <code>Broker B</code>. This bridging mechanism ensures the message is eventually delivered to <code>Broker B</code> where the consumer can process it, thereby maintaining eventual consistency and message delivery guarantees.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_the_bottleneck_why_redistribution_reduces_throughput"><a class="anchor" href="#_the_bottleneck_why_redistribution_reduces_throughput"></a>The Bottleneck: Why Redistribution Reduces Throughput</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>While message redistribution is a vital safety net for ensuring message delivery, <strong>over-reliance</strong> on it introduces significant overhead and can drastically reduce the overall throughput of the cluster.</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p><strong>Single Connection Bottleneck:</strong> As highlighted in the context, without a proper connection pool or client-side load-balancing policy, applications frequently establish a single connection to a single broker within the cluster. This creates an immediate bottleneck, as all messages from that application are directed to one specific node, irrespective of where the consumers for those messages are located.</p>
+</li>
+<li>
+<p><strong>Inter-Broker Communication Overhead:</strong> When messages need to be redistributed, they are not processed locally. Instead, they must be transmitted across the network from the initial broker (<code>Broker A</code>) to the broker where the consumer resides (<code>Broker B</code>). This inter-broker communication involves:</p>
+<div class="ulist">
+<ul>
+<li>
+<p>Serialization and deserialization of messages.</p>
+</li>
+<li>
+<p>Network latency and bandwidth consumption.</p>
+</li>
+<li>
+<p>Processing cycles on both the source and destination brokers to manage the redistribution process.
+This "moving messages between nodes" introduces a measurable delay and consumes valuable broker resources that could otherwise be used for direct message processing. The context specifically notes that while the cluster can mitigate uneven distribution "by moving messages between nodes (configured via <code>redistribution-delay</code>), this process introduces significant overhead."</p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<p><strong>Reduced Overall Cluster Throughput:</strong> The cumulative effect of this overhead is a reduction in the cluster&#8217;s overall capacity to process messages. Instead of each broker contributing to the processing of new messages from producers, some brokers become burdened with the task of forwarding messages that should ideally have landed on a different node. This reliance on redistribution "reduces overall cluster throughput."</p>
+</li>
+<li>
+<p><strong>Paging Messages to Disk:</strong> In high-volume scenarios, if a queue on a broker is receiving a large influx of messages that continuously need to be redistributed, the broker might struggle to keep up with the forwarding rate. When the in-memory message buffer fills up, ActiveMQ Artemis may be forced to page these pending messages to disk. Disk I/O operations are significantly slower than in-memory operations, further exacerbating the performance bottleneck and leading to increased latency. The context explicitly warns that this can "force high-volume queues to page pending messages to disk."</p>
+</li>
+</ol>
+</div>
+<div class="paragraph">
+<p>In essence, while ActiveMQ Artemis clusters offer server-side load balancing and message redistribution capabilities, these features are best utilized as intelligent routing mechanisms and fail-safe options, rather than primary methods for client-side message distribution. Optimal performance is achieved when messages are initially directed to a broker that already has an attached consumer, minimizing the need for costly inter-broker redistribution.</p>
+</div>
+<div class="sect2">
+<h3 id="_identifying_and_mitigating_redistribution_issues"><a class="anchor" href="#_identifying_and_mitigating_redistribution_issues"></a>Identifying and Mitigating Redistribution Issues</h3>
+<div class="paragraph">
+<p>Understanding the impact of message redistribution is the first step towards optimizing your ActiveMQ Artemis cluster. Future sections and hands-on activities will delve into practical solutions for achieving more even message distribution, primarily through client-side strategies, to maximize throughput and leverage the cluster&#8217;s full potential without incurring the overhead of excessive redistribution. This involves configuring client connection factories to distribute connections across multiple brokers, thereby ensuring that messages are sent directly to appropriate nodes from the outset.</p>
+</div>
+<div class="paragraph">
+<p>The goal is to move from a scenario where "an application typically establishes a single connection to a single broker, creating a bottleneck" to one where client connections are intelligently managed to "evenly distribute messages across its members."</p>
+</div>
+</div>
+</div>
+</div>
+<nav class="pagination">
+  <span class="prev"><a href="impact-of-default-client-load-balancing-policies.html">Impact of default client load-balancing policies</a></span>
+  <span class="next"><a href="risk-of-high-volume-queues-paging-messages-to-disk.html">Risk of high-volume queues paging messages to disk</a></span>
+</nav>
+</article>
+  </div>
+</main>
+</div>
+<footer class="footer">
+  <img src="../../../_/img/rhl-logo-red.png" height="40px" alt="Red Hat"  href="https://redhat.com" >
+</footer><script id="site-script" src="../../../_/js/site.js" data-ui-root-path="../../../_"></script>
+<script async src="../../../_/js/vendor/highlight.js"></script>
+  </body>
+</html>

@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Solutions for Even Message Distribution :: ActiveMQ Artemis Clustering for High-Performance Messaging</title>
+    <link rel="prev" href="../deploying-amq-on-openshift/exposing-broker-services-for-client-connections.html">
+    <link rel="next" href="strategies-for-client-side-load-balancing.html">
+    <meta name="generator" content="Antora 3.1.3">
+    <link rel="stylesheet" href="../../../_/css/site.css">
+    <script>var uiRootPath = '../../../_'</script>
+  </head>
+  <body class="article">
+<header class="header">
+  <nav class="navbar">
+    <div class="navbar-brand">
+      <a class="navbar-item" href="https://www.redhat.com" target="_blank"><img src="../../../_/img/redhat-logo.png" height="40px" alt="Red Hat"></a>
+      <a class="navbar-item" style="font-size: 24px; color: white" href="../../..">ActiveMQ Artemis Clustering for High-Performance Messaging</a>
+      <button class="navbar-burger" data-target="topbar-nav">
+        <span></span>
+        <span></span>
+        <span></span>
+      </button>
+    </div>
+    <div id="topbar-nav" class="navbar-menu">
+      <div class="navbar-end">
+        <a class="navbar-item" href="https://github.com/RedHatQuickCourses/REPLACEREPONAME/issues" target="_blank">Report Issues</a>
+      </div>
+    </div>
+  </nav>
+</header>
+<div class="body">
+<div class="nav-container" data-component="amq-connection-distribution" data-version="1.0.0">
+  <aside class="nav">
+    <div class="panels">
+<div class="nav-panel-menu is-active" data-panel="menu">
+  <nav class="nav-menu">
+    <h3 class="title"><a href="../index.html">ActiveMQ Artemis Clustering for High-Performance Messaging</a></h3>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="../index.html">Home</a>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../introduction-to-activemq-artemis/introduction-to-activemq-artemis.html">Introduction to ActiveMQ Artemis</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../introduction-to-activemq-artemis/understanding-message-oriented-middleware-mom.html">Understanding Message-Oriented Middleware (MOM)</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../introduction-to-activemq-artemis/core-features-and-benefits-of-activemq-artemis.html">Core features and benefits of ActiveMQ Artemis</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../introduction-to-activemq-artemis/decoupling-producers-and-consumers.html">Decoupling Producers and Consumers</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../introduction-to-activemq-artemis/asynchronous-communication-patterns.html">Asynchronous communication patterns</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../introduction-to-activemq-artemis/traffic-smoothing-and-competing-consumers.html">Traffic smoothing and competing consumers</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../client-side-challenges/client-side-challenges.html">Client-Side Challenges</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../client-side-challenges/bottlenecks-from-single-connection-to-a-single-broker.html">Bottlenecks from single connection to a single broker</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../client-side-challenges/impact-of-default-client-load-balancing-policies.html">Impact of default client load-balancing policies</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../client-side-challenges/reduced-cluster-throughput-due-to-message-redistribution.html">Reduced cluster throughput due to message redistribution</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../client-side-challenges/risk-of-high-volume-queues-paging-messages-to-disk.html">Risk of high-volume queues paging messages to disk</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../deploying-amq-on-openshift/deploying-amq-on-openshift.html">Deploying AMQ on OpenShift</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../deploying-amq-on-openshift/overview-of-red-hat-amq-operator.html">Overview of Red Hat AMQ Operator</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../deploying-amq-on-openshift/installing-the-amq-operator-on-openshift.html">Installing the AMQ Operator on OpenShift</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../deploying-amq-on-openshift/creating-an-activemqartemis-custom-resource-cr.html">Creating an ActiveMQArtemis Custom Resource (CR)</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../deploying-amq-on-openshift/configuring-a-two-node-activemq-artemis-cluster.html">Configuring a two-node ActiveMQ Artemis cluster</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../deploying-amq-on-openshift/exposing-broker-services-for-client-connections.html">Exposing broker services for client connections</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item is-current-page" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="solutions-for-even-message-distribution.html">Solutions for Even Message Distribution</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="strategies-for-client-side-load-balancing.html">Strategies for client-side load balancing</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="configuring-client-connection-factories-for-multiple-brokers.html">Configuring client connection factories for multiple brokers</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="techniques-to-distribute-messages-evenly-across-cluster-members.html">Techniques to distribute messages evenly across cluster members</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="optimizing-client-connectivity-for-high-throughput.html">Optimizing client connectivity for high throughput</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../hands-on-lab-deploying-and-interacting-with-an-activemq-artemis-cluster/hands-on-lab-deploying-and-interacting-with-an-activemq-artemis-cluster.html">Hands-on Lab: Deploying and Interacting with an ActiveMQ Artemis Cluster</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../hands-on-lab-deploying-and-interacting-with-an-activemq-artemis-cluster/setting-up-the-openshift-environment-for-amq-deployment.html">Setting up the OpenShift environment for AMQ deployment</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../hands-on-lab-deploying-and-interacting-with-an-activemq-artemis-cluster/deploying-a-two-node-activemq-artemis-cluster-using-the-operator.html">Deploying a two-node ActiveMQ Artemis cluster using the Operator</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../hands-on-lab-deploying-and-interacting-with-an-activemq-artemis-cluster/developing-and-deploying-client-applications.html">Developing and deploying client applications</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../hands-on-lab-deploying-and-interacting-with-an-activemq-artemis-cluster/observing-message-distribution-and-cluster-behavior.html">Observing message distribution and cluster behavior</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../hands-on-lab-deploying-and-interacting-with-an-activemq-artemis-cluster/testing-failover-scenarios-and-ha-capabilities.html">Testing failover scenarios and HA capabilities</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+</ul>
+  </nav>
+</div>
+<div class="nav-panel-explore" data-panel="explore">
+  <div class="context">
+    <span class="title">ActiveMQ Artemis Clustering for High-Performance Messaging</span>
+    <span class="version">1.0.0</span>
+  </div>
+  <ul class="components">
+    <li class="component is-current">
+      <a class="title" href="../index.html">ActiveMQ Artemis Clustering for High-Performance Messaging</a>
+      <ul class="versions">
+        <li class="version is-current is-latest">
+          <a href="../index.html">1.0.0</a>
+        </li>
+      </ul>
+    </li>
+  </ul>
+</div>
+    </div>
+  </aside>
+</div>
+<main class="article">
+<div class="toolbar" role="navigation">
+<button class="nav-toggle"></button>
+  <a href="../index.html" class="home-link"></a>
+<nav class="breadcrumbs" aria-label="breadcrumbs">
+  <ul>
+    <li><a href="../index.html">ActiveMQ Artemis Clustering for High-Performance Messaging</a></li>
+    <li><a href="solutions-for-even-message-distribution.html">Solutions for Even Message Distribution</a></li>
+  </ul>
+</nav>
+</div>
+  <div class="content">
+<aside class="toc sidebar" data-title="Contents" data-levels="2">
+  <div class="toc-menu"></div>
+</aside>
+<article class="doc">
+<h1 class="page">Solutions for Even Message Distribution</h1>
+<div class="sect2">
+<h3 id="_solutions_for_even_message_distribution"><a class="anchor" href="#_solutions_for_even_message_distribution"></a>Solutions for Even Message Distribution</h3>
+<div class="paragraph">
+<p>Achieving even message distribution across an ActiveMQ Artemis cluster is crucial for high performance and throughput, avoiding bottlenecks and inefficient message handling.</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>Problem</strong>:</p>
+</li>
+<li>
+<p>Applications typically establish a single connection to a single broker, creating a bottleneck.</p>
+</li>
+<li>
+<p>Reliance on broker-side message redistribution introduces significant overhead, reduces overall cluster throughput, and can force high-volume queues to page pending messages to disk.</p>
+</li>
+<li>
+<p><strong>Solution Approach</strong>:</p>
+</li>
+<li>
+<p>Deploying a multi-node ActiveMQ Artemis cluster (e.g., a two-node cluster on OpenShift using the Red Hat AMQ Operator).</p>
+</li>
+<li>
+<p>Implementing client-side load balancing strategies and configuring client connection factories for multiple brokers. This approach directly distributes messages evenly across cluster members, optimizing client connectivity for high throughput and avoiding the overhead of broker-side message redistribution.</p>
+</li>
+</ul>
+</div>
+</div>
+<nav class="pagination">
+  <span class="prev"><a href="../deploying-amq-on-openshift/exposing-broker-services-for-client-connections.html">Exposing broker services for client connections</a></span>
+  <span class="next"><a href="strategies-for-client-side-load-balancing.html">Strategies for client-side load balancing</a></span>
+</nav>
+</article>
+  </div>
+</main>
+</div>
+<footer class="footer">
+  <img src="../../../_/img/rhl-logo-red.png" height="40px" alt="Red Hat"  href="https://redhat.com" >
+</footer><script id="site-script" src="../../../_/js/site.js" data-ui-root-path="../../../_"></script>
+<script async src="../../../_/js/vendor/highlight.js"></script>
+  </body>
+</html>

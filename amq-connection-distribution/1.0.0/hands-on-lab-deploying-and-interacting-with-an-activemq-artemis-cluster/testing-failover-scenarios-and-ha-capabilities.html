@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Testing failover scenarios and HA capabilities :: ActiveMQ Artemis Clustering for High-Performance Messaging</title>
+    <link rel="prev" href="observing-message-distribution-and-cluster-behavior.html">
+    <meta name="generator" content="Antora 3.1.3">
+    <link rel="stylesheet" href="../../../_/css/site.css">
+    <script>var uiRootPath = '../../../_'</script>
+  </head>
+  <body class="article">
+<header class="header">
+  <nav class="navbar">
+    <div class="navbar-brand">
+      <a class="navbar-item" href="https://www.redhat.com" target="_blank"><img src="../../../_/img/redhat-logo.png" height="40px" alt="Red Hat"></a>
+      <a class="navbar-item" style="font-size: 24px; color: white" href="../../..">ActiveMQ Artemis Clustering for High-Performance Messaging</a>
+      <button class="navbar-burger" data-target="topbar-nav">
+        <span></span>
+        <span></span>
+        <span></span>
+      </button>
+    </div>
+    <div id="topbar-nav" class="navbar-menu">
+      <div class="navbar-end">
+        <a class="navbar-item" href="https://github.com/RedHatQuickCourses/REPLACEREPONAME/issues" target="_blank">Report Issues</a>
+      </div>
+    </div>
+  </nav>
+</header>
+<div class="body">
+<div class="nav-container" data-component="amq-connection-distribution" data-version="1.0.0">
+  <aside class="nav">
+    <div class="panels">
+<div class="nav-panel-menu is-active" data-panel="menu">
+  <nav class="nav-menu">
+    <h3 class="title"><a href="../index.html">ActiveMQ Artemis Clustering for High-Performance Messaging</a></h3>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="../index.html">Home</a>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../introduction-to-activemq-artemis/introduction-to-activemq-artemis.html">Introduction to ActiveMQ Artemis</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../introduction-to-activemq-artemis/understanding-message-oriented-middleware-mom.html">Understanding Message-Oriented Middleware (MOM)</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../introduction-to-activemq-artemis/core-features-and-benefits-of-activemq-artemis.html">Core features and benefits of ActiveMQ Artemis</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../introduction-to-activemq-artemis/decoupling-producers-and-consumers.html">Decoupling Producers and Consumers</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../introduction-to-activemq-artemis/asynchronous-communication-patterns.html">Asynchronous communication patterns</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../introduction-to-activemq-artemis/traffic-smoothing-and-competing-consumers.html">Traffic smoothing and competing consumers</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../client-side-challenges/client-side-challenges.html">Client-Side Challenges</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../client-side-challenges/bottlenecks-from-single-connection-to-a-single-broker.html">Bottlenecks from single connection to a single broker</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../client-side-challenges/impact-of-default-client-load-balancing-policies.html">Impact of default client load-balancing policies</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../client-side-challenges/reduced-cluster-throughput-due-to-message-redistribution.html">Reduced cluster throughput due to message redistribution</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../client-side-challenges/risk-of-high-volume-queues-paging-messages-to-disk.html">Risk of high-volume queues paging messages to disk</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../deploying-amq-on-openshift/deploying-amq-on-openshift.html">Deploying AMQ on OpenShift</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../deploying-amq-on-openshift/overview-of-red-hat-amq-operator.html">Overview of Red Hat AMQ Operator</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../deploying-amq-on-openshift/installing-the-amq-operator-on-openshift.html">Installing the AMQ Operator on OpenShift</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../deploying-amq-on-openshift/creating-an-activemqartemis-custom-resource-cr.html">Creating an ActiveMQArtemis Custom Resource (CR)</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../deploying-amq-on-openshift/configuring-a-two-node-activemq-artemis-cluster.html">Configuring a two-node ActiveMQ Artemis cluster</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../deploying-amq-on-openshift/exposing-broker-services-for-client-connections.html">Exposing broker services for client connections</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../solutions-for-even-message-distribution/solutions-for-even-message-distribution.html">Solutions for Even Message Distribution</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../solutions-for-even-message-distribution/strategies-for-client-side-load-balancing.html">Strategies for client-side load balancing</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../solutions-for-even-message-distribution/configuring-client-connection-factories-for-multiple-brokers.html">Configuring client connection factories for multiple brokers</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../solutions-for-even-message-distribution/techniques-to-distribute-messages-evenly-across-cluster-members.html">Techniques to distribute messages evenly across cluster members</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../solutions-for-even-message-distribution/optimizing-client-connectivity-for-high-throughput.html">Optimizing client connectivity for high throughput</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="hands-on-lab-deploying-and-interacting-with-an-activemq-artemis-cluster.html">Hands-on Lab: Deploying and Interacting with an ActiveMQ Artemis Cluster</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="setting-up-the-openshift-environment-for-amq-deployment.html">Setting up the OpenShift environment for AMQ deployment</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="deploying-a-two-node-activemq-artemis-cluster-using-the-operator.html">Deploying a two-node ActiveMQ Artemis cluster using the Operator</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="developing-and-deploying-client-applications.html">Developing and deploying client applications</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="observing-message-distribution-and-cluster-behavior.html">Observing message distribution and cluster behavior</a>
+  </li>
+  <li class="nav-item is-current-page" data-depth="2">
+    <a class="nav-link" href="testing-failover-scenarios-and-ha-capabilities.html">Testing failover scenarios and HA capabilities</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+</ul>
+  </nav>
+</div>
+<div class="nav-panel-explore" data-panel="explore">
+  <div class="context">
+    <span class="title">ActiveMQ Artemis Clustering for High-Performance Messaging</span>
+    <span class="version">1.0.0</span>
+  </div>
+  <ul class="components">
+    <li class="component is-current">
+      <a class="title" href="../index.html">ActiveMQ Artemis Clustering for High-Performance Messaging</a>
+      <ul class="versions">
+        <li class="version is-current is-latest">
+          <a href="../index.html">1.0.0</a>
+        </li>
+      </ul>
+    </li>
+  </ul>
+</div>
+    </div>
+  </aside>
+</div>
+<main class="article">
+<div class="toolbar" role="navigation">
+<button class="nav-toggle"></button>
+  <a href="../index.html" class="home-link"></a>
+<nav class="breadcrumbs" aria-label="breadcrumbs">
+  <ul>
+    <li><a href="../index.html">ActiveMQ Artemis Clustering for High-Performance Messaging</a></li>
+    <li><a href="hands-on-lab-deploying-and-interacting-with-an-activemq-artemis-cluster.html">Hands-on Lab: Deploying and Interacting with an ActiveMQ Artemis Cluster</a></li>
+    <li><a href="testing-failover-scenarios-and-ha-capabilities.html">Testing failover scenarios and HA capabilities</a></li>
+  </ul>
+</nav>
+</div>
+  <div class="content">
+<aside class="toc sidebar" data-title="Contents" data-levels="2">
+  <div class="toc-menu"></div>
+</aside>
+<article class="doc">
+<h1 class="page">Testing failover scenarios and HA capabilities</h1>
+<h1 id="_testing_failover_scenarios_and_ha_capabilities" class="sect0"><a class="anchor" href="#_testing_failover_scenarios_and_ha_capabilities"></a>Testing Failover Scenarios and HA Capabilities</h1>
+<div class="sect1">
+<h2 id="_understanding_high_availability_and_failover_in_activemq_artemis_clusters"><a class="anchor" href="#_understanding_high_availability_and_failover_in_activemq_artemis_clusters"></a>Understanding High Availability and Failover in ActiveMQ Artemis Clusters</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>In enterprise environments, the reliability of messaging infrastructure is paramount. A single broker instance, no matter how robust, represents a single point of failure. ActiveMQ Artemis addresses this critical concern through its clustering capabilities, specifically implementing High Availability (HA) and Failover mechanisms.</p>
+</div>
+<div class="paragraph">
+<p>The core concept of High Availability in an ActiveMQ Artemis cluster, as stated in the provided context, is: "In a clustered setup, if a primary broker fails, a backup broker can immediately take over (Failover), ensuring zero downtime for critical business operations." This mechanism is crucial for maintaining continuous service and data integrity in distributed systems.</p>
+</div>
+<div class="paragraph">
+<p>When a primary broker, which is actively serving client connections and processing messages, experiences a failure (e.g., a hardware failure, network partition, or unexpected shutdown), the failover process is initiated. A designated backup broker, which has been in a passive or standby mode, detecting the primary&#8217;s failure, takes over its role. This takeover is designed to be seamless, with minimal disruption to the clients.</p>
+</div>
+<div class="paragraph">
+<p>From a client&#8217;s perspective, well-configured client applications will automatically detect the loss of connection to the failed primary broker and subsequently reconnect to the newly active backup broker. This transparent reconnection ensures that producers can continue sending messages and consumers can resume processing messages without significant interruption or data loss. The messaging system remains operational, upholding the principle of eventual consistency and high reliability that Message-Oriented Middleware (MOM) aims to provide.</p>
+</div>
+<div class="paragraph">
+<p>This capability is a cornerstone for systems requiring constant uptime and protection against service interruptions, preventing the cascading failures that can occur in tightly coupled systems.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_lab_activity_demonstrating_cluster_failover"><a class="anchor" href="#_lab_activity_demonstrating_cluster_failover"></a>Lab Activity: Demonstrating Cluster Failover</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>This lab activity will guide you through simulating a broker failure in your deployed ActiveMQ Artemis cluster on OpenShift and observing the failover process. This will demonstrate the cluster&#8217;s High Availability (HA) capabilities and how client applications seamlessly recover.</p>
+</div>
+<div class="sect2">
+<h3 id="_prerequisites"><a class="anchor" href="#_prerequisites"></a>Prerequisites</h3>
+<div class="paragraph">
+<p>Ensure you have:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>An OpenShift environment with the Red Hat AMQ Operator installed.</p>
+</li>
+<li>
+<p>A two-node ActiveMQ Artemis cluster deployed using an <code>ActiveMQArtemis</code> Custom Resource, as configured in previous lab activities.</p>
+</li>
+<li>
+<p>Client applications (producers and consumers) deployed and actively interacting with the cluster, configured to connect to multiple brokers (as per "Configuring client connection factories for multiple brokers").</p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_steps"><a class="anchor" href="#_steps"></a>Steps</h3>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p><strong>Monitor Initial Cluster State and Client Activity</strong></p>
+<div class="olist loweralpha">
+<ol class="loweralpha" type="a">
+<li>
+<p>Open your OpenShift console or use the <code>oc</code> CLI to list the pods for your ActiveMQ Artemis cluster. You should see two broker pods running (e.g., <code>broker-ss-0</code>, <code>broker-ss-1</code>).</p>
+<div class="literalblock">
+<div class="content">
+<pre>```bash
+oc get pods -n &lt;your-project&gt; -l app.kubernetes.io/name=activemq-artemis-broker
+```</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Ensure your client applications (producers and consumers) are running and actively sending/receiving messages. Observe their logs to confirm they are connected and processing messages.</p>
+<div class="literalblock">
+<div class="content">
+<pre>```bash
+oc logs -f &lt;your-producer-pod-name&gt; -n &lt;your-project&gt;
+oc logs -f &lt;your-consumer-pod-name&gt; -n &lt;your-project&gt;
+```</pre>
+</div>
+</div>
+</li>
+<li>
+<p>You can also inspect the queue statistics on one of the brokers. The context provides an example of queue stats, showing messages being processed. Pick one of your broker pods and port-forward to its management port (usually 8161 for the web console or 61616 for AMQP if you prefer a client tool). For instance, using <code>oc exec</code> to get internal queue stats:</p>
+<div class="literalblock">
+<div class="content">
+<pre>```bash
+# Example using oc exec to get queue stats from within a broker pod
+oc exec -it broker-ss-0 -n &lt;your-project&gt; -- /bin/bash -c "head -n 20 /opt/amq/broker/log/artemis.log | grep -i 'queue stats'"
+```
+(Note: The actual command to get live queue stats from within the broker might vary depending on the AMQ Artemis version and configuration, but the intent is to show that messages are being handled by both brokers.)</pre>
+</div>
+</div>
+</li>
+</ol>
+</div>
+</li>
+<li>
+<p><strong>Simulate a Primary Broker Failure</strong></p>
+<div class="olist loweralpha">
+<ol class="loweralpha" type="a">
+<li>
+<p>Identify one of your broker pods to simulate its failure. For this example, let&#8217;s target <code>broker-ss-0</code>.</p>
+</li>
+<li>
+<p>Delete the pod for <code>broker-ss-0</code>. This action will simulate an unexpected failure of that broker instance. The OpenShift StatefulSet controller will automatically attempt to recreate it.</p>
+<div class="literalblock">
+<div class="content">
+<pre>```bash
+oc delete pod broker-ss-0 -n &lt;your-project&gt;
+```</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Immediately list the pods again to observe the status change:</p>
+<div class="literalblock">
+<div class="content">
+<pre>```bash
+oc get pods -n &lt;your-project&gt; -l app.kubernetes.io/name=activemq-artemis-broker
+```
+You should see `broker-ss-0` terminating and then a new pod with the same name starting up. `broker-ss-1` should remain running.</pre>
+</div>
+</div>
+</li>
+</ol>
+</div>
+</li>
+<li>
+<p><strong>Observe Client Failover and Continued Operation</strong></p>
+<div class="olist loweralpha">
+<ol class="loweralpha" type="a">
+<li>
+<p><strong>Check Client Logs:</strong> Revisit the logs of your producer and consumer client applications.</p>
+<div class="ulist">
+<ul>
+<li>
+<p>You should observe messages indicating a connection loss to the failed broker (<code>broker-ss-0</code>).</p>
+</li>
+<li>
+<p>Crucially, you should then see messages indicating that the clients have successfully reconnected to the remaining active broker (<code>broker-ss-1</code>).</p>
+</li>
+<li>
+<p>Producers should continue sending messages, and consumers should continue receiving them, demonstrating that the applications have gracefully failed over.</p>
+</li>
+<li>
+<p>There should be no prolonged interruption or error state, confirming the "zero downtime" aspect from the client&#8217;s perspective for critical operations.</p>
+<div class="literalblock">
+<div class="content">
+<pre>```bash
+oc logs -f &lt;your-producer-pod-name&gt; -n &lt;your-project&gt;
+oc logs -f &lt;your-consumer-pod-name&gt; -n &lt;your-project&gt;
+```</pre>
+</div>
+</div>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<p><strong>Verify Message Continuity:</strong> Ensure that messages continue to flow through the cluster without significant loss. If you had a counter in your consumer, verify it continues to increment.</p>
+</li>
+<li>
+<p><strong>Observe Cluster Recovery:</strong> Watch the <code>oc get pods</code> output until the <code>broker-ss-0</code> pod is back to a <code>Running</code> state. Once it restarts, it will rejoin the cluster, potentially taking on the role of a backup broker or becoming active if <code>broker-ss-1</code> was the original primary.</p>
+<div class="literalblock">
+<div class="content">
+<pre>```bash
+oc get pods -w -n &lt;your-project&gt; -l app.kubernetes.io/name=activemq-artemis-broker
+```</pre>
+</div>
+</div>
+</li>
+</ol>
+</div>
+</li>
+</ol>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_conclusion"><a class="anchor" href="#_conclusion"></a>Conclusion</h3>
+<div class="paragraph">
+<p>By successfully completing this lab, you have witnessed ActiveMQ Artemis&#8217;s High Availability and Failover capabilities in action. You observed how a client application seamlessly reconnects to an available broker after a primary broker failure, ensuring continuous messaging operations and demonstrating the resilience provided by clustering. This mitigation of a "single point of failure" is a key benefit of deploying ActiveMQ Artemis in a clustered configuration.</p>
+</div>
+</div>
+</div>
+</div>
+<nav class="pagination">
+  <span class="prev"><a href="observing-message-distribution-and-cluster-behavior.html">Observing message distribution and cluster behavior</a></span>
+</nav>
+</article>
+  </div>
+</main>
+</div>
+<footer class="footer">
+  <img src="../../../_/img/rhl-logo-red.png" height="40px" alt="Red Hat"  href="https://redhat.com" >
+</footer><script id="site-script" src="../../../_/js/site.js" data-ui-root-path="../../../_"></script>
+<script async src="../../../_/js/vendor/highlight.js"></script>
+  </body>
+</html>

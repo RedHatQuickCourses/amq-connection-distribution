@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Overview of Red Hat AMQ Operator :: ActiveMQ Artemis Clustering for High-Performance Messaging</title>
+    <link rel="prev" href="deploying-amq-on-openshift.html">
+    <link rel="next" href="installing-the-amq-operator-on-openshift.html">
+    <meta name="generator" content="Antora 3.1.3">
+    <link rel="stylesheet" href="../../../_/css/site.css">
+    <script>var uiRootPath = '../../../_'</script>
+  </head>
+  <body class="article">
+<header class="header">
+  <nav class="navbar">
+    <div class="navbar-brand">
+      <a class="navbar-item" href="https://www.redhat.com" target="_blank"><img src="../../../_/img/redhat-logo.png" height="40px" alt="Red Hat"></a>
+      <a class="navbar-item" style="font-size: 24px; color: white" href="../../..">ActiveMQ Artemis Clustering for High-Performance Messaging</a>
+      <button class="navbar-burger" data-target="topbar-nav">
+        <span></span>
+        <span></span>
+        <span></span>
+      </button>
+    </div>
+    <div id="topbar-nav" class="navbar-menu">
+      <div class="navbar-end">
+        <a class="navbar-item" href="https://github.com/RedHatQuickCourses/REPLACEREPONAME/issues" target="_blank">Report Issues</a>
+      </div>
+    </div>
+  </nav>
+</header>
+<div class="body">
+<div class="nav-container" data-component="amq-connection-distribution" data-version="1.0.0">
+  <aside class="nav">
+    <div class="panels">
+<div class="nav-panel-menu is-active" data-panel="menu">
+  <nav class="nav-menu">
+    <h3 class="title"><a href="../index.html">ActiveMQ Artemis Clustering for High-Performance Messaging</a></h3>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="../index.html">Home</a>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../introduction-to-activemq-artemis/introduction-to-activemq-artemis.html">Introduction to ActiveMQ Artemis</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../introduction-to-activemq-artemis/understanding-message-oriented-middleware-mom.html">Understanding Message-Oriented Middleware (MOM)</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../introduction-to-activemq-artemis/core-features-and-benefits-of-activemq-artemis.html">Core features and benefits of ActiveMQ Artemis</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../introduction-to-activemq-artemis/decoupling-producers-and-consumers.html">Decoupling Producers and Consumers</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../introduction-to-activemq-artemis/asynchronous-communication-patterns.html">Asynchronous communication patterns</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../introduction-to-activemq-artemis/traffic-smoothing-and-competing-consumers.html">Traffic smoothing and competing consumers</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../client-side-challenges/client-side-challenges.html">Client-Side Challenges</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../client-side-challenges/bottlenecks-from-single-connection-to-a-single-broker.html">Bottlenecks from single connection to a single broker</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../client-side-challenges/impact-of-default-client-load-balancing-policies.html">Impact of default client load-balancing policies</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../client-side-challenges/reduced-cluster-throughput-due-to-message-redistribution.html">Reduced cluster throughput due to message redistribution</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../client-side-challenges/risk-of-high-volume-queues-paging-messages-to-disk.html">Risk of high-volume queues paging messages to disk</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="deploying-amq-on-openshift.html">Deploying AMQ on OpenShift</a>
+<ul class="nav-list">
+  <li class="nav-item is-current-page" data-depth="2">
+    <a class="nav-link" href="overview-of-red-hat-amq-operator.html">Overview of Red Hat AMQ Operator</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="installing-the-amq-operator-on-openshift.html">Installing the AMQ Operator on OpenShift</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="creating-an-activemqartemis-custom-resource-cr.html">Creating an ActiveMQArtemis Custom Resource (CR)</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="configuring-a-two-node-activemq-artemis-cluster.html">Configuring a two-node ActiveMQ Artemis cluster</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="exposing-broker-services-for-client-connections.html">Exposing broker services for client connections</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../solutions-for-even-message-distribution/solutions-for-even-message-distribution.html">Solutions for Even Message Distribution</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../solutions-for-even-message-distribution/strategies-for-client-side-load-balancing.html">Strategies for client-side load balancing</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../solutions-for-even-message-distribution/configuring-client-connection-factories-for-multiple-brokers.html">Configuring client connection factories for multiple brokers</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../solutions-for-even-message-distribution/techniques-to-distribute-messages-evenly-across-cluster-members.html">Techniques to distribute messages evenly across cluster members</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../solutions-for-even-message-distribution/optimizing-client-connectivity-for-high-throughput.html">Optimizing client connectivity for high throughput</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../hands-on-lab-deploying-and-interacting-with-an-activemq-artemis-cluster/hands-on-lab-deploying-and-interacting-with-an-activemq-artemis-cluster.html">Hands-on Lab: Deploying and Interacting with an ActiveMQ Artemis Cluster</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../hands-on-lab-deploying-and-interacting-with-an-activemq-artemis-cluster/setting-up-the-openshift-environment-for-amq-deployment.html">Setting up the OpenShift environment for AMQ deployment</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../hands-on-lab-deploying-and-interacting-with-an-activemq-artemis-cluster/deploying-a-two-node-activemq-artemis-cluster-using-the-operator.html">Deploying a two-node ActiveMQ Artemis cluster using the Operator</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../hands-on-lab-deploying-and-interacting-with-an-activemq-artemis-cluster/developing-and-deploying-client-applications.html">Developing and deploying client applications</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../hands-on-lab-deploying-and-interacting-with-an-activemq-artemis-cluster/observing-message-distribution-and-cluster-behavior.html">Observing message distribution and cluster behavior</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../hands-on-lab-deploying-and-interacting-with-an-activemq-artemis-cluster/testing-failover-scenarios-and-ha-capabilities.html">Testing failover scenarios and HA capabilities</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+</ul>
+  </nav>
+</div>
+<div class="nav-panel-explore" data-panel="explore">
+  <div class="context">
+    <span class="title">ActiveMQ Artemis Clustering for High-Performance Messaging</span>
+    <span class="version">1.0.0</span>
+  </div>
+  <ul class="components">
+    <li class="component is-current">
+      <a class="title" href="../index.html">ActiveMQ Artemis Clustering for High-Performance Messaging</a>
+      <ul class="versions">
+        <li class="version is-current is-latest">
+          <a href="../index.html">1.0.0</a>
+        </li>
+      </ul>
+    </li>
+  </ul>
+</div>
+    </div>
+  </aside>
+</div>
+<main class="article">
+<div class="toolbar" role="navigation">
+<button class="nav-toggle"></button>
+  <a href="../index.html" class="home-link"></a>
+<nav class="breadcrumbs" aria-label="breadcrumbs">
+  <ul>
+    <li><a href="../index.html">ActiveMQ Artemis Clustering for High-Performance Messaging</a></li>
+    <li><a href="deploying-amq-on-openshift.html">Deploying AMQ on OpenShift</a></li>
+    <li><a href="overview-of-red-hat-amq-operator.html">Overview of Red Hat AMQ Operator</a></li>
+  </ul>
+</nav>
+</div>
+  <div class="content">
+<aside class="toc sidebar" data-title="Contents" data-levels="2">
+  <div class="toc-menu"></div>
+</aside>
+<article class="doc">
+<h1 class="page">Overview of Red Hat AMQ Operator</h1>
+<h1 id="_overview_of_red_hat_amq_operator" class="sect0"><a class="anchor" href="#_overview_of_red_hat_amq_operator"></a>Overview of Red Hat AMQ Operator</h1>
+<div class="paragraph lead">
+<p>The Red Hat AMQ Operator plays a pivotal role in streamlining the deployment, management, and scaling of ActiveMQ Artemis message brokers within OpenShift and Kubernetes environments. It encapsulates the operational expertise required to run a robust messaging infrastructure, automating complex tasks and integrating seamlessly with the platform&#8217;s native capabilities.</p>
+</div>
+<div class="sect1">
+<h2 id="_understanding_kubernetes_operators"><a class="anchor" href="#_understanding_kubernetes_operators"></a>Understanding Kubernetes Operators</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Before delving into the specifics of the Red Hat AMQ Operator, it&#8217;s crucial to grasp the fundamental concept of a Kubernetes Operator. An Operator is a method of packaging, deploying, and managing a Kubernetes-native application. It extends the Kubernetes API, allowing you to manage complex stateful applications using familiar Kubernetes objects and principles.</p>
+</div>
+<div class="paragraph">
+<p>Operators follow the <a href="https://kubernetes.io/docs/concepts/architecture/controller/" target="_blank" rel="noopener">controller pattern</a>, where they continuously observe the cluster&#8217;s current state and compare it to a desired state defined by a Custom Resource (CR). If a discrepancy is detected, the Operator takes the necessary actions to reconcile the actual state with the desired state. This declarative approach significantly simplifies the management of applications that require intricate configurations, lifecycle management, and operational logic.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_the_role_of_the_red_hat_amq_operator"><a class="anchor" href="#_the_role_of_the_red_hat_amq_operator"></a>The Role of the Red Hat AMQ Operator</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>The Red Hat AMQ Operator is a specialized controller designed to manage ActiveMQ Artemis instances and clusters on OpenShift. It acts as an automation layer that understands how to deploy, configure, and maintain ActiveMQ Artemis brokers according to the specifications provided in an <code>ActiveMQArtemis</code> Custom Resource.</p>
+</div>
+<div class="paragraph">
+<p>When you interact with the AMQ Operator, you&#8217;re not directly deploying pods or services. Instead, you declare your desired ActiveMQ Artemis cluster configuration through a <code>ActiveMQArtemis</code> Custom Resource. The Operator then translates this high-level declaration into all the necessary underlying Kubernetes resources, such as:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>StatefulSets</strong>: For stable, unique network identifiers and persistent storage for each broker node.</p>
+</li>
+<li>
+<p><strong>Services</strong>: To provide stable network access to the broker nodes for internal and external clients.</p>
+</li>
+<li>
+<p><strong>ConfigMaps</strong>: To store broker configuration files.</p>
+</li>
+<li>
+<p><strong>Routes/Ingress</strong>: (Potentially) to expose broker services externally via OpenShift Routes.</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>As highlighted in the provided context, deploying an ActiveMQ Artemis cluster involves defining an <code>ActiveMQArtemis</code> Custom Resource:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">apiVersion: broker.amq.io/v1beta1
+kind: ActiveMQArtemis
+metadata:
+  name: broker
+  namespace: broker
+spec:
+  acceptors:
+    - bindToAllInterfaces: true
+      connectionsAllowed: -1
+      expose: true
+      name: broker
+      port: 61617
+      sslEnabled: true
+      sslSecret: tls
+  addressSettings:
+    addressSetting:
+      - match: '#'
+      # ... further configuration details ...</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>This snippet illustrates how the <code>ActiveMQArtemis</code> CR allows you to configure essential aspects such as:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>Acceptors</strong>: Define network listeners, including ports (<code>61617</code>), whether to <code>expose: true</code> the service for client connections, and SSL/TLS settings (<code>sslEnabled: true</code>, <code>sslSecret: tls</code>).</p>
+</li>
+<li>
+<p><strong>Clustering</strong>: The Operator handles the internal configuration required for brokers to form a cluster and communicate effectively, facilitating server-side load balancing and high availability (HA).</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_benefits_of_using_the_amq_operator_for_activemq_artemis_deployment"><a class="anchor" href="#_benefits_of_using_the_amq_operator_for_activemq_artemis_deployment"></a>Benefits of Using the AMQ Operator for ActiveMQ Artemis Deployment</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Leveraging the Red Hat AMQ Operator for deploying ActiveMQ Artemis on OpenShift provides significant advantages:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>Automated Deployment and Lifecycle Management</strong>: The Operator automates the entire process of deploying and managing ActiveMQ Artemis, from initial setup to ongoing operations like scaling, updates, and failover. This automation reduces manual effort and minimizes the risk of human error.</p>
+</li>
+<li>
+<p><strong>Declarative Configuration</strong>: By defining the desired state of your ActiveMQ Artemis cluster in a Custom Resource, you ensure consistent and repeatable deployments across different environments. The Operator continuously works to maintain this declared state.</p>
+</li>
+<li>
+<p><strong>Enhanced Operational Efficiency</strong>: The Operator abstracts away the complexities of managing ActiveMQ Artemis on Kubernetes, allowing operations teams to focus on higher-level tasks rather than low-level infrastructure details.</p>
+</li>
+<li>
+<p><strong>Native Kubernetes Integration</strong>: It fully utilizes OpenShift&#8217;s native capabilities such as self-healing, scaling, and declarative management, contributing to a highly robust and resilient messaging platform.</p>
+</li>
+<li>
+<p><strong>Simplified High Availability (HA)</strong>: The Operator simplifies the deployment of ActiveMQ Artemis clusters with built-in high availability, a critical feature for enterprise environments to ensure continuous service availability and zero downtime in case of broker failures, as mentioned in the broader context.</p>
+</li>
+<li>
+<p><strong>Security Integration</strong>: Facilitates secure communication by integrating with OpenShift&#8217;s secrets management, allowing easy configuration of SSL/TLS for encrypted client connections, as evidenced by <code>sslSecret: tls</code> in the example CR.</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_hands_on_activity_exploring_the_operatorhub_for_amq_broker"><a class="anchor" href="#_hands_on_activity_exploring_the_operatorhub_for_amq_broker"></a>Hands-on Activity: Exploring the OperatorHub for AMQ Broker</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Before we proceed with the actual installation of the Red Hat AMQ Operator, it&#8217;s beneficial to familiarize ourselves with where and how Operators are made available within OpenShift.</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p><strong>Objective:</strong> Understand how to locate and review the Red Hat AMQ Broker Operator in the OpenShift OperatorHub.</p>
+</li>
+<li>
+<p><strong>Prerequisites:</strong></p>
+<div class="ulist">
+<ul>
+<li>
+<p>Access to an OpenShift cluster.</p>
+</li>
+<li>
+<p>The <code>oc</code> command-line interface (CLI) configured and authenticated with your OpenShift cluster.</p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<p><strong>Steps:</strong></p>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p><strong>Log in to the OpenShift Web Console:</strong> Open your web browser and navigate to your OpenShift cluster&#8217;s web console URL. Log in with your credentials.</p>
+</li>
+<li>
+<p><strong>Navigate to OperatorHub:</strong> In the left-hand navigation pane, click on <strong>Operators</strong> and then select <strong>OperatorHub</strong>.</p>
+</li>
+<li>
+<p><strong>Search for AMQ Broker:</strong> In the "Filter by keyword" search box, type <code>AMQ Broker</code>.</p>
+</li>
+<li>
+<p><strong>Inspect the Operator:</strong> You should see a tile for "Red Hat Integration - AMQ Broker". Click on this tile to view its details.</p>
+</li>
+<li>
+<p><strong>Review Operator Information:</strong> Examine the "Overview" tab for a description of the Operator, its capabilities, and the "Supported Versions" tab to see which ActiveMQ Artemis versions it supports. Also, take a moment to look at the "YAML" tab to get a sense of the subscription configuration, though we won&#8217;t be applying it yet.</p>
+</li>
+<li>
+<p><strong>Understand Installation Options (without installing):</strong> Notice the "Install" button. Clicking this typically presents options for installation mode (e.g., install in all namespaces or a specific namespace) and update channel. <strong>For this activity, we are only observing; do not click 'Install' at this point, as the actual installation will be covered in the next topic.</strong></p>
+</li>
+</ol>
+</div>
+</li>
+</ol>
+</div>
+<div class="paragraph">
+<p>This activity provides a foundational understanding of the Red Hat AMQ Operator&#8217;s availability and basic information within the OpenShift ecosystem, setting the stage for its deployment.</p>
+</div>
+</div>
+</div>
+<nav class="pagination">
+  <span class="prev"><a href="deploying-amq-on-openshift.html">Deploying AMQ on OpenShift</a></span>
+  <span class="next"><a href="installing-the-amq-operator-on-openshift.html">Installing the AMQ Operator on OpenShift</a></span>
+</nav>
+</article>
+  </div>
+</main>
+</div>
+<footer class="footer">
+  <img src="../../../_/img/rhl-logo-red.png" height="40px" alt="Red Hat"  href="https://redhat.com" >
+</footer><script id="site-script" src="../../../_/js/site.js" data-ui-root-path="../../../_"></script>
+<script async src="../../../_/js/vendor/highlight.js"></script>
+  </body>
+</html>

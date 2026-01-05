@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Strategies for client-side load balancing :: ActiveMQ Artemis Clustering for High-Performance Messaging</title>
+    <link rel="prev" href="solutions-for-even-message-distribution.html">
+    <link rel="next" href="configuring-client-connection-factories-for-multiple-brokers.html">
+    <meta name="generator" content="Antora 3.1.3">
+    <link rel="stylesheet" href="../../../_/css/site.css">
+    <script>var uiRootPath = '../../../_'</script>
+  </head>
+  <body class="article">
+<header class="header">
+  <nav class="navbar">
+    <div class="navbar-brand">
+      <a class="navbar-item" href="https://www.redhat.com" target="_blank"><img src="../../../_/img/redhat-logo.png" height="40px" alt="Red Hat"></a>
+      <a class="navbar-item" style="font-size: 24px; color: white" href="../../..">ActiveMQ Artemis Clustering for High-Performance Messaging</a>
+      <button class="navbar-burger" data-target="topbar-nav">
+        <span></span>
+        <span></span>
+        <span></span>
+      </button>
+    </div>
+    <div id="topbar-nav" class="navbar-menu">
+      <div class="navbar-end">
+        <a class="navbar-item" href="https://github.com/RedHatQuickCourses/REPLACEREPONAME/issues" target="_blank">Report Issues</a>
+      </div>
+    </div>
+  </nav>
+</header>
+<div class="body">
+<div class="nav-container" data-component="amq-connection-distribution" data-version="1.0.0">
+  <aside class="nav">
+    <div class="panels">
+<div class="nav-panel-menu is-active" data-panel="menu">
+  <nav class="nav-menu">
+    <h3 class="title"><a href="../index.html">ActiveMQ Artemis Clustering for High-Performance Messaging</a></h3>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="../index.html">Home</a>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../introduction-to-activemq-artemis/introduction-to-activemq-artemis.html">Introduction to ActiveMQ Artemis</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../introduction-to-activemq-artemis/understanding-message-oriented-middleware-mom.html">Understanding Message-Oriented Middleware (MOM)</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../introduction-to-activemq-artemis/core-features-and-benefits-of-activemq-artemis.html">Core features and benefits of ActiveMQ Artemis</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../introduction-to-activemq-artemis/decoupling-producers-and-consumers.html">Decoupling Producers and Consumers</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../introduction-to-activemq-artemis/asynchronous-communication-patterns.html">Asynchronous communication patterns</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../introduction-to-activemq-artemis/traffic-smoothing-and-competing-consumers.html">Traffic smoothing and competing consumers</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../client-side-challenges/client-side-challenges.html">Client-Side Challenges</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../client-side-challenges/bottlenecks-from-single-connection-to-a-single-broker.html">Bottlenecks from single connection to a single broker</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../client-side-challenges/impact-of-default-client-load-balancing-policies.html">Impact of default client load-balancing policies</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../client-side-challenges/reduced-cluster-throughput-due-to-message-redistribution.html">Reduced cluster throughput due to message redistribution</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../client-side-challenges/risk-of-high-volume-queues-paging-messages-to-disk.html">Risk of high-volume queues paging messages to disk</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../deploying-amq-on-openshift/deploying-amq-on-openshift.html">Deploying AMQ on OpenShift</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../deploying-amq-on-openshift/overview-of-red-hat-amq-operator.html">Overview of Red Hat AMQ Operator</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../deploying-amq-on-openshift/installing-the-amq-operator-on-openshift.html">Installing the AMQ Operator on OpenShift</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../deploying-amq-on-openshift/creating-an-activemqartemis-custom-resource-cr.html">Creating an ActiveMQArtemis Custom Resource (CR)</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../deploying-amq-on-openshift/configuring-a-two-node-activemq-artemis-cluster.html">Configuring a two-node ActiveMQ Artemis cluster</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../deploying-amq-on-openshift/exposing-broker-services-for-client-connections.html">Exposing broker services for client connections</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="solutions-for-even-message-distribution.html">Solutions for Even Message Distribution</a>
+<ul class="nav-list">
+  <li class="nav-item is-current-page" data-depth="2">
+    <a class="nav-link" href="strategies-for-client-side-load-balancing.html">Strategies for client-side load balancing</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="configuring-client-connection-factories-for-multiple-brokers.html">Configuring client connection factories for multiple brokers</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="techniques-to-distribute-messages-evenly-across-cluster-members.html">Techniques to distribute messages evenly across cluster members</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="optimizing-client-connectivity-for-high-throughput.html">Optimizing client connectivity for high throughput</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../hands-on-lab-deploying-and-interacting-with-an-activemq-artemis-cluster/hands-on-lab-deploying-and-interacting-with-an-activemq-artemis-cluster.html">Hands-on Lab: Deploying and Interacting with an ActiveMQ Artemis Cluster</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../hands-on-lab-deploying-and-interacting-with-an-activemq-artemis-cluster/setting-up-the-openshift-environment-for-amq-deployment.html">Setting up the OpenShift environment for AMQ deployment</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../hands-on-lab-deploying-and-interacting-with-an-activemq-artemis-cluster/deploying-a-two-node-activemq-artemis-cluster-using-the-operator.html">Deploying a two-node ActiveMQ Artemis cluster using the Operator</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../hands-on-lab-deploying-and-interacting-with-an-activemq-artemis-cluster/developing-and-deploying-client-applications.html">Developing and deploying client applications</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../hands-on-lab-deploying-and-interacting-with-an-activemq-artemis-cluster/observing-message-distribution-and-cluster-behavior.html">Observing message distribution and cluster behavior</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../hands-on-lab-deploying-and-interacting-with-an-activemq-artemis-cluster/testing-failover-scenarios-and-ha-capabilities.html">Testing failover scenarios and HA capabilities</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+</ul>
+  </nav>
+</div>
+<div class="nav-panel-explore" data-panel="explore">
+  <div class="context">
+    <span class="title">ActiveMQ Artemis Clustering for High-Performance Messaging</span>
+    <span class="version">1.0.0</span>
+  </div>
+  <ul class="components">
+    <li class="component is-current">
+      <a class="title" href="../index.html">ActiveMQ Artemis Clustering for High-Performance Messaging</a>
+      <ul class="versions">
+        <li class="version is-current is-latest">
+          <a href="../index.html">1.0.0</a>
+        </li>
+      </ul>
+    </li>
+  </ul>
+</div>
+    </div>
+  </aside>
+</div>
+<main class="article">
+<div class="toolbar" role="navigation">
+<button class="nav-toggle"></button>
+  <a href="../index.html" class="home-link"></a>
+<nav class="breadcrumbs" aria-label="breadcrumbs">
+  <ul>
+    <li><a href="../index.html">ActiveMQ Artemis Clustering for High-Performance Messaging</a></li>
+    <li><a href="solutions-for-even-message-distribution.html">Solutions for Even Message Distribution</a></li>
+    <li><a href="strategies-for-client-side-load-balancing.html">Strategies for client-side load balancing</a></li>
+  </ul>
+</nav>
+</div>
+  <div class="content">
+<aside class="toc sidebar" data-title="Contents" data-levels="2">
+  <div class="toc-menu"></div>
+</aside>
+<article class="doc">
+<h1 class="page">Strategies for client-side load balancing</h1>
+<h1 id="_strategies_for_client_side_load_balancing" class="sect0"><a class="anchor" href="#_strategies_for_client_side_load_balancing"></a>Strategies for Client-Side Load Balancing</h1>
+<div class="paragraph">
+<p>ActiveMQ Artemis clusters provide powerful server-side capabilities for High Availability (HA) and message redistribution. Brokers are aware of each other and can intelligently route messages to nodes with matching consumers. However, relying solely on server-side redistribution, particularly in high-volume scenarios, can introduce significant overhead and reduce overall cluster throughput. This section explores strategies for client-side load balancing to ensure efficient and even distribution of messages directly from producers to cluster members, mitigating common bottlenecks.</p>
+</div>
+<div class="sect1">
+<h2 id="_detailed_technical_explanation"><a class="anchor" href="#_detailed_technical_explanation"></a>Detailed Technical Explanation</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>When a client application interacts with an ActiveMQ Artemis cluster, a common pitfall is establishing a single connection to a single broker instance. While the cluster can internally move messages between nodes if a producer connects to a broker without a matching consumer (configured via <code>redistribution-delay</code>), this process is resource-intensive. Messages must first arrive at one broker, then be streamed across the network to another, consuming network bandwidth and CPU cycles on both brokers. This reliance on message redistribution reduces overall cluster throughput and can force high-volume queues to page pending messages to disk, significantly impacting performance and latency.</p>
+</div>
+<div class="paragraph">
+<p>The goal of client-side load balancing is to distribute messages as close to the source as possible – at the producer client itself. Instead of sending all messages to a single broker and relying on the cluster to redistribute them, clients are configured to be aware of multiple brokers within the cluster. This allows the client application to distribute its outgoing messages across different cluster nodes directly, often using a round-robin or random distribution policy.</p>
+</div>
+<div class="paragraph">
+<p>Key benefits of implementing client-side load balancing include:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>Even Message Distribution</strong>: Messages are distributed uniformly across all active broker nodes, preventing any single node from becoming a bottleneck.</p>
+</li>
+<li>
+<p><strong>Increased Throughput</strong>: By bypassing server-side message redistribution, the overall throughput of the cluster is significantly enhanced, as brokers can focus on processing local messages rather than forwarding them.</p>
+</li>
+<li>
+<p><strong>Reduced Resource Contention</strong>: Less reliance on inter-broker message movement frees up CPU, memory, and network resources on the brokers.</p>
+</li>
+<li>
+<p><strong>Preventing Disk Paging</strong>: High-volume queues are less likely to accumulate large backlogs on a single broker, reducing the risk of messages being paged to disk.</p>
+</li>
+<li>
+<p><strong>Enhanced Scalability</strong>: Clients can seamlessly leverage the full capacity of a scaled-out cluster, contributing directly to horizontal scalability.</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>The core strategy involves configuring the client&#8217;s connection factory to include the network addresses of multiple brokers in the cluster. Modern messaging client libraries (like JMS, AMQP clients for ActiveMQ Artemis) are designed to interpret such configurations and implement internal load-balancing logic. When a client establishes a connection, it uses the provided list of broker URLs to intelligently select a broker for sending messages, thereby distributing the load.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_hands_on_activity_configuring_client_connection_factories_for_even_message_distribution"><a class="anchor" href="#_hands_on_activity_configuring_client_connection_factories_for_even_message_distribution"></a>Hands-on Activity: Configuring Client Connection Factories for Even Message Distribution</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>This activity demonstrates how to conceptually configure a client application to connect to multiple brokers in an ActiveMQ Artemis cluster, enabling client-side load balancing. While specific client code will vary based on the programming language and messaging protocol (e.g., JMS, AMQP), the underlying principle of providing multiple broker endpoints remains consistent.</p>
+</div>
+<div class="sect2">
+<h3 id="_objective"><a class="anchor" href="#_objective"></a>Objective</h3>
+<div class="paragraph">
+<p>Configure a client application&#8217;s connection factory to distribute messages across a two-node ActiveMQ Artemis cluster deployed on OpenShift.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_scenario"><a class="anchor" href="#_scenario"></a>Scenario</h3>
+<div class="paragraph">
+<p>You have deployed a two-node ActiveMQ Artemis cluster on OpenShift using the <code>ActiveMQArtemis</code> Custom Resource (CR). The brokers are exposed via a headless service, and their individual pod services are reachable. For a two-node cluster named <code>broker</code> in the <code>broker</code> namespace, the service endpoints would typically follow the pattern:
+*   <code>broker-ss-0.broker-hdls-svc.broker.svc.cluster.local</code>
+*   <code>broker-ss-1.broker-hdls-svc.broker.svc.cluster.local</code></p>
+</div>
+<div class="paragraph">
+<p>From the <code>ActiveMQArtemis</code> CR configuration, we know the acceptor port is <code>61617</code> and <code>sslEnabled: true</code>. This implies that connections should be made over SSL to port 61617.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_steps"><a class="anchor" href="#_steps"></a>Steps</h3>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p><strong>Identify Broker Endpoints</strong>:
+Based on the OpenShift deployment and the <code>ActiveMQArtemis</code> Custom Resource, determine the full connection URLs for each broker in your cluster. Given a two-node cluster named <code>broker</code> in the <code>broker</code> namespace, and the acceptor configuration (<code>port: 61617</code>, <code>sslEnabled: true</code>), the URLs would be:</p>
+<div class="ulist">
+<ul>
+<li>
+<p><code>ssl://broker-ss-0.broker-hdls-svc.broker.svc.cluster.local:61617</code></p>
+</li>
+<li>
+<p><code>ssl://broker-ss-1.broker-hdls-svc.broker.svc.cluster.local:61617</code></p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<p><strong>Configure the Client Connection Factory</strong>:
+In your client application, instead of providing a single broker URL, provide a comma-separated list of all known broker URLs to the connection factory. The client library will then handle the distribution logic.</p>
+<div class="literalblock">
+<div class="content">
+<pre>While the exact syntax varies, here's a conceptual example using a generic client configuration pattern:</pre>
+</div>
+</div>
+<div class="literalblock">
+<div class="content">
+<pre>```text
+// Conceptual Configuration for a Messaging Client (e.g., Java JMS, AMQP client)</pre>
+</div>
+</div>
+<div class="literalblock">
+<div class="content">
+<pre>// Define the full list of broker URLs for client-side load balancing
+String brokerUrls = "ssl://broker-ss-0.broker-hdls-svc.broker.svc.cluster.local:61617," +
+                    "ssl://broker-ss-1.broker-hdls-svc.broker.svc.cluster.local:61617";</pre>
+</div>
+</div>
+<div class="literalblock">
+<div class="content">
+<pre>// Initialize your connection factory with the list of URLs
+// (e.g., ActiveMQConnectionFactory in JMS, or AMQP ConnectionFactory)
+ConnectionFactory connectionFactory = new MyMessagingConnectionFactory(brokerUrls);</pre>
+</div>
+</div>
+<div class="literalblock">
+<div class="content">
+<pre>// Create a connection and session
+Connection connection = connectionFactory.createConnection();
+Session session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);</pre>
+</div>
+</div>
+<div class="literalblock">
+<div class="content">
+<pre>// Create a producer
+MessageProducer producer = session.createProducer(queueDestination);</pre>
+</div>
+</div>
+<div class="literalblock">
+<div class="content">
+<pre>// Messages sent by this producer will be load-balanced across the
+// brokers specified in brokerUrls.
+```</pre>
+</div>
+</div>
+</li>
+<li>
+<p><strong>Explanation of Client Behavior</strong>:
+When the client application creates a connection using this <code>connectionFactory</code>, the underlying messaging library will typically implement a client-side load-balancing policy. Common policies include:</p>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>Round-Robin</strong>: Each new connection or message is directed to the next broker in the list sequentially.</p>
+</li>
+<li>
+<p><strong>Random</strong>: A broker is chosen randomly from the list for each new connection or message.</p>
+</li>
+<li>
+<p><strong>Failover</strong>: The client will try to connect to the first broker, and if it fails, it will attempt the next one in the list, ensuring resilience. When combined with load balancing, it means it will balance <strong>and</strong> failover.</p>
+<div class="literalblock">
+<div class="content">
+<pre>By configuring `brokerUrls` with multiple endpoints, the client ensures that producers establish connections to different cluster members, or send messages to different members within existing connections, thereby distributing the load evenly and directly, rather than relying on the cluster's internal message redistribution mechanisms. This approach is crucial for optimizing client connectivity for high throughput and ensuring efficient utilization of your ActiveMQ Artemis cluster.</pre>
+</div>
+</div>
+</li>
+</ul>
+</div>
+</li>
+</ol>
+</div>
+</div>
+</div>
+</div>
+<nav class="pagination">
+  <span class="prev"><a href="solutions-for-even-message-distribution.html">Solutions for Even Message Distribution</a></span>
+  <span class="next"><a href="configuring-client-connection-factories-for-multiple-brokers.html">Configuring client connection factories for multiple brokers</a></span>
+</nav>
+</article>
+  </div>
+</main>
+</div>
+<footer class="footer">
+  <img src="../../../_/img/rhl-logo-red.png" height="40px" alt="Red Hat"  href="https://redhat.com" >
+</footer><script id="site-script" src="../../../_/js/site.js" data-ui-root-path="../../../_"></script>
+<script async src="../../../_/js/vendor/highlight.js"></script>
+  </body>
+</html>

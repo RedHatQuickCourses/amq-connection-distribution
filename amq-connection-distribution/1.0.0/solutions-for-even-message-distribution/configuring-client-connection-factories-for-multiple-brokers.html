@@ -1,0 +1,521 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Configuring client connection factories for multiple brokers :: ActiveMQ Artemis Clustering for High-Performance Messaging</title>
+    <link rel="prev" href="strategies-for-client-side-load-balancing.html">
+    <link rel="next" href="techniques-to-distribute-messages-evenly-across-cluster-members.html">
+    <meta name="generator" content="Antora 3.1.3">
+    <link rel="stylesheet" href="../../../_/css/site.css">
+    <script>var uiRootPath = '../../../_'</script>
+  </head>
+  <body class="article">
+<header class="header">
+  <nav class="navbar">
+    <div class="navbar-brand">
+      <a class="navbar-item" href="https://www.redhat.com" target="_blank"><img src="../../../_/img/redhat-logo.png" height="40px" alt="Red Hat"></a>
+      <a class="navbar-item" style="font-size: 24px; color: white" href="../../..">ActiveMQ Artemis Clustering for High-Performance Messaging</a>
+      <button class="navbar-burger" data-target="topbar-nav">
+        <span></span>
+        <span></span>
+        <span></span>
+      </button>
+    </div>
+    <div id="topbar-nav" class="navbar-menu">
+      <div class="navbar-end">
+        <a class="navbar-item" href="https://github.com/RedHatQuickCourses/REPLACEREPONAME/issues" target="_blank">Report Issues</a>
+      </div>
+    </div>
+  </nav>
+</header>
+<div class="body">
+<div class="nav-container" data-component="amq-connection-distribution" data-version="1.0.0">
+  <aside class="nav">
+    <div class="panels">
+<div class="nav-panel-menu is-active" data-panel="menu">
+  <nav class="nav-menu">
+    <h3 class="title"><a href="../index.html">ActiveMQ Artemis Clustering for High-Performance Messaging</a></h3>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="../index.html">Home</a>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../introduction-to-activemq-artemis/introduction-to-activemq-artemis.html">Introduction to ActiveMQ Artemis</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../introduction-to-activemq-artemis/understanding-message-oriented-middleware-mom.html">Understanding Message-Oriented Middleware (MOM)</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../introduction-to-activemq-artemis/core-features-and-benefits-of-activemq-artemis.html">Core features and benefits of ActiveMQ Artemis</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../introduction-to-activemq-artemis/decoupling-producers-and-consumers.html">Decoupling Producers and Consumers</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../introduction-to-activemq-artemis/asynchronous-communication-patterns.html">Asynchronous communication patterns</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../introduction-to-activemq-artemis/traffic-smoothing-and-competing-consumers.html">Traffic smoothing and competing consumers</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../client-side-challenges/client-side-challenges.html">Client-Side Challenges</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../client-side-challenges/bottlenecks-from-single-connection-to-a-single-broker.html">Bottlenecks from single connection to a single broker</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../client-side-challenges/impact-of-default-client-load-balancing-policies.html">Impact of default client load-balancing policies</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../client-side-challenges/reduced-cluster-throughput-due-to-message-redistribution.html">Reduced cluster throughput due to message redistribution</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../client-side-challenges/risk-of-high-volume-queues-paging-messages-to-disk.html">Risk of high-volume queues paging messages to disk</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../deploying-amq-on-openshift/deploying-amq-on-openshift.html">Deploying AMQ on OpenShift</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../deploying-amq-on-openshift/overview-of-red-hat-amq-operator.html">Overview of Red Hat AMQ Operator</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../deploying-amq-on-openshift/installing-the-amq-operator-on-openshift.html">Installing the AMQ Operator on OpenShift</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../deploying-amq-on-openshift/creating-an-activemqartemis-custom-resource-cr.html">Creating an ActiveMQArtemis Custom Resource (CR)</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../deploying-amq-on-openshift/configuring-a-two-node-activemq-artemis-cluster.html">Configuring a two-node ActiveMQ Artemis cluster</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../deploying-amq-on-openshift/exposing-broker-services-for-client-connections.html">Exposing broker services for client connections</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="solutions-for-even-message-distribution.html">Solutions for Even Message Distribution</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="strategies-for-client-side-load-balancing.html">Strategies for client-side load balancing</a>
+  </li>
+  <li class="nav-item is-current-page" data-depth="2">
+    <a class="nav-link" href="configuring-client-connection-factories-for-multiple-brokers.html">Configuring client connection factories for multiple brokers</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="techniques-to-distribute-messages-evenly-across-cluster-members.html">Techniques to distribute messages evenly across cluster members</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="optimizing-client-connectivity-for-high-throughput.html">Optimizing client connectivity for high throughput</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../hands-on-lab-deploying-and-interacting-with-an-activemq-artemis-cluster/hands-on-lab-deploying-and-interacting-with-an-activemq-artemis-cluster.html">Hands-on Lab: Deploying and Interacting with an ActiveMQ Artemis Cluster</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../hands-on-lab-deploying-and-interacting-with-an-activemq-artemis-cluster/setting-up-the-openshift-environment-for-amq-deployment.html">Setting up the OpenShift environment for AMQ deployment</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../hands-on-lab-deploying-and-interacting-with-an-activemq-artemis-cluster/deploying-a-two-node-activemq-artemis-cluster-using-the-operator.html">Deploying a two-node ActiveMQ Artemis cluster using the Operator</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../hands-on-lab-deploying-and-interacting-with-an-activemq-artemis-cluster/developing-and-deploying-client-applications.html">Developing and deploying client applications</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../hands-on-lab-deploying-and-interacting-with-an-activemq-artemis-cluster/observing-message-distribution-and-cluster-behavior.html">Observing message distribution and cluster behavior</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../hands-on-lab-deploying-and-interacting-with-an-activemq-artemis-cluster/testing-failover-scenarios-and-ha-capabilities.html">Testing failover scenarios and HA capabilities</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+</ul>
+  </nav>
+</div>
+<div class="nav-panel-explore" data-panel="explore">
+  <div class="context">
+    <span class="title">ActiveMQ Artemis Clustering for High-Performance Messaging</span>
+    <span class="version">1.0.0</span>
+  </div>
+  <ul class="components">
+    <li class="component is-current">
+      <a class="title" href="../index.html">ActiveMQ Artemis Clustering for High-Performance Messaging</a>
+      <ul class="versions">
+        <li class="version is-current is-latest">
+          <a href="../index.html">1.0.0</a>
+        </li>
+      </ul>
+    </li>
+  </ul>
+</div>
+    </div>
+  </aside>
+</div>
+<main class="article">
+<div class="toolbar" role="navigation">
+<button class="nav-toggle"></button>
+  <a href="../index.html" class="home-link"></a>
+<nav class="breadcrumbs" aria-label="breadcrumbs">
+  <ul>
+    <li><a href="../index.html">ActiveMQ Artemis Clustering for High-Performance Messaging</a></li>
+    <li><a href="solutions-for-even-message-distribution.html">Solutions for Even Message Distribution</a></li>
+    <li><a href="configuring-client-connection-factories-for-multiple-brokers.html">Configuring client connection factories for multiple brokers</a></li>
+  </ul>
+</nav>
+</div>
+  <div class="content">
+<aside class="toc sidebar" data-title="Contents" data-levels="2">
+  <div class="toc-menu"></div>
+</aside>
+<article class="doc">
+<h1 class="page">Configuring client connection factories for multiple brokers</h1>
+<h1 id="configuring-client-connection-factories-for-multiple-brokers" class="sect0"><a class="anchor" href="#configuring-client-connection-factories-for-multiple-brokers"></a>Configuring Client Connection Factories for Multiple Brokers</h1>
+<div class="paragraph">
+<p>To ensure efficient and balanced message distribution across an ActiveMQ Artemis cluster, especially in high-throughput scenarios, client applications must be configured to intelligently interact with multiple broker instances. Modern application frameworks often scale connections on demand, which can lead to connection disparity and uneven message distribution if not properly managed.</p>
+</div>
+<div class="sect1">
+<h2 id="_the_challenge_of_client_side_connection_disparity"><a class="anchor" href="#_the_challenge_of_client_side_connection_disparity"></a>The Challenge of Client-Side Connection Disparity</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>When an ActiveMQ Artemis cluster, for instance, a two-node cluster configured via an <code>ActiveMQArtemis</code> Custom Resource with <code>size: 2</code>, is deployed, each broker operates independently. While this provides high availability, clients connecting directly to these brokers without proper load-balancing mechanisms can inadvertently create an imbalance.</p>
+</div>
+<div class="paragraph">
+<p>As noted in the context, "Since the brokers generally handle the connection independently, it creates a connection disparity between the two nodes and by association, the same disparity leaks into consumers." This means some brokers might receive significantly more connections and messages than others, leading to bottlenecks and potential performance degradation on overloaded nodes. This issue is particularly pronounced with transient consumers or applications that frequently establish and tear down connections.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_solution_connection_pooling_with_jmspoolconnectionfactory"><a class="anchor" href="#_solution_connection_pooling_with_jmspoolconnectionfactory"></a>Solution: Connection Pooling with <code>JmsPoolConnectionFactory</code></h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>To overcome connection disparity and achieve even message distribution, it&#8217;s crucial to employ a robust connection pooling mechanism on the client side. The <code>JmsPoolConnectionFactory</code>, provided by the <code>pooled-jms</code> library from MessagingHub, is an effective solution for this. It wraps the underlying <code>ActiveMQConnectionFactory</code>, managing a pool of JMS connections and sessions to optimize resource usage and facilitate load balancing across multiple brokers.</p>
+</div>
+<div class="paragraph">
+<p>The key to using <code>JmsPoolConnectionFactory</code> effectively for cluster distribution lies in configuring it with an appropriate <code>maxConnections</code> value. This value should be set <strong>equal to or greater than the number of brokers in your cluster</strong>. This ensures that the pool can establish and manage connections to all available broker instances, allowing for more balanced distribution of client connections and, subsequently, messages.</p>
+</div>
+<div class="paragraph">
+<p>For example, if you have a two-node cluster, setting <code>poolConnectionFactory.setMaxConnections(2)</code> or higher is recommended. The provided context explicitly states, "//max connections should be set equal to or more than the number of brokers".</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_configuring_the_broker_urls_for_high_availability"><a class="anchor" href="#_configuring_the_broker_urls_for_high_availability"></a>Configuring the Broker URLs for High Availability</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>The <code>quarkus.artemis.url</code> property is used to specify the connection string for the ActiveMQ Artemis brokers. For a clustered setup, this URL should list all broker endpoints, separated by commas, and include parameters for high availability (HA) and client-side load balancing.</p>
+</div>
+<div class="paragraph">
+<p>For example, a typical configuration for a two-node cluster might look like this:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-properties hljs" data-lang="properties">quarkus.artemis.url=amqp://broker-0-svc-headless.amq-artemis.svc:61617,amqp://broker-1-svc-headless.amq-artemis.svc:61617?ha=true&amp;retryInterval=5000&amp;connectionLoadBalancingPolicy=RANDOM&amp;reconnectAttempts=3&amp;callTimeout=2000&amp;retryInterval=5000
+quarkus.artemis.username=admin
+quarkus.artemis.password=admin</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Here:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><code>amqp://broker-0-svc-headless.amq-artemis.svc:61617,amqp://broker-1-svc-headless.amq-artemis.svc:61617</code>: Specifies the addresses of the two broker services in the cluster.</p>
+</li>
+<li>
+<p><code>ha=true</code>: Enables high availability, allowing the client to failover to another broker if the primary connection is lost.</p>
+</li>
+<li>
+<p><code>connectionLoadBalancingPolicy=RANDOM</code>: Instructs the client to randomly select a broker from the list for new connections, promoting better distribution. Other policies like <code>ROUND_ROBIN</code> are also available depending on the ActiveMQ Artemis client version.</p>
+</li>
+<li>
+<p><code>reconnectAttempts</code>, <code>callTimeout</code>, <code>retryInterval</code>: These parameters define the client&#8217;s reconnection behavior and timeouts, crucial for maintaining connectivity in dynamic environments.</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_hands_on_activity_configuring_producer_connection_factory"><a class="anchor" href="#_hands_on_activity_configuring_producer_connection_factory"></a>Hands-on Activity: Configuring Producer Connection Factory</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>This section demonstrates how to configure a producer-specific <code>JmsPoolConnectionFactory</code> within a Quarkus application. This approach ensures that producers leverage connection pooling and distribute their load across the cluster effectively.</p>
+</div>
+<div class="paragraph">
+<div class="title">Prerequisites</div>
+<p>Ensure your Quarkus project includes the <code>pooled-jms</code> library dependency (e.g., <code>org.messaginghub:pooled-jms</code>).</p>
+</div>
+<div class="paragraph">
+<div class="title">Configure <code>quarkus.properties</code></div>
+<p>Add the following configuration to your <code>src/main/resources/application.properties</code> or a similar configuration file:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-properties hljs" data-lang="properties">quarkus.artemis.url=amqp://broker-0-svc-headless.amq-artemis.svc:61617,amqp://broker-1-svc-headless.amq-artemis.svc:61617?ha=true&amp;retryInterval=5000&amp;connectionLoadBalancingPolicy=RANDOM&amp;reconnectAttempts=3&amp;callTimeout=2000&amp;retryInterval=5000
+quarkus.artemis.username=admin
+quarkus.artemis.password=admin</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<div class="title">Create a Producer Connection Factory Configuration</div>
+<p>Implement a class, for example, <code>MyConfig</code>, to produce an <code>ActiveMQConnectionFactory</code> wrapped in a <code>JmsPoolConnectionFactory</code>. This factory will be specifically identified for producers using the <code>@Identifier("pcfProducer")</code> annotation, allowing for separate configuration from consumer connection factories.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-java hljs" data-lang="java">import io.smallrye.common.annotation.Identifier;
+import jakarta.enterprise.inject.Produces;
+import jakarta.inject.Singleton;
+import org.apache.activemq.artemis.jms.client.ActiveMQConnectionFactory;
+import org.eclipse.microprofile.config.inject.ConfigProperty;
+import org.messaginghub.pooled.jms.JmsPoolConnectionFactory;
+
+@Singleton
+public class MyConfig {
+
+    @ConfigProperty(name = "quarkus.artemis.url")
+    String url;
+
+    @ConfigProperty(name = "quarkus.artemis.username")
+    String username;
+
+    @ConfigProperty(name = "quarkus.artemis.password")
+    String password;
+
+    @Produces
+    @Identifier("pcfProducer") <i class="conum" data-value="1"></i><b>(1)</b>
+    public JmsPoolConnectionFactory createProducerJmsPoolConnectionFactory() {
+        // Instantiate the underlying ActiveMQConnectionFactory with cluster URLs
+        ActiveMQConnectionFactory activeMQConnectionFactory = new ActiveMQConnectionFactory(url, username, password);
+
+        // Wrap it in JmsPoolConnectionFactory for connection management
+        JmsPoolConnectionFactory poolConnectionFactory = new JmsPoolConnectionFactory();
+        poolConnectionFactory.setConnectionFactory(activeMQConnectionFactory);
+        poolConnectionFactory.setMaxConnections(5); <i class="conum" data-value="2"></i><b>(2)</b>
+        poolConnectionFactory.setMaxSessionsPerConnection(1); <i class="conum" data-value="3"></i><b>(3)</b>
+
+        return poolConnectionFactory;
+    }
+}</code></pre>
+</div>
+</div>
+<div class="colist arabic">
+<table>
+<tr>
+<td><i class="conum" data-value="1"></i><b>1</b></td>
+<td>The <code>@Identifier("pcfProducer")</code> annotation makes this specific <code>JmsPoolConnectionFactory</code> instance injectable by name for producer components, ensuring separation of concerns.</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="2"></i><b>2</b></td>
+<td><code>setMaxConnections(5)</code> explicitly configures the maximum number of connections the pool will manage. For a two-node cluster, a value of 2 or more is required to allow connections to both brokers. Setting it higher (e.g., 5) provides flexibility and can accommodate more concurrent operations across the cluster.</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="3"></i><b>3</b></td>
+<td><code>setMaxSessionsPerConnection(1)</code> configures each connection in the pool to provide a single session. This can be useful for controlling resource usage and managing session-level transaction boundaries.</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<div class="title">Injecting the Producer Connection Factory</div>
+<p>Producer components can now inject this specific connection factory using the <code>@Identifier</code> annotation:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-java hljs" data-lang="java">import io.quarkus.runtime.ShutdownEvent;
+import io.quarkus.runtime.StartupEvent;
+import io.smallrye.common.annotation.Identifier;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.event.Observes;
+import jakarta.inject.Inject;
+import org.messaginghub.pooled.jms.JmsPoolConnectionFactory;
+
+import java.util.Random;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
+
+@ApplicationScoped
+public class MyProducer {
+
+    @Inject
+    @Identifier("pcfProducer") <i class="conum" data-value="1"></i><b>(1)</b>
+    JmsPoolConnectionFactory producerConnectionFactory;
+
+    private final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
+
+    void onStart(@Observes StartupEvent ev) {
+        // Start a scheduled task to send messages
+        scheduler.scheduleWithFixedDelay(this::sendMessage, 0L, 5L, TimeUnit.SECONDS);
+    }
+
+    void onStop(@Observes ShutdownEvent ev) {
+        scheduler.shutdown();
+    }
+
+    private void sendMessage() {
+        try (jakarta.jms.Connection connection = producerConnectionFactory.createConnection();
+             jakarta.jms.Session session = connection.createSession(false, jakarta.jms.Session.AUTO_ACKNOWLEDGE)) {
+            connection.start();
+            jakarta.jms.Queue queue = session.createQueue("myQueue");
+            jakarta.jms.MessageProducer producer = session.createProducer(queue);
+            String messageText = "Hello from producer " + new Random().nextInt(10000);
+            jakarta.jms.TextMessage message = session.createTextMessage(messageText);
+            producer.send(message);
+            System.out.println("Sent message: " + messageText);
+        } catch (jakarta.jms.JMSException ex) {
+            System.err.println("Error sending message: " + ex.getMessage());
+            ex.printStackTrace();
+        }
+    }
+}</code></pre>
+</div>
+</div>
+<div class="colist arabic">
+<table>
+<tr>
+<td><i class="conum" data-value="1"></i><b>1</b></td>
+<td>The producer component explicitly requests the <code>JmsPoolConnectionFactory</code> identified as "pcfProducer", ensuring it uses the correctly configured pooled connection factory for optimal cluster interaction.</td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_configuring_consumer_connection_factory_for_even_distribution"><a class="anchor" href="#_configuring_consumer_connection_factory_for_even_distribution"></a>Configuring Consumer Connection Factory for Even Distribution</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Similar to producers, consumer applications should also utilize a <code>JmsPoolConnectionFactory</code>. The strategy for consumers is to create the same number of consumers as the <code>maxConnections</code> set in their connection factory, or at least a number sufficient to balance across brokers. This ensures that all connections (and associated consumers) are created alternately on both brokers, leading to an even distribution of message consumption across the cluster.</p>
+</div>
+<div class="paragraph">
+<p>This way, as stated in the context, "all the connections (and by association, the consumers) will be created alternately on both brokers."</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-java hljs" data-lang="java">import io.quarkus.runtime.ShutdownEvent;
+import io.quarkus.runtime.StartupEvent;
+import io.smallrye.common.annotation.Identifier;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.event.Observes;
+import jakarta.inject.Inject;
+import jakarta.jms.Connection;
+import jakarta.jms.MessageConsumer;
+import jakarta.jms.Queue;
+import jakarta.jms.Session;
+import jakarta.jms.TextMessage;
+import org.messaginghub.pooled.jms.JmsPoolConnectionFactory;
+
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+
+@ApplicationScoped
+public class Consumer {
+
+    @Inject
+    @Identifier("ccfConsumer") // &lt;1&gt; Assuming a separately configured consumer connection factory
+    JmsPoolConnectionFactory consumerConnectionFactory;
+
+    private ExecutorService consumerExecutor;
+
+    void onStart(@Observes StartupEvent ev) {
+        // Create multiple consumers to distribute load across broker connections
+        // The number of consumers should ideally match or exceed the number of brokers (or maxConnections)
+        int numberOfConsumers = consumerConnectionFactory.getMaxConnections(); <i class="conum" data-value="2"></i><b>(2)</b>
+        consumerExecutor = Executors.newFixedThreadPool(numberOfConsumers);
+
+        for (int i = 0; i &lt; numberOfConsumers; i++) {
+            final int consumerId = i;
+            consumerExecutor.submit(() -&gt; {
+                try (Connection connection = consumerConnectionFactory.createConnection();
+                     Session session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE)) {
+                    connection.start();
+                    Queue queue = session.createQueue("myQueue");
+                    MessageConsumer consumer = session.createConsumer(queue);
+
+                    System.out.println("Consumer " + consumerId + " started on broker: " + connection.getClientID());
+
+                    while (true) { // Keep consumer alive
+                        TextMessage message = (TextMessage) consumer.receive(5000); // Receive with timeout
+                        if (message != null) {
+                            System.out.println("Consumer " + consumerId + " received: " + message.getText());
+                        }
+                    }
+                } catch (Exception ex) {
+                    System.err.println("Consumer " + consumerId + " encountered an error: " + ex.getMessage());
+                    // Consider logging the full stack trace for debugging
+                }
+            });
+        }
+    }
+
+    void onStop(@Observes ShutdownEvent ev) {
+        if (consumerExecutor != null) {
+            consumerExecutor.shutdownNow(); // Attempt to stop consumers gracefully
+        }
+    }
+}</code></pre>
+</div>
+</div>
+<div class="colist arabic">
+<table>
+<tr>
+<td><i class="conum" data-value="1"></i><b>1</b></td>
+<td>A separate <code>@Identifier</code> (e.g., "ccfConsumer") is used to define and inject the consumer-specific pooled connection factory. This would typically be defined in <code>MyConfig</code> similar to <code>pcfProducer</code>.</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="2"></i><b>2</b></td>
+<td>By creating a number of consumer threads equal to <code>getMaxConnections()</code> of the pooled factory, the application actively attempts to establish connections to each available broker in the cluster, ensuring that messages are consumed evenly from all instances.</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>By implementing these configurations, client applications can effectively leverage ActiveMQ Artemis clustering, ensuring high performance, fault tolerance, and an even distribution of messaging load across all broker instances.</p>
+</div>
+</div>
+</div>
+<nav class="pagination">
+  <span class="prev"><a href="strategies-for-client-side-load-balancing.html">Strategies for client-side load balancing</a></span>
+  <span class="next"><a href="techniques-to-distribute-messages-evenly-across-cluster-members.html">Techniques to distribute messages evenly across cluster members</a></span>
+</nav>
+</article>
+  </div>
+</main>
+</div>
+<footer class="footer">
+  <img src="../../../_/img/rhl-logo-red.png" height="40px" alt="Red Hat"  href="https://redhat.com" >
+</footer><script id="site-script" src="../../../_/js/site.js" data-ui-root-path="../../../_"></script>
+<script async src="../../../_/js/vendor/highlight.js"></script>
+  </body>
+</html>
