@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Deploying AMQ Broker instances with console HTTPS security :: Advanced AMQ Broker Configuration and Security</title>
+    <link rel="prev" href="managing-bearer-tokens-and-direct-access-credentials.html">
+    <link rel="next" href="integrating-amq-monitoring-and-console-properties-with-keycloak.html">
+    <meta name="generator" content="Antora 3.1.3">
+    <link rel="stylesheet" href="../../../_/css/site.css">
+    <script>var uiRootPath = '../../../_'</script>
+  </head>
+  <body class="article">
+<header class="header">
+  <nav class="navbar">
+    <div class="navbar-brand">
+      <a class="navbar-item" href="https://www.redhat.com" target="_blank"><img src="../../../_/img/redhat-logo.png" height="40px" alt="Red Hat"></a>
+      <a class="navbar-item" style="font-size: 24px; color: white" href="../../..">Advanced AMQ Broker Configuration and Security</a>
+      <button class="navbar-burger" data-target="topbar-nav">
+        <span></span>
+        <span></span>
+        <span></span>
+      </button>
+    </div>
+    <div id="topbar-nav" class="navbar-menu">
+      <div class="navbar-end">
+        <a class="navbar-item" href="https://github.com/RedHatQuickCourses/REPLACEREPONAME/issues" target="_blank">Report Issues</a>
+      </div>
+    </div>
+  </nav>
+</header>
+<div class="body">
+<div class="nav-container" data-component="amq-connection-distribution" data-version="1.0.0">
+  <aside class="nav">
+    <div class="panels">
+<div class="nav-panel-menu is-active" data-panel="menu">
+  <nav class="nav-menu">
+    <h3 class="title"><a href="../index.html">Advanced AMQ Broker Configuration and Security</a></h3>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="../index.html">Home</a>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="amq-with-keycloak.html">AMQ with Keycloak</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="configuring-keycloak-jaas-authentication-secrets.html">Configuring Keycloak JAAS authentication secrets</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="managing-bearer-tokens-and-direct-access-credentials.html">Managing bearer tokens and direct access credentials</a>
+  </li>
+  <li class="nav-item is-current-page" data-depth="2">
+    <a class="nav-link" href="deploying-amq-broker-instances-with-console-https-security.html">Deploying AMQ Broker instances with console HTTPS security</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="integrating-amq-monitoring-and-console-properties-with-keycloak.html">Integrating AMQ monitoring and console properties with Keycloak</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../amq-mirroring/amq-mirroring.html">AMQ Mirroring</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../amq-mirroring/configuring-peer-broker-connectivity-for-disaster-recovery.html">Configuring peer-broker connectivity for disaster recovery</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../amq-mirroring/defining-amqp-connection-uris-and-retry-intervals.html">Defining AMQP connection URIs and retry intervals</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../amq-mirroring/implementing-mirror-type-and-message-acknowledgement-policies.html">Implementing mirror type and message acknowledgement policies</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../amq-mirroring/automating-queue-creation-via-broker-properties.html">Automating queue creation via broker properties</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../amq-jdbc-persistence/amq-jdbc-persistence.html">AMQ JDBC Persistence</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../amq-jdbc-persistence/setting-up-shared-store-namespaces.html">Setting up shared store namespaces</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../amq-jdbc-persistence/deploying-activemq-artemis-crs-for-clustered-environments.html">Deploying ActiveMQ Artemis CRs for clustered environments</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../amq-jdbc-persistence/configuring-storage-backend-connectivity-for-high-availability.html">Configuring storage backend connectivity for high availability</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../hands-on-lab/hands-on-lab.html">Hands-on Lab</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../hands-on-lab/creating-tls-secrets-for-secure-broker-communication.html">Creating TLS secrets for secure broker communication</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../hands-on-lab/deploying-a-multi-node-broker-cluster-with-keycloak-authentication.html">Deploying a multi-node broker cluster with Keycloak authentication</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../hands-on-lab/configuring-inter-broker-mirroring-for-multi-site-synchronization.html">Configuring inter-broker mirroring for multi-site synchronization</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+</ul>
+  </nav>
+</div>
+<div class="nav-panel-explore" data-panel="explore">
+  <div class="context">
+    <span class="title">Advanced AMQ Broker Configuration and Security</span>
+    <span class="version">1.0.0</span>
+  </div>
+  <ul class="components">
+    <li class="component is-current">
+      <a class="title" href="../index.html">Advanced AMQ Broker Configuration and Security</a>
+      <ul class="versions">
+        <li class="version is-current is-latest">
+          <a href="../index.html">1.0.0</a>
+        </li>
+      </ul>
+    </li>
+  </ul>
+</div>
+    </div>
+  </aside>
+</div>
+<main class="article">
+<div class="toolbar" role="navigation">
+<button class="nav-toggle"></button>
+  <a href="../index.html" class="home-link"></a>
+<nav class="breadcrumbs" aria-label="breadcrumbs">
+  <ul>
+    <li><a href="../index.html">Advanced AMQ Broker Configuration and Security</a></li>
+    <li><a href="amq-with-keycloak.html">AMQ with Keycloak</a></li>
+    <li><a href="deploying-amq-broker-instances-with-console-https-security.html">Deploying AMQ Broker instances with console HTTPS security</a></li>
+  </ul>
+</nav>
+</div>
+  <div class="content">
+<aside class="toc sidebar" data-title="Contents" data-levels="2">
+  <div class="toc-menu"></div>
+</aside>
+<article class="doc">
+<h1 class="page">Deploying AMQ Broker instances with console HTTPS security</h1>
+<h1 id="_deploying_amq_broker_instances_with_console_https_security" class="sect0"><a class="anchor" href="#_deploying_amq_broker_instances_with_console_https_security"></a>Deploying AMQ Broker Instances with Console HTTPS Security</h1>
+<div class="paragraph">
+<p>Securing the AMQ Broker management console is a critical requirement for enterprise environments. By default, access to the console should be restricted via TLS/HTTPS to ensure that management credentials and operational data are encrypted in transit.</p>
+</div>
+<div class="paragraph">
+<p>In a Kubernetes or OpenShift environment, this is achieved by leveraging TLS secrets that the AMQ Broker Operator mounts to provide identity and encryption for the web console.</p>
+</div>
+<div class="sect1">
+<h2 id="_prerequisites"><a class="anchor" href="#_prerequisites"></a>Prerequisites</h2>
+<div class="sectionbody">
+<div class="ulist">
+<ul>
+<li>
+<p>An active OpenShift/Kubernetes project (e.g., <code>amq</code>).</p>
+</li>
+<li>
+<p>The AMQ Broker Operator installed in the namespace.</p>
+</li>
+<li>
+<p>A valid TLS certificate and private key intended for the broker console.</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_creating_the_tls_secret"><a class="anchor" href="#_creating_the_tls_secret"></a>Creating the TLS Secret</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>The AMQ Broker Operator expects a standard Kubernetes secret containing the certificate (<code>tls.crt</code>) and private key (<code>tls.key</code>). This secret must be created in the same namespace where the broker will be deployed.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc create secret tls mytlssecret \
+  --cert=path/to/tls.crt \
+  --key=path/to/tls.key \
+  -n amq</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p><strong>Note: Ensure the secret name matches the name referenced in your <code>ActiveMQArtemis</code> custom resource (CR) specification.</strong></p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_configuring_the_activemqartemis_cr_for_https"><a class="anchor" href="#_configuring_the_activemqartemis_cr_for_https"></a>Configuring the ActiveMQArtemis CR for HTTPS</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>To enable HTTPS, you must reference the TLS secret within the <code>console</code> configuration block of your <code>ActiveMQArtemis</code> resource. This instructs the operator to mount the secret into the broker pod and configure the underlying web server to listen on the secure port.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">apiVersion: broker.amq.io/v1beta1
+kind: ActiveMQArtemis
+metadata:
+  name: ex-aao
+  namespace: amq
+spec:
+  console:
+    enabled: true
+    expose: true
+    sslSecret: mytlssecret <i class="conum" data-value="1"></i><b>(1)</b>
+  # ... remaining configuration (Keycloak, storage, etc)</code></pre>
+</div>
+</div>
+<div class="colist arabic">
+<table>
+<tr>
+<td><i class="conum" data-value="1"></i><b>1</b></td>
+<td>The <code>sslSecret</code> field links the operator to the TLS secret created in the previous step.</td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_verification_steps"><a class="anchor" href="#_verification_steps"></a>Verification Steps</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Once the CR is applied, the operator will trigger a rolling update of the broker pods. To verify that HTTPS is correctly configured:</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p><strong>Check Pod Status:</strong> Ensure the broker pods have reached the <code>Running</code> state.
+[source,bash]
+oc get pods -n amq</p>
+</li>
+<li>
+<p><strong>Verify Service Route:</strong> If you have exposed the console via a Route, check the configuration to ensure it points to the secure console port.
+[source,bash]
+oc get route -n amq</p>
+</li>
+<li>
+<p><strong>Validate HTTPS Access:</strong> Attempt to access the console using <code>https://</code>.
+[source,bash]
+# Use curl to verify the SSL handshake
+curl -I -k <a href="https://&lt;console-route-url&gt;/console/" class="bare">https://&lt;console-route-url&gt;/console/</a></p>
+</li>
+</ol>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_troubleshooting"><a class="anchor" href="#_troubleshooting"></a>Troubleshooting</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>If the console is not accessible over HTTPS:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>Secret Consistency:</strong> Verify that the secret <code>mytlssecret</code> contains valid data by running <code>oc describe secret mytlssecret -n amq</code>.</p>
+</li>
+<li>
+<p><strong>Operator Logs:</strong> Check the AMQ Broker Operator logs for errors related to secret mounting or certificate parsing:
+[source,bash]
+oc logs -l name=amq-broker-operator -n amq</p>
+</li>
+<li>
+<p><strong>Permissions:</strong> Ensure the service account used by the broker deployment has permission to read the secret if you are operating in a constrained RBAC environment.</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<nav class="pagination">
+  <span class="prev"><a href="managing-bearer-tokens-and-direct-access-credentials.html">Managing bearer tokens and direct access credentials</a></span>
+  <span class="next"><a href="integrating-amq-monitoring-and-console-properties-with-keycloak.html">Integrating AMQ monitoring and console properties with Keycloak</a></span>
+</nav>
+</article>
+  </div>
+</main>
+</div>
+<footer class="footer">
+  <img src="../../../_/img/rhl-logo-red.png" height="40px" alt="Red Hat"  href="https://redhat.com" >
+</footer><script id="site-script" src="../../../_/js/site.js" data-ui-root-path="../../../_"></script>
+<script async src="../../../_/js/vendor/highlight.js"></script>
+  </body>
+</html>

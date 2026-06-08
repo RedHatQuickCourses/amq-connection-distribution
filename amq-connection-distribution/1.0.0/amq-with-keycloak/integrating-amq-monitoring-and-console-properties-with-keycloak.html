@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Integrating AMQ monitoring and console properties with Keycloak :: Advanced AMQ Broker Configuration and Security</title>
+    <link rel="prev" href="deploying-amq-broker-instances-with-console-https-security.html">
+    <link rel="next" href="../amq-mirroring/amq-mirroring.html">
+    <meta name="generator" content="Antora 3.1.3">
+    <link rel="stylesheet" href="../../../_/css/site.css">
+    <script>var uiRootPath = '../../../_'</script>
+  </head>
+  <body class="article">
+<header class="header">
+  <nav class="navbar">
+    <div class="navbar-brand">
+      <a class="navbar-item" href="https://www.redhat.com" target="_blank"><img src="../../../_/img/redhat-logo.png" height="40px" alt="Red Hat"></a>
+      <a class="navbar-item" style="font-size: 24px; color: white" href="../../..">Advanced AMQ Broker Configuration and Security</a>
+      <button class="navbar-burger" data-target="topbar-nav">
+        <span></span>
+        <span></span>
+        <span></span>
+      </button>
+    </div>
+    <div id="topbar-nav" class="navbar-menu">
+      <div class="navbar-end">
+        <a class="navbar-item" href="https://github.com/RedHatQuickCourses/REPLACEREPONAME/issues" target="_blank">Report Issues</a>
+      </div>
+    </div>
+  </nav>
+</header>
+<div class="body">
+<div class="nav-container" data-component="amq-connection-distribution" data-version="1.0.0">
+  <aside class="nav">
+    <div class="panels">
+<div class="nav-panel-menu is-active" data-panel="menu">
+  <nav class="nav-menu">
+    <h3 class="title"><a href="../index.html">Advanced AMQ Broker Configuration and Security</a></h3>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="../index.html">Home</a>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="amq-with-keycloak.html">AMQ with Keycloak</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="configuring-keycloak-jaas-authentication-secrets.html">Configuring Keycloak JAAS authentication secrets</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="managing-bearer-tokens-and-direct-access-credentials.html">Managing bearer tokens and direct access credentials</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="deploying-amq-broker-instances-with-console-https-security.html">Deploying AMQ Broker instances with console HTTPS security</a>
+  </li>
+  <li class="nav-item is-current-page" data-depth="2">
+    <a class="nav-link" href="integrating-amq-monitoring-and-console-properties-with-keycloak.html">Integrating AMQ monitoring and console properties with Keycloak</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../amq-mirroring/amq-mirroring.html">AMQ Mirroring</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../amq-mirroring/configuring-peer-broker-connectivity-for-disaster-recovery.html">Configuring peer-broker connectivity for disaster recovery</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../amq-mirroring/defining-amqp-connection-uris-and-retry-intervals.html">Defining AMQP connection URIs and retry intervals</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../amq-mirroring/implementing-mirror-type-and-message-acknowledgement-policies.html">Implementing mirror type and message acknowledgement policies</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../amq-mirroring/automating-queue-creation-via-broker-properties.html">Automating queue creation via broker properties</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../amq-jdbc-persistence/amq-jdbc-persistence.html">AMQ JDBC Persistence</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../amq-jdbc-persistence/setting-up-shared-store-namespaces.html">Setting up shared store namespaces</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../amq-jdbc-persistence/deploying-activemq-artemis-crs-for-clustered-environments.html">Deploying ActiveMQ Artemis CRs for clustered environments</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../amq-jdbc-persistence/configuring-storage-backend-connectivity-for-high-availability.html">Configuring storage backend connectivity for high availability</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../hands-on-lab/hands-on-lab.html">Hands-on Lab</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../hands-on-lab/creating-tls-secrets-for-secure-broker-communication.html">Creating TLS secrets for secure broker communication</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../hands-on-lab/deploying-a-multi-node-broker-cluster-with-keycloak-authentication.html">Deploying a multi-node broker cluster with Keycloak authentication</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../hands-on-lab/configuring-inter-broker-mirroring-for-multi-site-synchronization.html">Configuring inter-broker mirroring for multi-site synchronization</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+</ul>
+  </nav>
+</div>
+<div class="nav-panel-explore" data-panel="explore">
+  <div class="context">
+    <span class="title">Advanced AMQ Broker Configuration and Security</span>
+    <span class="version">1.0.0</span>
+  </div>
+  <ul class="components">
+    <li class="component is-current">
+      <a class="title" href="../index.html">Advanced AMQ Broker Configuration and Security</a>
+      <ul class="versions">
+        <li class="version is-current is-latest">
+          <a href="../index.html">1.0.0</a>
+        </li>
+      </ul>
+    </li>
+  </ul>
+</div>
+    </div>
+  </aside>
+</div>
+<main class="article">
+<div class="toolbar" role="navigation">
+<button class="nav-toggle"></button>
+  <a href="../index.html" class="home-link"></a>
+<nav class="breadcrumbs" aria-label="breadcrumbs">
+  <ul>
+    <li><a href="../index.html">Advanced AMQ Broker Configuration and Security</a></li>
+    <li><a href="amq-with-keycloak.html">AMQ with Keycloak</a></li>
+    <li><a href="integrating-amq-monitoring-and-console-properties-with-keycloak.html">Integrating AMQ monitoring and console properties with Keycloak</a></li>
+  </ul>
+</nav>
+</div>
+  <div class="content">
+<aside class="toc sidebar" data-title="Contents" data-levels="2">
+  <div class="toc-menu"></div>
+</aside>
+<article class="doc">
+<h1 class="page">Integrating AMQ monitoring and console properties with Keycloak</h1>
+<h1 id="_integrating_amq_monitoring_and_console_properties_with_keycloak" class="sect0"><a class="anchor" href="#_integrating_amq_monitoring_and_console_properties_with_keycloak"></a>Integrating AMQ Monitoring and Console Properties with Keycloak</h1>
+<div class="paragraph">
+<p>In a production-grade AMQ Broker environment, securing the management console and monitoring endpoints is critical. By integrating AMQ Broker with Keycloak, you centralize authentication, offloading identity management to a dedicated OIDC (OpenID Connect) provider.</p>
+</div>
+<div class="sect1">
+<h2 id="_overview_of_console_and_monitoring_security"><a class="anchor" href="#_overview_of_console_and_monitoring_security"></a>Overview of Console and Monitoring Security</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>When deploying AMQ Broker on OpenShift, the <code>ActiveMQArtemis</code> custom resource (CR) defines how the broker exposes the management console and monitoring services. To integrate these with Keycloak, you must:</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p><strong>Map OIDC Roles:</strong> Ensure Keycloak defines roles that the AMQ Broker can map to its internal management roles (e.g., <code>admin</code>, <code>viewer</code>).</p>
+</li>
+<li>
+<p><strong>Configure Console Properties:</strong> Explicitly enable the console and monitoring features within the CR.</p>
+</li>
+<li>
+<p><strong>Reference Keycloak Secrets:</strong> Provide the broker with the necessary JAAS (Java Authentication and Authorization Service) configuration and bearer token settings to validate incoming requests.</p>
+</li>
+</ol>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_configuration_requirements"><a class="anchor" href="#_configuration_requirements"></a>Configuration Requirements</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>To link the broker console to Keycloak, your <code>ActiveMQArtemis</code> CR must include a <code>console</code> configuration block. This block references the secret created during your JAAS configuration setup (e.g., <code>keycloak-jaas-config</code>).</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">spec:
+  console:
+    enabled: true
+    rbac:
+      rbacEnabled: true
+      rolePrincipals:
+        - role: admin
+          principals:
+            - amq-admins # Group/Role from Keycloak
+    ssl:
+      enabled: true
+      secretName: mytlssecret # Required for HTTPS security
+  monitoring:
+    enabled: true
+    # Monitoring is secured via the same Keycloak provider</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_implementation_steps"><a class="anchor" href="#_implementation_steps"></a>Implementation Steps</h2>
+<div class="sectionbody">
+<div class="sect2">
+<h3 id="_1_define_the_keycloak_client"><a class="anchor" href="#_1_define_the_keycloak_client"></a>1. Define the Keycloak Client</h3>
+<div class="paragraph">
+<p>Ensure your Keycloak realm includes a client (e.g., <code>amq-console</code>) configured with the correct OIDC settings. This client must trust the AMQ Broker&#8217;s service account and be configured for "Direct Access" or "Bearer Token" authentication depending on your specific integration requirements.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_2_create_the_jaas_configuration"><a class="anchor" href="#_2_create_the_jaas_configuration"></a>2. Create the JAAS Configuration</h3>
+<div class="paragraph">
+<p>The <code>login.config</code> file used in your <code>keycloak-jaas-config</code> secret must include the <code>BearerTokenLoginModule</code>. This module intercepts the incoming console token, validates it against the Keycloak server, and maps the user&#8217;s groups to broker roles.</p>
+</div>
+<div class="listingblock">
+<div class="title">login.config snippet</div>
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-text hljs" data-lang="text">console {
+    org.keycloak.adapters.jaas.BearerTokenLoginModule sufficient
+        keycloak-config-file="/path/to/keycloak-js-client.json"
+        public-key="&lt;YOUR_KEYCLOAK_REALM_PUBLIC_KEY&gt;";
+};</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_3_deploying_with_security_properties"><a class="anchor" href="#_3_deploying_with_security_properties"></a>3. Deploying with Security Properties</h3>
+<div class="paragraph">
+<p>Once the secret is created and the CR is updated, apply the configuration to your OpenShift namespace.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># Ensure the secret is present before applying the CR
+oc create secret -n amq generic keycloak-jaas-config \
+  --from-file=login.config \
+  --from-file=_keycloak-js-client.json
+
+# Apply the updated broker deployment
+oc apply -n amq -f activemqartemis-ex-aao-rhbk.yaml</code></pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_troubleshooting_integration"><a class="anchor" href="#_troubleshooting_integration"></a>Troubleshooting Integration</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>If you are unable to access the console or metrics after deployment:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>Validate Secret Mounting:</strong> Ensure the <code>keycloak-jaas-config</code> secret is mounted in the <code>etc</code> directory of the broker pod. Use <code>oc describe pod &lt;broker-pod-name&gt;</code> to verify volume mounts.</p>
+</li>
+<li>
+<p><strong>HTTPS/TLS:</strong> Since the console is secured by <code>mytlssecret</code>, ensure your browser or monitoring tool trusts the CA that signed the certificate.</p>
+</li>
+<li>
+<p><strong>Logging:</strong> Check the broker logs for JAAS initialization errors:
+<code>oc logs -n amq &lt;broker-pod-name&gt; | grep -i "jaas"</code></p>
+</li>
+<li>
+<p><strong>Token Expiry:</strong> If users are disconnected frequently, verify the "Access Token Lifespan" in your Keycloak client configuration.</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<nav class="pagination">
+  <span class="prev"><a href="deploying-amq-broker-instances-with-console-https-security.html">Deploying AMQ Broker instances with console HTTPS security</a></span>
+  <span class="next"><a href="../amq-mirroring/amq-mirroring.html">AMQ Mirroring</a></span>
+</nav>
+</article>
+  </div>
+</main>
+</div>
+<footer class="footer">
+  <img src="../../../_/img/rhl-logo-red.png" height="40px" alt="Red Hat"  href="https://redhat.com" >
+</footer><script id="site-script" src="../../../_/js/site.js" data-ui-root-path="../../../_"></script>
+<script async src="../../../_/js/vendor/highlight.js"></script>
+  </body>
+</html>

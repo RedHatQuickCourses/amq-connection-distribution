@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Defining AMQP connection URIs and retry intervals :: Advanced AMQ Broker Configuration and Security</title>
+    <link rel="prev" href="configuring-peer-broker-connectivity-for-disaster-recovery.html">
+    <link rel="next" href="implementing-mirror-type-and-message-acknowledgement-policies.html">
+    <meta name="generator" content="Antora 3.1.3">
+    <link rel="stylesheet" href="../../../_/css/site.css">
+    <script>var uiRootPath = '../../../_'</script>
+  </head>
+  <body class="article">
+<header class="header">
+  <nav class="navbar">
+    <div class="navbar-brand">
+      <a class="navbar-item" href="https://www.redhat.com" target="_blank"><img src="../../../_/img/redhat-logo.png" height="40px" alt="Red Hat"></a>
+      <a class="navbar-item" style="font-size: 24px; color: white" href="../../..">Advanced AMQ Broker Configuration and Security</a>
+      <button class="navbar-burger" data-target="topbar-nav">
+        <span></span>
+        <span></span>
+        <span></span>
+      </button>
+    </div>
+    <div id="topbar-nav" class="navbar-menu">
+      <div class="navbar-end">
+        <a class="navbar-item" href="https://github.com/RedHatQuickCourses/REPLACEREPONAME/issues" target="_blank">Report Issues</a>
+      </div>
+    </div>
+  </nav>
+</header>
+<div class="body">
+<div class="nav-container" data-component="amq-connection-distribution" data-version="1.0.0">
+  <aside class="nav">
+    <div class="panels">
+<div class="nav-panel-menu is-active" data-panel="menu">
+  <nav class="nav-menu">
+    <h3 class="title"><a href="../index.html">Advanced AMQ Broker Configuration and Security</a></h3>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="../index.html">Home</a>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../amq-with-keycloak/amq-with-keycloak.html">AMQ with Keycloak</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../amq-with-keycloak/configuring-keycloak-jaas-authentication-secrets.html">Configuring Keycloak JAAS authentication secrets</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../amq-with-keycloak/managing-bearer-tokens-and-direct-access-credentials.html">Managing bearer tokens and direct access credentials</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../amq-with-keycloak/deploying-amq-broker-instances-with-console-https-security.html">Deploying AMQ Broker instances with console HTTPS security</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../amq-with-keycloak/integrating-amq-monitoring-and-console-properties-with-keycloak.html">Integrating AMQ monitoring and console properties with Keycloak</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="amq-mirroring.html">AMQ Mirroring</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="configuring-peer-broker-connectivity-for-disaster-recovery.html">Configuring peer-broker connectivity for disaster recovery</a>
+  </li>
+  <li class="nav-item is-current-page" data-depth="2">
+    <a class="nav-link" href="defining-amqp-connection-uris-and-retry-intervals.html">Defining AMQP connection URIs and retry intervals</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="implementing-mirror-type-and-message-acknowledgement-policies.html">Implementing mirror type and message acknowledgement policies</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="automating-queue-creation-via-broker-properties.html">Automating queue creation via broker properties</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../amq-jdbc-persistence/amq-jdbc-persistence.html">AMQ JDBC Persistence</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../amq-jdbc-persistence/setting-up-shared-store-namespaces.html">Setting up shared store namespaces</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../amq-jdbc-persistence/deploying-activemq-artemis-crs-for-clustered-environments.html">Deploying ActiveMQ Artemis CRs for clustered environments</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../amq-jdbc-persistence/configuring-storage-backend-connectivity-for-high-availability.html">Configuring storage backend connectivity for high availability</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../hands-on-lab/hands-on-lab.html">Hands-on Lab</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../hands-on-lab/creating-tls-secrets-for-secure-broker-communication.html">Creating TLS secrets for secure broker communication</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../hands-on-lab/deploying-a-multi-node-broker-cluster-with-keycloak-authentication.html">Deploying a multi-node broker cluster with Keycloak authentication</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../hands-on-lab/configuring-inter-broker-mirroring-for-multi-site-synchronization.html">Configuring inter-broker mirroring for multi-site synchronization</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+</ul>
+  </nav>
+</div>
+<div class="nav-panel-explore" data-panel="explore">
+  <div class="context">
+    <span class="title">Advanced AMQ Broker Configuration and Security</span>
+    <span class="version">1.0.0</span>
+  </div>
+  <ul class="components">
+    <li class="component is-current">
+      <a class="title" href="../index.html">Advanced AMQ Broker Configuration and Security</a>
+      <ul class="versions">
+        <li class="version is-current is-latest">
+          <a href="../index.html">1.0.0</a>
+        </li>
+      </ul>
+    </li>
+  </ul>
+</div>
+    </div>
+  </aside>
+</div>
+<main class="article">
+<div class="toolbar" role="navigation">
+<button class="nav-toggle"></button>
+  <a href="../index.html" class="home-link"></a>
+<nav class="breadcrumbs" aria-label="breadcrumbs">
+  <ul>
+    <li><a href="../index.html">Advanced AMQ Broker Configuration and Security</a></li>
+    <li><a href="amq-mirroring.html">AMQ Mirroring</a></li>
+    <li><a href="defining-amqp-connection-uris-and-retry-intervals.html">Defining AMQP connection URIs and retry intervals</a></li>
+  </ul>
+</nav>
+</div>
+  <div class="content">
+<aside class="toc sidebar" data-title="Contents" data-levels="2">
+  <div class="toc-menu"></div>
+</aside>
+<article class="doc">
+<h1 class="page">Defining AMQP connection URIs and retry intervals</h1>
+<h1 id="_defining_amqp_connection_uris_and_retry_intervals" class="sect0"><a class="anchor" href="#_defining_amqp_connection_uris_and_retry_intervals"></a>Defining AMQP Connection URIs and Retry Intervals</h1>
+<div class="paragraph">
+<p>To establish robust inter-broker communication for mirroring and disaster recovery, AMQ Broker uses AMQP connection strings. These URIs define how the source broker interacts with the target peer, including security parameters, retry behavior, and mirroring policies.</p>
+</div>
+<div class="sect1">
+<h2 id="_understanding_amqp_connection_uris"><a class="anchor" href="#_understanding_amqp_connection_uris"></a>Understanding AMQP Connection URIs</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>The AMQP connection URI is a key-value string provided within the <code>ActiveMQArtemis</code> custom resource (CR). It dictates the transport layer, authentication, and the specific mirroring configuration required to synchronize state between brokers.</p>
+</div>
+<div class="paragraph">
+<p>A standard URI structure follows this pattern:
+<code>tcp://&lt;host&gt;:&lt;port&gt;?&lt;options&gt;</code></p>
+</div>
+<div class="sect2">
+<h3 id="_key_uri_components"><a class="anchor" href="#_key_uri_components"></a>Key URI Components</h3>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>Transport Protocol:</strong> Generally defined as <code>tcp</code> for broker-to-broker communication.</p>
+</li>
+<li>
+<p><strong>SSL/TLS Configuration:</strong> For secure communication, <code>sslEnabled=true</code> must be set. You must also define the path to the <code>trustStore</code> and provide the corresponding password to ensure the broker trusts the peer’s certificate.</p>
+</li>
+<li>
+<p><strong>Host Verification:</strong> In many development or internal cluster environments, you may set <code>verifyHost=false</code> if the certificate common name (CN) does not strictly match the service URI, though this should be carefully evaluated for production security.</p>
+</li>
+<li>
+<p><strong>Credentials:</strong> While the connection uses the <code>AMQPConnections.&lt;name&gt;.user</code> and <code>password</code> fields in the CR, the URI ensures the connection is established to the correct destination with the required protocol handshake.</p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_example_uri_configuration"><a class="anchor" href="#_example_uri_configuration"></a>Example URI Configuration</h3>
+<div class="paragraph">
+<p>For a mirrored connection, the URI is configured as part of the <code>brokerProperties</code> in your CR:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-properties hljs" data-lang="properties">AMQPConnections.dr.uri=tcp://broker-dr-amqp-${STATEFUL_SET_ORDINAL}-svc-dr.apps.example.com:443?sslEnabled=true;trustStorePath=/amq/extra/secrets/mytlssecret/client.ts;trustStorePassword=password;verifyHost=false</code></pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_configuring_retry_intervals"><a class="anchor" href="#_configuring_retry_intervals"></a>Configuring Retry Intervals</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>The <code>retryInterval</code> is a critical parameter for high availability. It defines the time (in milliseconds) the source broker will wait before attempting to reconnect to the target broker if a connection is dropped or becomes unreachable.</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>Setting:</strong> <code>AMQPConnections.&lt;name&gt;.retryInterval</code></p>
+</li>
+<li>
+<p><strong>Recommendation:</strong> A standard value is <code>5000</code> (5 seconds).</p>
+</li>
+<li>
+<p><strong>Impact:</strong> If the network experiences instability or the peer broker undergoes a rolling restart, the retry interval ensures the mirroring process self-heals without manual intervention.</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_practical_implementation_defining_mirroring_properties"><a class="anchor" href="#_practical_implementation_defining_mirroring_properties"></a>Practical Implementation: Defining Mirroring Properties</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>When configuring mirroring in your <code>ActiveMQArtemis</code> CR, you must combine the URI, the retry interval, and the mirror-specific elements.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">brokerProperties:
+  - AMQPConnections.dr.uri=tcp://broker-dr-amqp-${STATEFUL_SET_ORDINAL}-svc-dr.apps.example.com:443?sslEnabled=true;trustStorePath=/amq/extra/secrets/mytlssecret/client.ts;trustStorePassword=password;verifyHost=false
+  - AMQPConnections.dr.retryInterval=5000
+  - AMQPConnections.dr.user=admin
+  - AMQPConnections.dr.password=admin
+  - AMQPConnections.dr.connectionElements.mirror.type=MIRROR
+  - AMQPConnections.dr.connectionElements.mirror.messageAcknowledgements=true
+  - AMQPConnections.dr.connectionElements.mirror.queueCreation=true
+  - AMQPConnections.dr.connectionElements.mirror.queueRemoval=true</code></pre>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_key_considerations_for_connectivity"><a class="anchor" href="#_key_considerations_for_connectivity"></a>Key Considerations for Connectivity</h3>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p><strong>Ordinal Expansion:</strong> The use of <code>${STATEFUL_SET_ORDINAL}</code> in the URI allows the broker to dynamically resolve the correct member of the target StatefulSet, which is essential for scaling clusters.</p>
+</li>
+<li>
+<p><strong>Mirroring Logic:</strong> By setting <code>queueCreation=true</code> and <code>queueRemoval=true</code>, you automate the management of the address space across your DR site, ensuring that the target broker mirrors the configuration of the primary source.</p>
+</li>
+<li>
+<p><strong>Acknowledgement:</strong> Setting <code>messageAcknowledgements=true</code> ensures that the primary broker receives confirmation that the message has reached the target, providing the transactional integrity required for effective disaster recovery.</p>
+</li>
+</ol>
+</div>
+</div>
+</div>
+</div>
+<nav class="pagination">
+  <span class="prev"><a href="configuring-peer-broker-connectivity-for-disaster-recovery.html">Configuring peer-broker connectivity for disaster recovery</a></span>
+  <span class="next"><a href="implementing-mirror-type-and-message-acknowledgement-policies.html">Implementing mirror type and message acknowledgement policies</a></span>
+</nav>
+</article>
+  </div>
+</main>
+</div>
+<footer class="footer">
+  <img src="../../../_/img/rhl-logo-red.png" height="40px" alt="Red Hat"  href="https://redhat.com" >
+</footer><script id="site-script" src="../../../_/js/site.js" data-ui-root-path="../../../_"></script>
+<script async src="../../../_/js/vendor/highlight.js"></script>
+  </body>
+</html>

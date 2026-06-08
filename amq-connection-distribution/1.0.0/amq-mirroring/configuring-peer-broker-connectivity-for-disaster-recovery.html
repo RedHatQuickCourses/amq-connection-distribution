@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Configuring peer-broker connectivity for disaster recovery :: Advanced AMQ Broker Configuration and Security</title>
+    <link rel="prev" href="amq-mirroring.html">
+    <link rel="next" href="defining-amqp-connection-uris-and-retry-intervals.html">
+    <meta name="generator" content="Antora 3.1.3">
+    <link rel="stylesheet" href="../../../_/css/site.css">
+    <script>var uiRootPath = '../../../_'</script>
+  </head>
+  <body class="article">
+<header class="header">
+  <nav class="navbar">
+    <div class="navbar-brand">
+      <a class="navbar-item" href="https://www.redhat.com" target="_blank"><img src="../../../_/img/redhat-logo.png" height="40px" alt="Red Hat"></a>
+      <a class="navbar-item" style="font-size: 24px; color: white" href="../../..">Advanced AMQ Broker Configuration and Security</a>
+      <button class="navbar-burger" data-target="topbar-nav">
+        <span></span>
+        <span></span>
+        <span></span>
+      </button>
+    </div>
+    <div id="topbar-nav" class="navbar-menu">
+      <div class="navbar-end">
+        <a class="navbar-item" href="https://github.com/RedHatQuickCourses/REPLACEREPONAME/issues" target="_blank">Report Issues</a>
+      </div>
+    </div>
+  </nav>
+</header>
+<div class="body">
+<div class="nav-container" data-component="amq-connection-distribution" data-version="1.0.0">
+  <aside class="nav">
+    <div class="panels">
+<div class="nav-panel-menu is-active" data-panel="menu">
+  <nav class="nav-menu">
+    <h3 class="title"><a href="../index.html">Advanced AMQ Broker Configuration and Security</a></h3>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="../index.html">Home</a>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../amq-with-keycloak/amq-with-keycloak.html">AMQ with Keycloak</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../amq-with-keycloak/configuring-keycloak-jaas-authentication-secrets.html">Configuring Keycloak JAAS authentication secrets</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../amq-with-keycloak/managing-bearer-tokens-and-direct-access-credentials.html">Managing bearer tokens and direct access credentials</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../amq-with-keycloak/deploying-amq-broker-instances-with-console-https-security.html">Deploying AMQ Broker instances with console HTTPS security</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../amq-with-keycloak/integrating-amq-monitoring-and-console-properties-with-keycloak.html">Integrating AMQ monitoring and console properties with Keycloak</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="amq-mirroring.html">AMQ Mirroring</a>
+<ul class="nav-list">
+  <li class="nav-item is-current-page" data-depth="2">
+    <a class="nav-link" href="configuring-peer-broker-connectivity-for-disaster-recovery.html">Configuring peer-broker connectivity for disaster recovery</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="defining-amqp-connection-uris-and-retry-intervals.html">Defining AMQP connection URIs and retry intervals</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="implementing-mirror-type-and-message-acknowledgement-policies.html">Implementing mirror type and message acknowledgement policies</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="automating-queue-creation-via-broker-properties.html">Automating queue creation via broker properties</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../amq-jdbc-persistence/amq-jdbc-persistence.html">AMQ JDBC Persistence</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../amq-jdbc-persistence/setting-up-shared-store-namespaces.html">Setting up shared store namespaces</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../amq-jdbc-persistence/deploying-activemq-artemis-crs-for-clustered-environments.html">Deploying ActiveMQ Artemis CRs for clustered environments</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../amq-jdbc-persistence/configuring-storage-backend-connectivity-for-high-availability.html">Configuring storage backend connectivity for high availability</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../hands-on-lab/hands-on-lab.html">Hands-on Lab</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../hands-on-lab/creating-tls-secrets-for-secure-broker-communication.html">Creating TLS secrets for secure broker communication</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../hands-on-lab/deploying-a-multi-node-broker-cluster-with-keycloak-authentication.html">Deploying a multi-node broker cluster with Keycloak authentication</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../hands-on-lab/configuring-inter-broker-mirroring-for-multi-site-synchronization.html">Configuring inter-broker mirroring for multi-site synchronization</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+</ul>
+  </nav>
+</div>
+<div class="nav-panel-explore" data-panel="explore">
+  <div class="context">
+    <span class="title">Advanced AMQ Broker Configuration and Security</span>
+    <span class="version">1.0.0</span>
+  </div>
+  <ul class="components">
+    <li class="component is-current">
+      <a class="title" href="../index.html">Advanced AMQ Broker Configuration and Security</a>
+      <ul class="versions">
+        <li class="version is-current is-latest">
+          <a href="../index.html">1.0.0</a>
+        </li>
+      </ul>
+    </li>
+  </ul>
+</div>
+    </div>
+  </aside>
+</div>
+<main class="article">
+<div class="toolbar" role="navigation">
+<button class="nav-toggle"></button>
+  <a href="../index.html" class="home-link"></a>
+<nav class="breadcrumbs" aria-label="breadcrumbs">
+  <ul>
+    <li><a href="../index.html">Advanced AMQ Broker Configuration and Security</a></li>
+    <li><a href="amq-mirroring.html">AMQ Mirroring</a></li>
+    <li><a href="configuring-peer-broker-connectivity-for-disaster-recovery.html">Configuring peer-broker connectivity for disaster recovery</a></li>
+  </ul>
+</nav>
+</div>
+  <div class="content">
+<aside class="toc sidebar" data-title="Contents" data-levels="2">
+  <div class="toc-menu"></div>
+</aside>
+<article class="doc">
+<h1 class="page">Configuring peer-broker connectivity for disaster recovery</h1>
+<h1 id="_configuring_peer_broker_connectivity_for_disaster_recovery" class="sect0"><a class="anchor" href="#_configuring_peer_broker_connectivity_for_disaster_recovery"></a>Configuring Peer-Broker Connectivity for Disaster Recovery</h1>
+<div class="paragraph">
+<p>In a disaster recovery (DR) scenario, ensuring high availability and message consistency across geographically separate or logically isolated broker environments is critical. AMQ Broker achieves this through <strong>Mirroring</strong>, a mechanism that asynchronously replicates messages from a source broker (production) to a destination broker (DR site).</p>
+</div>
+<div class="sect1">
+<h2 id="_understanding_mirroring_architecture"><a class="anchor" href="#_understanding_mirroring_architecture"></a>Understanding Mirroring Architecture</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Mirroring establishes a persistent connection between a local broker and a remote peer. By leveraging AMQP as the underlying protocol, the source broker treats the remote peer as a target for message replication.</p>
+</div>
+<div class="paragraph">
+<p>Key architectural components include:
+* <strong>AMQP Connection URIs</strong>: Define the endpoint for the remote peer.
+* <strong>Retry Intervals</strong>: Ensure the system automatically recovers connectivity after transient network failures.
+* <strong>Mirroring Policies</strong>: Govern how queues are created, removed, and acknowledged during the replication process.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_configuring_connectivity_for_disaster_recovery"><a class="anchor" href="#_configuring_connectivity_for_disaster_recovery"></a>Configuring Connectivity for Disaster Recovery</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>To configure peer-broker connectivity, you modify the <code>ActiveMQArtemis</code> Custom Resource (CR). The configuration requires specifying the connection details for the DR cluster within the <code>brokerProperties</code> or the dedicated mirroring configuration section.</p>
+</div>
+<div class="sect2">
+<h3 id="_using_statefulset_ordinals_for_scalable_mirroring"><a class="anchor" href="#_using_statefulset_ordinals_for_scalable_mirroring"></a>Using StatefulSet Ordinals for Scalable Mirroring</h3>
+<div class="paragraph">
+<p>When deploying across Kubernetes clusters, it is best practice to use <code>${STATEFUL_SET_ORDINAL}</code>. This environment variable provides sequential identities for pod replicas, allowing each instance to map to a specific peer endpoint, which is essential for multi-node clusters.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml"># Example snippet for AMQP connection strings in brokerProperties
+- AMQPConnections.dr.uri=tcp://broker-dr-broker-all-${STATEFUL_SET_ORDINAL}-svc.dr.svc.cluster.local:61616
+- AMQPConnections.dr.retryInterval=5000
+- AMQPConnections.dr.user=admin
+- AMQPConnections.dr.password=admin
+- AMQPConnections.dr.connectionElements.mirror.type=MIRROR
+- AMQPConnections.dr.connectionElements.mirror.messageAcknowledgements=true
+- AMQPConnections.dr.connectionElements.mirror.queueCreation=true
+- AMQPConnections.dr.connectionElements.mirror.queueRemoval=true</code></pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_hands_on_activity_establishing_peer_connectivity"><a class="anchor" href="#_hands_on_activity_establishing_peer_connectivity"></a>Hands-on Activity: Establishing Peer Connectivity</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>This lab demonstrates how to configure the production broker to mirror traffic to a designated DR environment.</p>
+</div>
+<div class="sect2">
+<h3 id="_step_1_define_the_dr_broker_acceptors"><a class="anchor" href="#_step_1_define_the_dr_broker_acceptors"></a>Step 1: Define the DR Broker Acceptors</h3>
+<div class="paragraph">
+<p>Before the production broker can connect, the DR broker must have an acceptor configured to receive incoming AMQP traffic.</p>
+</div>
+<div class="paragraph">
+<p>Apply the following configuration to the <code>dr</code> namespace:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">spec:
+  acceptors:
+  - expose: true
+    name: all
+    port: 61616
+    protocols: all
+    sslEnabled: false
+  - expose: true
+    name: amqp
+    port: 5672
+    protocols: amqp
+    sslEnabled: false</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_step_2_configure_mirroring_on_the_production_broker"><a class="anchor" href="#_step_2_configure_mirroring_on_the_production_broker"></a>Step 2: Configure Mirroring on the Production Broker</h3>
+<div class="paragraph">
+<p>Update the production <code>ActiveMQArtemis</code> CR to point to the DR broker.</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>Locate your production broker CR.</p>
+</li>
+<li>
+<p>Add the <code>brokerProperties</code> to include the <code>AMQPConnections</code> configuration shown in the section above.</p>
+</li>
+<li>
+<p>Apply the changes using <code>oc apply -f &lt;broker-cr.yaml&gt;</code>.</p>
+</li>
+</ol>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_step_3_verifying_connectivity"><a class="anchor" href="#_step_3_verifying_connectivity"></a>Step 3: Verifying Connectivity</h3>
+<div class="paragraph">
+<p>Once applied, verify that the connection is active by checking the broker logs:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># Replace with your production pod name
+oc logs broker-prod-ss-0 | grep -i "mirror"</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_step_4_testing_message_synchronization"><a class="anchor" href="#_step_4_testing_message_synchronization"></a>Step 4: Testing Message Synchronization</h3>
+<div class="paragraph">
+<p>To ensure messages are replicated, create a queue on the production broker and produce messages before establishing the final sync, or verify real-time replication:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># Produce messages to the production broker
+export POD=broker-prod-ss-0
+oc exec -i $POD -- /home/jboss/amq-broker/bin/artemis producer \
+  --acceptor all --destination queue://A \
+  --user admin --password admin \
+  --message-count 3 --message "DR-Sync-Test"</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Verify that the messages appear on the DR broker instance by inspecting the management console or using the consumer CLI tool pointed at the DR broker endpoint.</p>
+</div>
+</div>
+</div>
+</div>
+<nav class="pagination">
+  <span class="prev"><a href="amq-mirroring.html">AMQ Mirroring</a></span>
+  <span class="next"><a href="defining-amqp-connection-uris-and-retry-intervals.html">Defining AMQP connection URIs and retry intervals</a></span>
+</nav>
+</article>
+  </div>
+</main>
+</div>
+<footer class="footer">
+  <img src="../../../_/img/rhl-logo-red.png" height="40px" alt="Red Hat"  href="https://redhat.com" >
+</footer><script id="site-script" src="../../../_/js/site.js" data-ui-root-path="../../../_"></script>
+<script async src="../../../_/js/vendor/highlight.js"></script>
+  </body>
+</html>
