@@ -1,0 +1,90 @@
+#  Configuring peer-broker connectivity for disaster recovery
+
+= Configuring Peer-Broker Connectivity for Disaster Recovery
+
+In a disaster recovery (DR) scenario, ensuring high availability and message consistency across geographically separate or logically isolated broker environments is critical. AMQ Broker achieves this through **Mirroring**, a mechanism that asynchronously replicates messages from a source broker (production) to a destination broker (DR site).
+
+== Understanding Mirroring Architecture
+
+Mirroring establishes a persistent connection between a local broker and a remote peer. By leveraging AMQP as the underlying protocol, the source broker treats the remote peer as a target for message replication. 
+
+Key architectural components include:
+* **AMQP Connection URIs**: Define the endpoint for the remote peer.
+* **Retry Intervals**: Ensure the system automatically recovers connectivity after transient network failures.
+* **Mirroring Policies**: Govern how queues are created, removed, and acknowledged during the replication process.
+
+== Configuring Connectivity for Disaster Recovery
+
+To configure peer-broker connectivity, you modify the `ActiveMQArtemis` Custom Resource (CR). The configuration requires specifying the connection details for the DR cluster within the `brokerProperties` or the dedicated mirroring configuration section.
+
+### Using StatefulSet Ordinals for Scalable Mirroring
+When deploying across Kubernetes clusters, it is best practice to use `${STATEFUL_SET_ORDINAL}`. This environment variable provides sequential identities for pod replicas, allowing each instance to map to a specific peer endpoint, which is essential for multi-node clusters.
+
+[source,yaml]
+----
+# Example snippet for AMQP connection strings in brokerProperties
+- AMQPConnections.dr.uri=tcp://broker-dr-broker-all-${STATEFUL_SET_ORDINAL}-svc.dr.svc.cluster.local:61616
+- AMQPConnections.dr.retryInterval=5000
+- AMQPConnections.dr.user=admin
+- AMQPConnections.dr.password=admin
+- AMQPConnections.dr.connectionElements.mirror.type=MIRROR
+- AMQPConnections.dr.connectionElements.mirror.messageAcknowledgements=true
+- AMQPConnections.dr.connectionElements.mirror.queueCreation=true
+- AMQPConnections.dr.connectionElements.mirror.queueRemoval=true
+----
+
+== Hands-on Activity: Establishing Peer Connectivity
+
+This lab demonstrates how to configure the production broker to mirror traffic to a designated DR environment.
+
+=== Step 1: Define the DR Broker Acceptors
+Before the production broker can connect, the DR broker must have an acceptor configured to receive incoming AMQP traffic.
+
+Apply the following configuration to the `dr` namespace:
+
+[source,yaml]
+----
+spec:
+  acceptors:
+  - expose: true
+    name: all
+    port: 61616
+    protocols: all
+    sslEnabled: false
+  - expose: true
+    name: amqp
+    port: 5672
+    protocols: amqp
+    sslEnabled: false
+----
+
+=== Step 2: Configure Mirroring on the Production Broker
+Update the production `ActiveMQArtemis` CR to point to the DR broker. 
+
+1. Locate your production broker CR.
+2. Add the `brokerProperties` to include the `AMQPConnections` configuration shown in the section above.
+3. Apply the changes using `oc apply -f <broker-cr.yaml>`.
+
+=== Step 3: Verifying Connectivity
+Once applied, verify that the connection is active by checking the broker logs:
+
+[source,bash]
+----
+# Replace with your production pod name
+oc logs broker-prod-ss-0 | grep -i "mirror"
+----
+
+=== Step 4: Testing Message Synchronization
+To ensure messages are replicated, create a queue on the production broker and produce messages before establishing the final sync, or verify real-time replication:
+
+[source,bash]
+----
+# Produce messages to the production broker
+export POD=broker-prod-ss-0
+oc exec -i $POD -- /home/jboss/amq-broker/bin/artemis producer \
+  --acceptor all --destination queue://A \
+  --user admin --password admin \
+  --message-count 3 --message "DR-Sync-Test"
+----
+
+Verify that the messages appear on the DR broker instance by inspecting the management console or using the consumer CLI tool pointed at the DR broker endpoint.

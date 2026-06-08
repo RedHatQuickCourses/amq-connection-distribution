@@ -1,18 +1,16 @@
 name: amq-connection-distribution
-title:  ActiveMQ Artemis Clustering for High-Performance Messaging
+title:  Advanced AMQ Broker Configuration and Security
 version: 1.0.0
 nav:
 - modules/ROOT/nav.adoc
 - modules/LABENV/nav.adoc
 
-- modules/introduction-to-activemq-artemis/nav.adoc
+- modules/amq-with-keycloak/nav.adoc
 
-- modules/client-side-challenges/nav.adoc
+- modules/amq-mirroring/nav.adoc
 
-- modules/deploying-amq-on-openshift/nav.adoc
+- modules/amq-jdbc-persistence/nav.adoc
 
-- modules/solutions-for-even-message-distribution/nav.adoc
-
-- modules/hands-on-lab-deploying-and-interacting-with-an-activemq-artemis-cluster/nav.adoc
+- modules/hands-on-lab/nav.adoc
 
 - modules/appendix/nav.adoc

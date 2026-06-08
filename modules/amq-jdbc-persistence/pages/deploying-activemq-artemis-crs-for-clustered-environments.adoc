@@ -1,0 +1,81 @@
+#  Deploying ActiveMQ Artemis CRs for clustered environments
+
+= Deploying ActiveMQ Artemis CRs for Clustered Environments
+
+Deploying ActiveMQ Artemis within a Kubernetes or OpenShift environment using the Operator requires a well-structured `ActiveMQArtemis` Custom Resource (CR). When designing for clustered environments, the configuration must account for high availability, persistence, and inter-broker communication.
+
+== Configuring JDBC Persistence for Clusters
+
+In clustered environments, especially those requiring high availability (HA), it is common to use a shared storage backend rather than local ephemeral storage. By using JDBC persistence, multiple broker instances can share a common database, ensuring that if one node fails, another can acquire the lock and recover the state.
+
+=== Key Configuration Parameters
+*   `storeConfiguration`: Defines the backend storage type.
+*   `storeConfiguration.jdbcDriverClassName`: Specifies the database driver (e.g., `oracle.jdbc.OracleDriver`).
+*   `storeConfiguration.jdbcConnectionUrl`: The JDBC connection string pointing to your database service.
+*   `jdbcLockRenewPeriodMillis` and `jdbcLockExpirationMillis`: These control the heartbeat and lease duration of the database lock, crucial for preventing split-brain scenarios in a cluster.
+
+== Hands-on Lab: Deploying a Clustered Broker with JDBC
+
+In this lab, you will deploy an ActiveMQ Artemis instance configured for shared-store HA using a JDBC backend.
+
+=== Prerequisites
+*   An existing database service accessible within your cluster namespace.
+*   The AMQ Broker Operator installed in your namespace.
+
+=== Step-by-Step Deployment
+
+1. **Define the ActiveMQArtemis CR**
+Create a YAML file (e.g., `broker-jdbc-cluster.yaml`) to define the clustered deployment.
+
+[source,yaml]
+----
+apiVersion: broker.amq.io/v1beta1
+kind: ActiveMQArtemis
+metadata:
+  name: broker-cluster-node
+  namespace: production
+spec:
+  deploymentPlan:
+    size: 2 # Scale to 2 nodes
+    clustered: true
+    persistenceEnabled: true
+  brokerProperties:
+    - 'storeConfiguration=DATABASE'
+    - 'storeConfiguration.jdbcDriverClassName=oracle.jdbc.OracleDriver'
+    - 'storeConfiguration.jdbcConnectionUrl=jdbc:oracle:thin:USER/PASS@db-service.default.svc.cluster.local:1521/DBNAME'
+    - 'storeConfiguration.jdbcLockRenewPeriodMillis=2000'
+    - 'storeConfiguration.jdbcLockExpirationMillis=6000'
+    - 'criticalAnalyser=false'
+----
+
+2. **Apply the Configuration**
+Deploy the broker to your namespace:
+
+[source,bash]
+----
+oc apply -f broker-jdbc-cluster.yaml
+----
+
+3. **Verify Deployment**
+Monitor the pods to ensure both nodes are starting and successfully competing for the database lock:
+
+[source,bash]
+----
+oc get pods -n production
+oc logs -f broker-cluster-node-ss-0
+----
+
+== Best Practices for Clustered CRs
+
+*   **Liveness Probes**: Always configure liveness probes to verify the lock file state. This ensures that a broker that has lost its connection to the shared database is restarted by the cluster orchestrator.
+    *   *Example snippet*:
+    [source,yaml]
+    livenessProbe:
+      exec:
+        command:
+          - test
+          - -f
+          - /home/jboss/amq-broker/lock/cli.lock
+
+*   **Resource Allocation**: In a shared store environment, ensure that the `jdbcLockExpirationMillis` is long enough to cover potential spikes in network latency between the broker and the database, preventing accidental node eviction.
+*   **Extra Libraries**: If using an external database like Oracle, ensure the JDBC driver is available via the `ARTEMIS_EXTRA_LIBS` environment variable, pointing to the volume where the driver JAR is mounted.

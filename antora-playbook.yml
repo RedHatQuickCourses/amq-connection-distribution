@@ -1,5 +1,5 @@
 site:
-  title:  ActiveMQ Artemis Clustering for High-Performance Messaging
+  title:  Advanced AMQ Broker Configuration and Security
   start_page: amq-connection-distribution::index.adoc
 
 content:

@@ -1,0 +1,12 @@
+#  AMQ with Keycloak
+
+= AMQ with Keycloak
+
+Integrating AMQ Broker with Keycloak provides centralized identity and access management through standard protocols like OAuth2 and OpenID Connect.
+
+Key implementation aspects include:
+
+*   **JAAS Authentication**: Configuring `keycloak-jaas-config` secrets to manage login modules, bearer tokens, and direct access credentials.
+*   **Secure Communication**: Utilizing TLS secrets (`mytlssecret`) to enforce HTTPS for the AMQ console and client connectivity.
+*   **Console Integration**: Mapping Keycloak roles to AMQ console access using OpenID Connect configuration properties such as `resource`, `public-client`, and `principal-attribute`.
+*   **Deployment**: Using custom resources (CRs) to bind the broker instance to the Keycloak realm, ensuring secure authentication for both console access and monitoring endpoints.

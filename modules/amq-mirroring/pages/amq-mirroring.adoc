@@ -1,0 +1,11 @@
+#  AMQ Mirroring
+
+= AMQ Mirroring
+
+AMQ Mirroring provides a mechanism for disaster recovery and data synchronization by replicating messages between geographically separate broker instances.
+
+*   **Peer-Broker Connectivity**: Uses AMQP connection URIs to establish links between primary and secondary (DR) broker environments.
+*   **Synchronization Policies**: Enables automated message acknowledgments, queue creation, and queue removal across sites.
+*   **Address Filtering**: Supports granular control over replicated data using address filter patterns (e.g., `fr.,!eu.`).
+*   **Resiliency**: Configurable retry intervals ensure robust connectivity, while persistent mirror queues capture synchronization events during network disruptions.
+*   **Deployment**: Managed via `brokerProperties` within the `ActiveMQArtemis` custom resource, defining connection elements and mirror types.

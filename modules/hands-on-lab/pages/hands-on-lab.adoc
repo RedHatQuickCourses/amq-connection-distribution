@@ -1,0 +1,9 @@
+#  Hands-on Lab
+
+= Hands-on Lab
+
+The hands-on lab focuses on practical implementation of advanced AMQ Broker security and high-availability patterns. Key activities include:
+
+* **Secure Communication:** Implementing TLS secrets to enforce encrypted broker connectivity.
+* **Identity Integration:** Deploying a multi-node broker cluster integrated with Keycloak for centralized authentication.
+* **Site Resiliency:** Configuring inter-broker mirroring to ensure robust multi-site message synchronization and disaster recovery.

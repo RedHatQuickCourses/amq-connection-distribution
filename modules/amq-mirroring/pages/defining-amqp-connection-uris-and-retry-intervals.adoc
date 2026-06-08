@@ -1,0 +1,56 @@
+#  Defining AMQP connection URIs and retry intervals
+
+= Defining AMQP Connection URIs and Retry Intervals
+
+To establish robust inter-broker communication for mirroring and disaster recovery, AMQ Broker uses AMQP connection strings. These URIs define how the source broker interacts with the target peer, including security parameters, retry behavior, and mirroring policies.
+
+== Understanding AMQP Connection URIs
+
+The AMQP connection URI is a key-value string provided within the `ActiveMQArtemis` custom resource (CR). It dictates the transport layer, authentication, and the specific mirroring configuration required to synchronize state between brokers.
+
+A standard URI structure follows this pattern:
+`tcp://<host>:<port>?<options>`
+
+=== Key URI Components
+*   **Transport Protocol:** Generally defined as `tcp` for broker-to-broker communication.
+*   **SSL/TLS Configuration:** For secure communication, `sslEnabled=true` must be set. You must also define the path to the `trustStore` and provide the corresponding password to ensure the broker trusts the peer’s certificate.
+*   **Host Verification:** In many development or internal cluster environments, you may set `verifyHost=false` if the certificate common name (CN) does not strictly match the service URI, though this should be carefully evaluated for production security.
+*   **Credentials:** While the connection uses the `AMQPConnections.<name>.user` and `password` fields in the CR, the URI ensures the connection is established to the correct destination with the required protocol handshake.
+
+=== Example URI Configuration
+For a mirrored connection, the URI is configured as part of the `brokerProperties` in your CR:
+
+[source,properties]
+----
+AMQPConnections.dr.uri=tcp://broker-dr-amqp-${STATEFUL_SET_ORDINAL}-svc-dr.apps.example.com:443?sslEnabled=true;trustStorePath=/amq/extra/secrets/mytlssecret/client.ts;trustStorePassword=password;verifyHost=false
+----
+
+== Configuring Retry Intervals
+
+The `retryInterval` is a critical parameter for high availability. It defines the time (in milliseconds) the source broker will wait before attempting to reconnect to the target broker if a connection is dropped or becomes unreachable.
+
+*   **Setting:** `AMQPConnections.<name>.retryInterval`
+*   **Recommendation:** A standard value is `5000` (5 seconds). 
+*   **Impact:** If the network experiences instability or the peer broker undergoes a rolling restart, the retry interval ensures the mirroring process self-heals without manual intervention.
+
+== Practical Implementation: Defining Mirroring Properties
+
+When configuring mirroring in your `ActiveMQArtemis` CR, you must combine the URI, the retry interval, and the mirror-specific elements.
+
+[source,yaml]
+----
+brokerProperties:
+  - AMQPConnections.dr.uri=tcp://broker-dr-amqp-${STATEFUL_SET_ORDINAL}-svc-dr.apps.example.com:443?sslEnabled=true;trustStorePath=/amq/extra/secrets/mytlssecret/client.ts;trustStorePassword=password;verifyHost=false
+  - AMQPConnections.dr.retryInterval=5000
+  - AMQPConnections.dr.user=admin
+  - AMQPConnections.dr.password=admin
+  - AMQPConnections.dr.connectionElements.mirror.type=MIRROR
+  - AMQPConnections.dr.connectionElements.mirror.messageAcknowledgements=true
+  - AMQPConnections.dr.connectionElements.mirror.queueCreation=true
+  - AMQPConnections.dr.connectionElements.mirror.queueRemoval=true
+----
+
+=== Key Considerations for Connectivity
+1.  **Ordinal Expansion:** The use of `${STATEFUL_SET_ORDINAL}` in the URI allows the broker to dynamically resolve the correct member of the target StatefulSet, which is essential for scaling clusters.
+2.  **Mirroring Logic:** By setting `queueCreation=true` and `queueRemoval=true`, you automate the management of the address space across your DR site, ensuring that the target broker mirrors the configuration of the primary source.
+3.  **Acknowledgement:** Setting `messageAcknowledgements=true` ensures that the primary broker receives confirmation that the message has reached the target, providing the transactional integrity required for effective disaster recovery.

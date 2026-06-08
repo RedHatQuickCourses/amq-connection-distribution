@@ -1,0 +1,77 @@
+#  Automating queue creation via broker properties
+
+= Automating Queue Creation via Broker Properties
+
+In high-availability and large-scale deployments, manually creating queues via CLI or the Web Console is not feasible. AMQ Broker allows you to automate the provisioning of queues, addresses, and settings directly through the `brokerProperties` field in the `ActiveMQArtemis` Custom Resource (CR). This ensures that every broker instance in your cluster adheres to the same configuration profile upon deployment.
+
+== Concept: Declarative Queue Provisioning
+
+By utilizing `brokerProperties`, you inject configuration parameters directly into the broker’s underlying `broker.xml` file. When managing an `ActiveMQArtemis` resource, specifying address and queue configurations here ensures that these resources are created automatically when the broker starts or restarts.
+
+The syntax follows the standard `address-settings` and `addresses` structure required by ActiveMQ Artemis, translated into a property-based format.
+
+== Implementation Strategy
+
+To automate queue creation, you map the address definitions to the `brokerProperties` list. 
+
+### Key Syntax Rules
+*   Each property must be prefixed with the configuration hierarchy path.
+*   For multiple brokers, using the CR ensures that as your cluster scales (e.g., adding a new node in a stateful set), the queues are automatically provisioned on the new member.
+
+=== Example Configuration
+
+To define a queue named `fr.nantes` with specific durability settings, add the following to your `ActiveMQArtemis` CR:
+
+[source,yaml]
+----
+spec:
+  brokerProperties:
+    - addresses.fr.nantes.anycast.queue.fr.nantes.durable=true
+    - addresses.fr.nantes.anycast.queue.fr.nantes.maxConsumers=-1
+----
+
+== Hands-on Lab: Provisioning Queues via CR
+
+This activity demonstrates how to enforce the existence of a queue through the broker configuration rather than manual CLI intervention.
+
+### Step 1: Update the ActiveMQArtemis CR
+Edit your existing `broker-prod` deployment to include the automated queue definition.
+
+1.  Open your CR for editing:
++
+[source,bash]
+----
+oc edit ActiveMQArtemis broker-prod -n production
+----
+
+2.  Add the `addresses` properties to the `brokerProperties` list:
++
+[source,yaml]
+----
+spec:
+  brokerProperties:
+    - maxDiskUsage=85
+    - clusterConfigurations.my-cluster.producerWindowSize=-1
+    # Adding automated queue creation:
+    - addresses.fr.nantes.anycast.queue.fr.nantes.durable=true
+----
+
+3.  Save and exit. The AMQ Operator will detect the change and perform a rolling update to apply the configuration to the broker pods.
+
+### Step 2: Verify Automatic Creation
+Once the pod has restarted, verify that the broker has automatically initialized the address and queue.
+
+1.  Execute the following command to query the broker:
++
+[source,bash]
+----
+export POD=broker-prod-ss-0 
+oc exec -i $POD -- /home/jboss/amq-broker/bin/artemis queue stat --user admin --password admin
+----
+
+2.  **Expected Outcome**: You should see `fr.nantes` listed in the output, confirming that the broker properties successfully provisioned the resource without manual intervention.
+
+== Best Practices for Automation
+*   **Consistency**: Always use the CR to manage queues in production environments to prevent "configuration drift" between manual CLI changes and the desired state defined in GitOps/YAML.
+*   **Validation**: When using `brokerProperties`, verify the syntax against the `broker.xml` schema. Incorrect property strings can lead to broker startup failures.
+*   **Idempotency**: Automating through properties is idempotent; the broker ensures the queue exists without creating duplicates, making it safe for rolling updates.

@@ -1,0 +1,100 @@
+#  Deploying a multi-node broker cluster with Keycloak authentication
+
+= Deploying a Multi-node Broker Cluster with Keycloak Authentication
+
+In high-availability enterprise environments, AMQ Broker clusters must be secured using centralized identity management. By integrating Keycloak (Red Hat Build of Keycloak), you offload authentication to an OIDC provider, ensuring that console access and broker connectivity are managed through standard tokens.
+
+This guide outlines the steps to deploy a multi-node broker cluster configured to authenticate against a Keycloak instance.
+
+== Prerequisites
+
+*   An active Red Hat OpenShift cluster.
+*   Keycloak 26 deployed and reachable within the OpenShift environment.
+*   The `amq-broker` operator installed.
+*   A created `mytlssecret` in the target namespace for console HTTPS.
+
+== Configuring Keycloak Authentication Secrets
+
+AMQ Broker requires a JAAS configuration and OIDC credentials to communicate with Keycloak. You must package these configurations into a Kubernetes secret to be mounted by the broker pods.
+
+[source,bash]
+----
+# Create the secret containing the OIDC client configurations
+oc create secret -n amq generic keycloak-jaas-config \
+  --from-file=login.config \
+  --from-file=_keycloak-bearer-token.json \
+  --from-file=_keycloak-js-client.json \
+  --from-file=_keycloak-direct-access.json
+----
+
+== Deploying the Multi-node Cluster
+
+To deploy the cluster, define an `ActiveMQArtemis` Custom Resource (CR). The deployment must reference the `keycloak-jaas-config` secret and define the console security properties.
+
+[source,yaml]
+----
+apiVersion: broker.amq.io/v2alpha4
+kind: ActiveMQArtemis
+metadata:
+  name: amq-broker-cluster
+  namespace: amq
+spec:
+  deploymentPlan:
+    size: 3 # Multi-node cluster size
+    image: registry.redhat.io/amq7/amq-broker-rhel9:7.13
+  console:
+    enabled: true
+    expose: true
+    sslSecret: mytlssecret # Required for HTTPS console access
+  authentication:
+    - name: keycloak-auth
+      type: oidc
+      secretRef:
+        name: keycloak-jaas-config
+----
+
+== Hands-on Lab: Provisioning the Secure Cluster
+
+Follow these steps to deploy and verify your multi-node cluster.
+
+=== Step 1: Create TLS Secrets
+The console requires a TLS secret for HTTPS communication. Create this secret if it does not already exist in the `amq` namespace:
+
+[source,bash]
+----
+# Replace with your actual certificate/key files
+oc create secret tls mytlssecret --cert=tls.crt --key=tls.key -n amq
+----
+
+=== Step 2: Apply the Broker Deployment
+Deploy the multi-node cluster using the manifest created in the previous section:
+
+[source,bash]
+----
+oc apply -f activemqartemis-ex-aao-rhbk.yaml -n amq
+----
+
+=== Step 3: Verify the Deployment
+Check the rollout status of the broker nodes. Ensure that all three replicas are in the `Ready` state:
+
+[source,bash]
+----
+oc get pods -n amq -l activemqartemis=amq-broker-cluster
+oc logs statefulset/amq-broker-cluster-ss-0 -n amq | grep -i "keycloak"
+----
+
+=== Step 4: Validate Console Access
+1. Retrieve the route for the AMQ console:
++
+[source,bash]
+----
+oc get route amq-broker-cluster-console -n amq
+----
+2. Navigate to the HTTPS URL in your browser.
+3. You will be redirected to the Keycloak login page defined in your `_keycloak-direct-access.json` configuration.
+4. Log in with the credentials managed in your `amq-broker-realm`.
+
+== Troubleshooting
+*   **Authentication Failures:** Ensure the `auth-server-url` in `_keycloak-direct-access.json` is correctly resolvable from within the OpenShift cluster.
+*   **Console HTTPS Errors:** Verify that the `mytlssecret` contains valid certificates and that the secret name matches exactly with the `sslSecret` property in the CR.
+*   **Cluster Discovery:** If nodes fail to join the cluster, verify that the `ActiveMQArtemis` CR has correctly defined the `brokerProperties` for network discovery and that cross-node traffic is not blocked by NetworkPolicies.

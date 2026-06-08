@@ -1,0 +1,94 @@
+#  Setting up shared store namespaces
+
+= Setting up shared store namespaces
+
+In a high-availability (HA) environment, a shared-store configuration allows multiple AMQ Broker instances to access the same persistent storage backend. This ensures that if a primary broker fails, a standby instance can take over by mounting the shared store, maintaining message integrity without data loss.
+
+When deploying AMQ Broker on OpenShift, the shared store namespace acts as a logical boundary for the database service and the broker instances that consume it.
+
+== Prerequisites
+
+*   An OpenShift cluster with the AMQ Broker Operator installed.
+*   Access to the OpenShift CLI (`oc`) with cluster-admin or project-admin privileges.
+*   A persistent storage backend (e.g., Oracle Database) accessible by the broker pods.
+
+== Step-by-Step: Configuring the Namespace and Shared Store
+
+To ensure that your brokers can reliably access a shared persistence layer, follow these steps to isolate the environment and deploy the database service.
+
+### 1. Creating the Shared Store Namespace
+First, create a dedicated namespace to host both the database and the associated AMQ Broker instances. This isolation provides better resource management and network policy control.
+
+[source,bash]
+----
+oc new-project oracle-jdbc-shared-store
+----
+
+### 2. Deploying the Shared Storage Backend
+In a shared-store architecture, the broker instances rely on a centralized database to persist messages. Using the provided context, we deploy an Oracle Database instance. 
+
+Create the deployment by applying the following configuration:
+
+[source,yaml]
+----
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: oracle-database-deployment
+  namespace: oracle-jdbc-shared-store
+spec:
+  selector:
+    matchLabels:
+      app: oracle-database
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: oracle-database
+    spec:
+      containers:
+      - name: oracle-database-container
+        image: container-registry.oracle.com/database/free:23.3.0.0
+        env:
+        - name: ORACLE_PWD
+          value: secret
+        resources:
+          limits:
+            cpu: 2
+            memory: 4Gi
+----
+
+Apply this configuration using the command:
+[source,bash]
+----
+oc apply -f oracle-db-deployment.yaml
+----
+
+### 3. Broker Configuration for Shared Storage
+Once the database is running, the AMQ Broker instances must be configured to utilize this store. When defining the `ActiveMQArtemis` custom resource (CR), you must set the `HAPolicyConfiguration` to `SHARED_STORE_PRIMARY` (or `SHARED_STORE_BACKUP` for standby nodes).
+
+Additionally, the broker container must be equipped with the appropriate JDBC drivers to communicate with the Oracle database. This is typically achieved via an `initContainer` within the `resourceTemplates` section of the CR:
+
+[source,yaml]
+----
+resourceTemplates:
+  - selector:
+      kind: StatefulSet
+    patch:
+      kind: StatefulSet
+      spec:
+        template:
+          spec:
+            initContainers:
+              - name: oracle-database-jdbc-driver-init
+                image: registry.redhat.io/amq7/amq-broker-rhel8:7.12
+                volumeMounts:
+                  - name: amq-cfg-dir
+                    mountPath: /amq/init/config
+----
+
+== Best Practices for Shared Store Namespaces
+
+*   **Network Latency:** Ensure the broker pods and the database are located within the same cluster, preferably on the same node-set or high-speed fabric, to minimize latency during message persistence.
+*   **Storage Access:** Ensure the underlying Persistent Volume (PV) used by the database supports `ReadWriteMany` (RWX) access modes if the database is clustered, or ensure strict control over the broker's connection string to the single-instance database.
+*   **Security:** Always use Kubernetes Secrets to manage database credentials rather than hardcoding passwords in the deployment YAML.

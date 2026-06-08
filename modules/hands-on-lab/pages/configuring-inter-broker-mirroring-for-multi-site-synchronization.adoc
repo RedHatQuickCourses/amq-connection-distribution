@@ -1,0 +1,78 @@
+#  Configuring inter-broker mirroring for multi-site synchronization
+
+= Configuring Inter-Broker Mirroring for Multi-Site Synchronization
+
+Inter-broker mirroring is a robust mechanism for achieving high availability and disaster recovery (DR) in AMQ Broker environments. By synchronizing addresses and queues across geographically distributed sites, you ensure business continuity even in the event of a total site failure.
+
+== Understanding Mirroring Mechanics
+
+The AMQ Broker mirror feature allows one broker (the source) to replicate its messages and state to another broker (the target). This synchronization occurs over the AMQP protocol, allowing for flexible connectivity between clusters.
+
+Key components of inter-broker mirroring include:
+*   **AMQP Connections:** Define the URI and credentials used to establish the bridge between site-specific clusters.
+*   **Mirroring Policies:** Govern the behavior of the synchronization, such as whether message acknowledgements are required and if the target broker should automatically create missing queues.
+*   **Address Filtering:** Provides granular control over which data is replicated, allowing administrators to include or exclude specific traffic patterns.
+
+== Configuring Mirroring via Broker Properties
+
+Mirroring is configured within the `ActiveMQArtemis` Custom Resource (CR) using the `brokerProperties` field. This allows for fine-tuned control over the replication lifecycle.
+
+[IMPORTANT]
+====
+When defining mirror configurations, ensure that network latency between sites is considered. High-latency links may require adjustments to the `retryInterval` to prevent connection flapping.
+====
+
+=== Example Configuration
+The following configuration demonstrates how to establish a connection to a disaster recovery site:
+
+[source,yaml]
+----
+brokerProperties:
+  - AMQPConnections.dr.uri=tcp://broker-dr-all-0-svc.dr.svc.cluster.local:61616
+  - AMQPConnections.dr.retryInterval=5000
+  - AMQPConnections.dr.user=admin
+  - AMQPConnections.dr.password=admin
+  - AMQPConnections.dr.connectionElements.mirror.type=MIRROR
+  - AMQPConnections.dr.connectionElements.mirror.messageAcknowledgements=true
+  - AMQPConnections.dr.connectionElements.mirror.queueCreation=true
+----
+
+== Hands-on Lab: Implementing Site Synchronization
+
+In this activity, you will configure a primary broker cluster to mirror its state to a DR site.
+
+=== Prerequisites
+*   Ensure both the `production` and `dr` namespaces are accessible.
+*   Verify that the target service `broker-dr-all-0-svc` is reachable from the production cluster.
+
+=== Step 1: Define the Mirroring Connection
+Apply the mirroring configuration to your production broker CR to initiate the link.
+
+1.  Edit the `ActiveMQArtemis` CR for your production cluster.
+2.  Add the `brokerProperties` snippet provided above to the `spec` section.
+3.  Apply the changes:
+    `oc apply -f broker-prod-cr.yaml`
+
+=== Step 2: Implement Address Filtering
+To optimize bandwidth and storage, apply an `addressFilter` to restrict which traffic is replicated. For example, to mirror only messages destined for French queues while excluding European-wide queues:
+
+[source,yaml]
+----
+# Add this property to your brokerProperties list
+- AMQPConnections.dr.connectionElements.mirror.addressFilter=fr.,!eu.
+----
+
+*   `fr.`: Includes all addresses starting with `fr.`.
+*   `!eu.`: Explicitly excludes all addresses starting with `eu.`.
+
+=== Step 3: Validate Synchronization
+Verify the replication by creating a queue and sending messages on the production broker:
+
+1.  Use the `artemis` producer tool to send messages to `queue://A`:
+    `oc exec -i broker-prod-ss-0 -- /home/jboss/amq-broker/bin/artemis producer --destination queue://A --message-count 1 --message "SyncTest"`
+2.  Log into the target DR broker console or use the `artemis consumer` tool to confirm that `queue://A` was automatically created and the message "SyncTest" is present.
+
+[TIP]
+====
+If messages do not appear in the target broker, check the broker logs for authentication errors or connection timeouts. Ensure that `managementRBACEnabled` is consistent across both sites if monitoring plugins are active.
+====

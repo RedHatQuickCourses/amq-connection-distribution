@@ -1,0 +1,13 @@
+#  AMQ JDBC Persistence
+
+= AMQ JDBC Persistence
+
+AMQ JDBC persistence enables high availability by utilizing a shared relational database as the storage backend for broker message data. This configuration allows multiple broker instances to coordinate state through a shared store, ensuring data consistency and recoverability.
+
+Key components include:
+
+* **Shared Store Namespace**: Deploying brokers within a common namespace or group (e.g., `jdbc-ha`) to access a centralized database.
+* **Storage Backend Connectivity**: Configuring `brokerProperties` to define JDBC driver classes, connection URLs, and credential secrets.
+* **Driver Integration**: Utilizing `initContainers` to inject necessary JDBC drivers (e.g., Oracle `ojdbc11.jar`) into the broker's runtime environment via `ARTEMIS_EXTRA_LIBS`.
+* **Lock Management**: Implementing database-level locking mechanisms, such as `jdbcLockRenewPeriodMillis` and `jdbcLockExpirationMillis`, to manage exclusive access in clustered environments.
+* **ActiveMQArtemis CRs**: Defining custom resources that specify `storeConfiguration=DATABASE` to migrate persistence from standard file-based storage to an external SQL database.

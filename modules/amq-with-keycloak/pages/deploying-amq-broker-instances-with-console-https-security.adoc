@@ -1,0 +1,74 @@
+#  Deploying AMQ Broker instances with console HTTPS security
+
+= Deploying AMQ Broker Instances with Console HTTPS Security
+
+Securing the AMQ Broker management console is a critical requirement for enterprise environments. By default, access to the console should be restricted via TLS/HTTPS to ensure that management credentials and operational data are encrypted in transit.
+
+In a Kubernetes or OpenShift environment, this is achieved by leveraging TLS secrets that the AMQ Broker Operator mounts to provide identity and encryption for the web console.
+
+== Prerequisites
+
+*   An active OpenShift/Kubernetes project (e.g., `amq`).
+*   The AMQ Broker Operator installed in the namespace.
+*   A valid TLS certificate and private key intended for the broker console.
+
+== Creating the TLS Secret
+
+The AMQ Broker Operator expects a standard Kubernetes secret containing the certificate (`tls.crt`) and private key (`tls.key`). This secret must be created in the same namespace where the broker will be deployed.
+
+[source,bash]
+----
+oc create secret tls mytlssecret \
+  --cert=path/to/tls.crt \
+  --key=path/to/tls.key \
+  -n amq
+----
+
+*Note: Ensure the secret name matches the name referenced in your `ActiveMQArtemis` custom resource (CR) specification.*
+
+== Configuring the ActiveMQArtemis CR for HTTPS
+
+To enable HTTPS, you must reference the TLS secret within the `console` configuration block of your `ActiveMQArtemis` resource. This instructs the operator to mount the secret into the broker pod and configure the underlying web server to listen on the secure port.
+
+[source,yaml]
+----
+apiVersion: broker.amq.io/v1beta1
+kind: ActiveMQArtemis
+metadata:
+  name: ex-aao
+  namespace: amq
+spec:
+  console:
+    enabled: true
+    expose: true
+    sslSecret: mytlssecret <1>
+  # ... remaining configuration (Keycloak, storage, etc)
+----
+<1> The `sslSecret` field links the operator to the TLS secret created in the previous step.
+
+== Verification Steps
+
+Once the CR is applied, the operator will trigger a rolling update of the broker pods. To verify that HTTPS is correctly configured:
+
+1.  **Check Pod Status:** Ensure the broker pods have reached the `Running` state.
+    [source,bash]
+    oc get pods -n amq
+
+2.  **Verify Service Route:** If you have exposed the console via a Route, check the configuration to ensure it points to the secure console port.
+    [source,bash]
+    oc get route -n amq
+
+3.  **Validate HTTPS Access:** Attempt to access the console using `https://`.
+    [source,bash]
+    # Use curl to verify the SSL handshake
+    curl -I -k https://<console-route-url>/console/
+
+== Troubleshooting
+
+If the console is not accessible over HTTPS:
+
+*   **Secret Consistency:** Verify that the secret `mytlssecret` contains valid data by running `oc describe secret mytlssecret -n amq`.
+*   **Operator Logs:** Check the AMQ Broker Operator logs for errors related to secret mounting or certificate parsing:
+    [source,bash]
+    oc logs -l name=amq-broker-operator -n amq
+*   **Permissions:** Ensure the service account used by the broker deployment has permission to read the secret if you are operating in a constrained RBAC environment.

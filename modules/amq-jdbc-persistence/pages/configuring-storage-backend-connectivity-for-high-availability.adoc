@@ -1,0 +1,93 @@
+#  Configuring storage backend connectivity for high availability
+
+= Configuring Storage Backend Connectivity for High Availability
+
+In high-availability (HA) AMQ Broker environments, the persistence layer is the critical component that ensures message integrity and recovery. By utilizing JDBC persistence with a shared-store approach, multiple broker instances can access a common database, allowing for a seamless failover mechanism where a secondary broker assumes the state of the primary in the event of a failure.
+
+== Understanding Shared-Store HA with JDBC
+
+When deploying AMQ Broker in a clustered environment on OpenShift/Kubernetes, the `ActiveMQArtemis` Custom Resource (CR) allows you to define a storage backend that enables shared-store HA. Unlike replicated stores, which copy journal data across nodes, a shared-store relies on an external database (such as PostgreSQL or MariaDB) to act as the "source of truth."
+
+Key components of this architecture include:
+*   **JDBC Persistence:** Replacing the default journal with a relational database.
+*   **Shared Namespace:** Ensuring both primary and backup brokers point to the same database connection string and credentials.
+*   **Locking Mechanism:** The broker uses the database to acquire a lock; only one instance in the cluster can be "active" at any given time, preventing data corruption.
+
+== Configuring Storage Connectivity
+
+To configure the storage backend, you must provide the connection details within the `ActiveMQArtemis` CR. This includes the data source, driver information, and the authentication secrets required to establish the link.
+
+=== Defining the JDBC Persistence CR
+
+The following configuration demonstrates how to define a shared store namespace and connect the broker to the persistent database:
+
+[source,yaml]
+----
+apiVersion: broker.amq.io/v2alpha4
+kind: ActiveMQArtemis
+metadata:
+  name: amq-broker-ha
+  namespace: oracle-jdbc-shared-store
+spec:
+  deploymentPlan:
+    size: 2 # Two nodes for HA
+    persistenceEnabled: true
+    journalType: jdbc # Explicitly setting JDBC persistence
+  # Connection details for the persistent store
+  brokerProperties:
+    - dataSource.url=jdbc:postgresql://postgres-svc.database.svc.cluster.local:5432/amq_db
+    - dataSource.driverClassName=org.postgresql.Driver
+    - dataSource.username=amq_user
+    - dataSource.password=secure_password
+----
+
+== Hands-on Lab: Deploying Clustered JDBC Storage
+
+In this exercise, you will configure an `ActiveMQArtemis` CR to point to an external JDBC store, ensuring both nodes in your cluster are HA-ready.
+
+=== Prerequisites
+*   An active database service accessible from the `oracle-jdbc-shared-store` namespace.
+*   The AMQ Broker operator installed in your project.
+
+=== Step 1: Create the Secret
+Before applying the CR, ensure your database credentials are stored as a Kubernetes Secret for security.
+
+[source,bash]
+----
+oc create secret generic db-credentials \
+  --from-literal=username=amq_user \
+  --from-literal=password=secure_password
+----
+
+=== Step 2: Configure the CR for HA
+Apply the following configuration to deploy a two-node cluster that shares the database:
+
+[source,yaml]
+----
+apiVersion: broker.amq.io/v2alpha4
+kind: ActiveMQArtemis
+metadata:
+  name: broker-ha-cluster
+spec:
+  deploymentPlan:
+    size: 2
+    persistenceEnabled: true
+  # Pointing to the shared store
+  brokerProperties:
+    - database.type=postgresql
+    - database.url=jdbc:postgresql://postgres-svc:5432/amq_db
+    - database.secret=db-credentials
+----
+
+=== Step 3: Verification
+Verify that the nodes have correctly initialized and established the shared lock:
+
+1.  **Check Pod Status:** Ensure both pods are running.
+    `oc get pods -n oracle-jdbc-shared-store`
+2.  **Inspect Logs:** Check the logs of the secondary broker to confirm it is in "standby" mode waiting for the shared store lock.
+    `oc logs broker-ha-cluster-ss-1`
+3.  **Validate Connection:** Look for `AMQ222010` log entries indicating the broker has successfully connected to the JDBC database and initialized the tables.
+
+== Troubleshooting Tips
+*   **Connectivity Errors:** If the broker fails to start, verify the network policy between the `oracle-jdbc-shared-store` namespace and the database service.
+*   **Lock Contention:** If both brokers attempt to become "active" simultaneously, ensure the JDBC driver is correctly configured and that the broker service account has read/write permissions to the database tables.

@@ -1,28 +1,25 @@
-=  ActiveMQ Artemis Client Side Challenges and their Solutions
+=  Advanced AMQ Broker Configuration and Security
 :navtitle: Home
 
 == Introduction
 
-Course Title:  ActiveMQ Artemis Client Side Challenges and their Solutions
+Course Title:  Advanced AMQ Broker Configuration and Security
 
 Description:
-ActiveMQ Artemis Client Side Challenges and their Solutions
+Course description FIXME
 
-
-Duration: 1 hour
+Duration: FIXME hours
 
 == Topics covered in this course
 
 
-*  Introduction to ActiveMQ Artemis
+*  AMQ with Keycloak
 
-*  Client-Side Challenges
+*  AMQ Mirroring
 
-*  Deploying AMQ on OpenShift
+*  AMQ JDBC Persistence
 
-*  Solutions for Even Message Distribution
-
-*  Hands-on Lab: Deploying and Interacting with an ActiveMQ Artemis Cluster
+*  Hands-on Lab
 
 
 
@@ -30,6 +27,6 @@ Duration: 1 hour
 
 This course assumes that you have the following prior experience:
 
-* Understanding of ActiveMQ Artemis
-* Understanding of OpenShift
-* Understanding of Quarkus or Spring Boot
+* Course or experience...
+* Course or experience...
+* Course or experience...

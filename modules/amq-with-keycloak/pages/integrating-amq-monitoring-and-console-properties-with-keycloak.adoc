@@ -1,0 +1,76 @@
+#  Integrating AMQ monitoring and console properties with Keycloak
+
+= Integrating AMQ Monitoring and Console Properties with Keycloak
+
+In a production-grade AMQ Broker environment, securing the management console and monitoring endpoints is critical. By integrating AMQ Broker with Keycloak, you centralize authentication, offloading identity management to a dedicated OIDC (OpenID Connect) provider.
+
+== Overview of Console and Monitoring Security
+When deploying AMQ Broker on OpenShift, the `ActiveMQArtemis` custom resource (CR) defines how the broker exposes the management console and monitoring services. To integrate these with Keycloak, you must:
+
+1.  **Map OIDC Roles:** Ensure Keycloak defines roles that the AMQ Broker can map to its internal management roles (e.g., `admin`, `viewer`).
+2.  **Configure Console Properties:** Explicitly enable the console and monitoring features within the CR.
+3.  **Reference Keycloak Secrets:** Provide the broker with the necessary JAAS (Java Authentication and Authorization Service) configuration and bearer token settings to validate incoming requests.
+
+== Configuration Requirements
+
+To link the broker console to Keycloak, your `ActiveMQArtemis` CR must include a `console` configuration block. This block references the secret created during your JAAS configuration setup (e.g., `keycloak-jaas-config`).
+
+[source,yaml]
+----
+spec:
+  console:
+    enabled: true
+    rbac:
+      rbacEnabled: true
+      rolePrincipals:
+        - role: admin
+          principals:
+            - amq-admins # Group/Role from Keycloak
+    ssl:
+      enabled: true
+      secretName: mytlssecret # Required for HTTPS security
+  monitoring:
+    enabled: true
+    # Monitoring is secured via the same Keycloak provider
+----
+
+== Implementation Steps
+
+=== 1. Define the Keycloak Client
+Ensure your Keycloak realm includes a client (e.g., `amq-console`) configured with the correct OIDC settings. This client must trust the AMQ Broker's service account and be configured for "Direct Access" or "Bearer Token" authentication depending on your specific integration requirements.
+
+=== 2. Create the JAAS Configuration
+The `login.config` file used in your `keycloak-jaas-config` secret must include the `BearerTokenLoginModule`. This module intercepts the incoming console token, validates it against the Keycloak server, and maps the user's groups to broker roles.
+
+[source,text]
+.login.config snippet
+----
+console {
+    org.keycloak.adapters.jaas.BearerTokenLoginModule sufficient
+        keycloak-config-file="/path/to/keycloak-js-client.json"
+        public-key="<YOUR_KEYCLOAK_REALM_PUBLIC_KEY>";
+};
+----
+
+=== 3. Deploying with Security Properties
+Once the secret is created and the CR is updated, apply the configuration to your OpenShift namespace.
+
+[source,bash]
+----
+# Ensure the secret is present before applying the CR
+oc create secret -n amq generic keycloak-jaas-config \
+  --from-file=login.config \
+  --from-file=_keycloak-js-client.json
+
+# Apply the updated broker deployment
+oc apply -n amq -f activemqartemis-ex-aao-rhbk.yaml
+----
+
+== Troubleshooting Integration
+If you are unable to access the console or metrics after deployment:
+
+* **Validate Secret Mounting:** Ensure the `keycloak-jaas-config` secret is mounted in the `etc` directory of the broker pod. Use `oc describe pod <broker-pod-name>` to verify volume mounts.
+* **HTTPS/TLS:** Since the console is secured by `mytlssecret`, ensure your browser or monitoring tool trusts the CA that signed the certificate.
+* **Logging:** Check the broker logs for JAAS initialization errors:
+  `oc logs -n amq <broker-pod-name> | grep -i "jaas"`
+* **Token Expiry:** If users are disconnected frequently, verify the "Access Token Lifespan" in your Keycloak client configuration.

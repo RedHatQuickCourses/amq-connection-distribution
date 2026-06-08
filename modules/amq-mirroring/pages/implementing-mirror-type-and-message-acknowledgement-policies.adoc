@@ -1,0 +1,83 @@
+#  Implementing mirror type and message acknowledgement policies
+
+= Implementing Mirror Type and Message Acknowledgement Policies
+
+In an AMQ Broker environment, mirroring is a powerful mechanism for disaster recovery and multi-site synchronization. Effectively implementing mirror types and message acknowledgement policies ensures that data consistency is maintained across broker instances while managing the performance impact of cross-site communication.
+
+== Mirror Types
+
+The `mirror.type` configuration defines the role of the broker connection. In the context of ActiveMQ Artemis, the primary type used for disaster recovery is `MIRROR`.
+
+When `mirror.type` is set to `MIRROR`, the broker acts as a source that replicates events (message sends, acknowledgements, and queue creation) to a target peer.
+
+[source,yaml]
+----
+AMQPConnections.dr.connectionElements.mirror.type=MIRROR
+----
+
+By defining this type, the source broker intercepts internal events and wraps them as AMQP messages to be delivered to the target broker's mirror consumer.
+
+== Message Acknowledgement Policies
+
+The `messageAcknowledgements` policy is critical for ensuring data integrity between mirrored sites. When enabled, the mirror connection tracks the acknowledgement status of messages.
+
+=== Understanding the Policy
+If `mirror.messageAcknowledgements` is set to `true`, the source broker will propagate message acknowledgements received from the client back to the target broker (and vice versa). This ensures that if a message is consumed on the target broker, the state is synchronized back to the source, preventing double-processing or "lost" acknowledgements in disaster recovery scenarios.
+
+[source,yaml]
+----
+AMQPConnections.dr.connectionElements.mirror.messageAcknowledgements=true
+----
+
+=== Key Considerations
+* **Consistency:** Enabling acknowledgements ensures that the target broker stays in sync with the consumption state of the primary broker.
+* **Latency:** Increased synchronization requires additional network round-trips. If network latency between sites is high, consider the impact on consumer throughput.
+* **Queue Auto-Creation:** When used in conjunction with `queueCreation=true`, the mirror will automatically recreate the necessary address and queue structures on the target side upon the arrival of the first message, ensuring the target is ready to receive mirrored traffic immediately.
+
+== Hands-on Lab: Configuring Mirroring Policies
+
+In this lab, you will configure a `brokerProperties` snippet to enforce the mirroring policy and enable automatic queue synchronization.
+
+=== Step 1: Define the Mirror Configuration
+Apply the following `brokerProperties` to your `ActiveMQArtemis` Custom Resource (CR). This configuration sets the target URI, enables the `MIRROR` type, and enforces message acknowledgement synchronization.
+
+[source,properties]
+----
+# Define the DR connection
+AMQPConnections.dr.uri=tcp://broker-dr-broker-all-0-svc.dr.svc.cluster.local:61616
+AMQPConnections.dr.retryInterval=5000
+AMQPConnections.dr.user=admin
+AMQPConnections.dr.password=admin
+
+# Configure Mirroring Policies
+AMQPConnections.dr.connectionElements.mirror.type=MIRROR
+AMQPConnections.dr.connectionElements.mirror.messageAcknowledgements=true
+AMQPConnections.dr.connectionElements.mirror.queueCreation=true
+AMQPConnections.dr.connectionElements.mirror.queueRemoval=true
+----
+
+=== Step 2: Applying the Configuration
+Apply the CR to your production namespace. The operator will perform a rolling restart of the broker pods to apply these properties.
+
+[source,bash]
+----
+# Apply the updated configuration
+oc apply -f broker-prod-mirroring.yaml
+
+# Monitor the rollout
+oc rollout status statefulset/broker-prod-ss
+----
+
+=== Step 3: Verifying Synchronization
+After the brokers restart, verify that the queues are being mirrored. Note that messages existing *before* the mirror was configured will not be transferred.
+
+1. Send a message to `queue://A` on the producer broker.
+2. Verify the queue exists on the DR broker:
++
+[source,bash]
+----
+export POD=broker-dr-ss-0
+oc exec -n dr -i $POD -- /home/jboss/amq-broker/bin/artemis queue stat --acceptor all --user admin --password admin
+----
+
+3. Confirm that the message appears in the DR broker queue statistics, demonstrating that the `MIRROR` type and acknowledgement policies are successfully replicating traffic.

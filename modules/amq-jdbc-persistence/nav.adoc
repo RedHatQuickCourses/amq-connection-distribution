@@ -1,0 +1,4 @@
+* xref:amq-jdbc-persistence.adoc[]
+** xref:setting-up-shared-store-namespaces.adoc[]
+** xref:deploying-activemq-artemis-crs-for-clustered-environments.adoc[]
+** xref:configuring-storage-backend-connectivity-for-high-availability.adoc[]
