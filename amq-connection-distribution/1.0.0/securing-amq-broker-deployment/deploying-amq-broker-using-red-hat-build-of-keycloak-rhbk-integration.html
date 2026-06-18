@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Deploying AMQ Broker using Red Hat Build of Keycloak (RHBK) integration :: Authenticating AMQ with Keycloak</title>
+    <link rel="prev" href="configuring-broker-side-security-credentials-and-passwords.html">
+    <meta name="generator" content="Antora 3.1.3">
+    <link rel="stylesheet" href="../../../_/css/site.css">
+    <script>var uiRootPath = '../../../_'</script>
+  </head>
+  <body class="article">
+<header class="header">
+  <nav class="navbar">
+    <div class="navbar-brand">
+      <a class="navbar-item" href="https://www.redhat.com" target="_blank"><img src="../../../_/img/redhat-logo.png" height="40px" alt="Red Hat"></a>
+      <a class="navbar-item" style="font-size: 24px; color: white" href="../../..">Authenticating AMQ with Keycloak</a>
+      <button class="navbar-burger" data-target="topbar-nav">
+        <span></span>
+        <span></span>
+        <span></span>
+      </button>
+    </div>
+    <div id="topbar-nav" class="navbar-menu">
+      <div class="navbar-end">
+        <a class="navbar-item" href="https://github.com/RedHatQuickCourses/REPLACEREPONAME/issues" target="_blank">Report Issues</a>
+      </div>
+    </div>
+  </nav>
+</header>
+<div class="body">
+<div class="nav-container" data-component="amq-connection-distribution" data-version="1.0.0">
+  <aside class="nav">
+    <div class="panels">
+<div class="nav-panel-menu is-active" data-panel="menu">
+  <nav class="nav-menu">
+    <h3 class="title"><a href="../index.html">Authenticating AMQ with Keycloak</a></h3>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="../index.html">Home</a>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="securing-amq-broker-deployment.html">Securing AMQ Broker Deployment</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="managing-tls-secrets-for-broker-keystores-and-truststores.html">Managing TLS secrets for broker keystores and truststores</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="configuring-broker-side-security-credentials-and-passwords.html">Configuring broker-side security credentials and passwords</a>
+  </li>
+  <li class="nav-item is-current-page" data-depth="2">
+    <a class="nav-link" href="deploying-amq-broker-using-red-hat-build-of-keycloak-rhbk-integration.html">Deploying AMQ Broker using Red Hat Build of Keycloak (RHBK) integration</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+</ul>
+  </nav>
+</div>
+<div class="nav-panel-explore" data-panel="explore">
+  <div class="context">
+    <span class="title">Authenticating AMQ with Keycloak</span>
+    <span class="version">1.0.0</span>
+  </div>
+  <ul class="components">
+    <li class="component is-current">
+      <a class="title" href="../index.html">Authenticating AMQ with Keycloak</a>
+      <ul class="versions">
+        <li class="version is-current is-latest">
+          <a href="../index.html">1.0.0</a>
+        </li>
+      </ul>
+    </li>
+  </ul>
+</div>
+    </div>
+  </aside>
+</div>
+<main class="article">
+<div class="toolbar" role="navigation">
+<button class="nav-toggle"></button>
+  <a href="../index.html" class="home-link"></a>
+<nav class="breadcrumbs" aria-label="breadcrumbs">
+  <ul>
+    <li><a href="../index.html">Authenticating AMQ with Keycloak</a></li>
+    <li><a href="securing-amq-broker-deployment.html">Securing AMQ Broker Deployment</a></li>
+    <li><a href="deploying-amq-broker-using-red-hat-build-of-keycloak-rhbk-integration.html">Deploying AMQ Broker using Red Hat Build of Keycloak (RHBK) integration</a></li>
+  </ul>
+</nav>
+</div>
+  <div class="content">
+<aside class="toc sidebar" data-title="Contents" data-levels="2">
+  <div class="toc-menu"></div>
+</aside>
+<article class="doc">
+<h1 class="page">Deploying AMQ Broker using Red Hat Build of Keycloak (RHBK) integration</h1>
+<h1 id="_deploying_amq_broker_using_red_hat_build_of_keycloak_rhbk_integration" class="sect0"><a class="anchor" href="#_deploying_amq_broker_using_red_hat_build_of_keycloak_rhbk_integration"></a>Deploying AMQ Broker using Red Hat Build of Keycloak (RHBK) integration</h1>
+<div class="paragraph">
+<p>To secure an AMQ Broker deployment using Red Hat Build of Keycloak (RHBK), you must establish a trust relationship between the broker and the Keycloak server and provide the necessary configuration files to enable OIDC-based authentication.</p>
+</div>
+<div class="sect1">
+<h2 id="_prerequisites"><a class="anchor" href="#_prerequisites"></a>Prerequisites</h2>
+<div class="sectionbody">
+<div class="ulist">
+<ul>
+<li>
+<p>An active RHBK instance (e.g., Keycloak 26).</p>
+</li>
+<li>
+<p>The RHBK server&#8217;s public certificate or CA certificate.</p>
+</li>
+<li>
+<p><code>oc</code> CLI tool logged into your OpenShift cluster.</p>
+</li>
+<li>
+<p>A target namespace (e.g., <code>amq</code>) where the broker will be deployed.</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_hands_on_activity_configuring_keycloak_integration"><a class="anchor" href="#_hands_on_activity_configuring_keycloak_integration"></a>Hands-on Activity: Configuring Keycloak Integration</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Follow these steps to prepare the secrets and configurations required for your AMQ Broker deployment.</p>
+</div>
+<div class="sect2">
+<h3 id="_1_create_the_keycloak_truststore"><a class="anchor" href="#_1_create_the_keycloak_truststore"></a>1. Create the Keycloak Truststore</h3>
+<div class="paragraph">
+<p>The AMQ Broker must trust the RHBK server&#8217;s certificate to validate tokens. Extract the RHBK certificate and create a secret in the <code>amq</code> namespace.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># Extract the RHBK TLS certificate
+oc extract secret/example-tls-secret -n keycloak --confirm
+
+# Create the truststore secret in the amq namespace
+oc create secret generic keycloak-truststore -n amq --from-file=tls.crt</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_2_generate_oidc_configuration_files"><a class="anchor" href="#_2_generate_oidc_configuration_files"></a>2. Generate OIDC Configuration Files</h3>
+<div class="paragraph">
+<p>You need to define the Keycloak client configuration. Use <code>envsubst</code> to inject your Keycloak URL into the JSON templates.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">export KEYCLOAK_URL=keycloak-sso.apps.com
+
+# Create the direct-access configuration
+cat &lt;&lt;EOF | envsubst &gt; _keycloak-direct-access.json
+{
+  "realm": "amq-broker-realm",
+  "auth-server-url": "https://$KEYCLOAK_URL",
+  "ssl-required": "all",
+  "credentials": { "secret": "amq-broker-secret-value" },
+  "resource": "amq-broker",
+  "use-resource-role-mappings": true,
+  "principal-attribute": "preferred_username",
+  "verify-token-audience": true,
+  "enable-basic-auth": true,
+  "confidential-port": 0
+}
+EOF
+
+# Create the bearer-token configuration (similar process for _keycloak-bearer-token.json)
+# Note: Ensure all client configuration files (_keycloak-js-client.json, etc.) are prepared.</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_3_package_configuration_into_a_secret"><a class="anchor" href="#_3_package_configuration_into_a_secret"></a>3. Package Configuration into a Secret</h3>
+<div class="paragraph">
+<p>AMQ Broker requires the JAAS configuration and OIDC client files to be mounted via a Kubernetes Secret.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc create secret -n amq generic keycloak-jaas-config \
+  --from-file=login.config \
+  --from-file=_keycloak-bearer-token.json \
+  --from-file=_keycloak-js-client.json \
+  --from-file=_keycloak-direct-access.json</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_4_deploy_the_amq_broker"><a class="anchor" href="#_4_deploy_the_amq_broker"></a>4. Deploy the AMQ Broker</h3>
+<div class="paragraph">
+<p>Deploy the AMQ Broker using your <code>ActiveMQArtemis</code> custom resource. Ensure the <code>mytlssecret</code> (for console HTTPS) and the <code>keycloak-jaas-config</code> secrets are referenced in your deployment YAML.</p>
+</div>
+<div class="listingblock">
+<div class="title">Example Deployment Configuration Snippet</div>
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">apiVersion: broker.amq.io/v2alpha1
+kind: ActiveMQArtemis
+metadata:
+  name: amq-broker-cluster
+  namespace: amq
+spec:
+  # ... other configurations ...
+  console:
+    enabled: true
+    secretName: mytlssecret
+  deploymentPlan:
+    # Ensure the Keycloak secrets are mounted for the broker process
+    ...</code></pre>
+</div>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>Ensure the <code>tls.crt</code> used in the <code>keycloak-truststore</code> secret matches the server certificate served by your Keycloak instance. Mismatched certificates will result in <code>SSLHandshakeException</code> errors during token validation.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+</div>
+<nav class="pagination">
+  <span class="prev"><a href="configuring-broker-side-security-credentials-and-passwords.html">Configuring broker-side security credentials and passwords</a></span>
+</nav>
+</article>
+  </div>
+</main>
+</div>
+<footer class="footer">
+  <img src="../../../_/img/rhl-logo-red.png" height="40px" alt="Red Hat"  href="https://redhat.com" >
+</footer><script id="site-script" src="../../../_/js/site.js" data-ui-root-path="../../../_"></script>
+<script async src="../../../_/js/vendor/highlight.js"></script>
+  </body>
+</html>
