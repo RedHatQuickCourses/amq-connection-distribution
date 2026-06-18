@@ -1,0 +1,89 @@
+#  Deploying microservices with service discovery
+
+= Deploying Microservices with Service Discovery
+
+In a microservices architecture, services are often ephemeral, meaning their network locations (IP addresses) change frequently due to scaling events or pod restarts. Service Discovery solves the problem of how services find each other without hardcoding IP addresses.
+
+== Understanding Service Discovery
+
+Service Discovery acts as a dynamic phonebook for your architecture. It consists of two main components:
+
+*   **Service Registry:** A central database where all active microservice instances register their location (hostname/IP and port).
+*   **Service Lookup:** The mechanism by which a client or another microservice queries the registry to resolve a service name into a network location.
+
+In Kubernetes-based environments like those used with Quarkus, this is typically handled by **Kubernetes Services**. By assigning a stable DNS name to a set of pods, the cluster provides built-in service discovery.
+
+== Hands-on Lab: Deploying with Service Discovery
+
+In this lab, you will deploy a Quarkus microservice and verify that it can be discovered within a cluster environment.
+
+=== Prerequisites
+*   A running Kubernetes cluster (e.g., Minikube or OpenShift).
+*   `kubectl` or `oc` CLI configured.
+*   A containerized Quarkus application.
+
+=== Step 1: Define the Deployment and Service
+Create a file named `microservice-deployment.yaml`. This file defines a Deployment (the application logic) and a Service (the discovery endpoint).
+
+[source,yaml]
+----
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: order-service
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: order-service
+  template:
+    metadata:
+      labels:
+        app: order-service
+    spec:
+      containers:
+      - name: quarkus-app
+        image: quay.io/example/order-service:1.0
+        ports:
+        - containerPort: 8080
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: order-service-discovery # <1>
+spec:
+  selector:
+    app: order-service
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 8080
+----
+<1> This is the stable DNS name that other services will use to call the `order-service`.
+
+=== Step 2: Apply the Configuration
+Deploy the resources to your namespace:
+
+[source,bash]
+----
+kubectl apply -f microservice-deployment.yaml
+----
+
+=== Step 3: Verify Discovery
+To ensure the service is discoverable, deploy a temporary diagnostic pod and attempt to reach the `order-service` using its internal DNS name.
+
+[source,bash]
+----
+# Run a temporary curl pod
+kubectl run curl-test --rm -i --tty --image=curlimages/curl -- sh
+
+# From inside the pod, perform a lookup
+curl http://order-service-discovery/health
+----
+
+If the request returns a `200 OK`, the service discovery mechanism is functioning correctly.
+
+== Troubleshooting Tips
+*   **Namespace Mismatch:** If your microservices are in different namespaces, you must use the fully qualified domain name (FQDN): `service-name.namespace.svc.cluster.local`.
+*   **Selectors:** Ensure the `labels` in the Deployment `template` match the `selector` in the Service resource. If they do not match, the Service will not route traffic to the pods.
+*   **Readiness Probes:** If a pod is not "Ready," it will not be added to the service endpoint list. Check `kubectl describe service order-service-discovery` to see the active Endpoints.

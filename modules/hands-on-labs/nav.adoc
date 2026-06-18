@@ -1,0 +1,2 @@
+* xref:hands-on-labs.adoc[]
+** xref:deploying-microservices-with-service-discovery.adoc[]

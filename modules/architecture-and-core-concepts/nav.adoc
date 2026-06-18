@@ -1,0 +1,2 @@
+* xref:architecture-and-core-concepts.adoc[]
+** xref:microservices-communication-patterns.adoc[]

@@ -1,19 +1,23 @@
-=  Authenticating AMQ with Keycloak
+=  Overview of microservices with Quarkus
 :navtitle: Home
 
 == Introduction
 
-Course Title:  Authenticating AMQ with Keycloak
+Course Title:  Overview of microservices with Quarkus
 
 Description:
 Course description FIXME
 
-Duration: 2 hours
+Duration: FIXME hours
 
 == Topics covered in this course
 
 
-*  Securing AMQ Broker Deployment
+*  Architecture and Core Concepts
+
+*  Quarkus Framework Fundamentals
+
+*  Hands-on Labs
 
 
 

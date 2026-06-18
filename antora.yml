@@ -1,10 +1,14 @@
 name: amq-connection-distribution
-title:  Authenticating AMQ with Keycloak
+title:  Overview of microservices with Quarkus
 version: 1.0.0
 nav:
 - modules/ROOT/nav.adoc
 - modules/LABENV/nav.adoc
 
-- modules/securing-amq-broker-deployment/nav.adoc
+- modules/architecture-and-core-concepts/nav.adoc
+
+- modules/quarkus-framework-fundamentals/nav.adoc
+
+- modules/hands-on-labs/nav.adoc
 
 - modules/appendix/nav.adoc

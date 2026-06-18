@@ -1,0 +1,9 @@
+#  Hands-on Labs
+
+= Hands-on Labs
+
+The hands-on labs provide a practical environment to apply microservices architecture principles using Quarkus. Key focus areas include:
+
+* **Service Discovery:** Implementing and managing dynamic service registration and discovery within a distributed microservices ecosystem.
+* **Deployment:** Executing the deployment of Quarkus-based microservices to cloud-native environments.
+* **Environment Configuration:** Utilizing Red Hat Integration tools, such as AMQ Broker, and configuring security protocols like one-way TLS using generated certificates to ensure robust service communication.

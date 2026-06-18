@@ -1,0 +1,9 @@
+#  Quarkus Framework Fundamentals
+
+= Quarkus Framework Fundamentals
+
+Quarkus is a Kubernetes-native Java framework optimized for cloud environments, emphasizing developer productivity and high-performance execution.
+
+*   **Build-time Optimization**: Unlike Spring Boot, which performs class scanning and dependency injection at runtime, Quarkus moves these processes to build time. This results in significantly faster startup times and a reduced memory footprint.
+*   **Developer Experience**: Features like **Live Reload** automatically detect and apply code changes during execution, removing the need for manual application restarts.
+*   **Simplified Data Access**: Through **Panache Entity**, developers can integrate database methods like `find` and `save` directly into model classes, eliminating the overhead of maintaining separate repository files.

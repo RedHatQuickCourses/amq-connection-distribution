@@ -1,0 +1,82 @@
+#  Microservices communication patterns
+
+= Microservices Communication Patterns
+
+In a microservices architecture, the system is decomposed into a collection of small, independent services. Because these services run in separate processes—often on different servers—they require robust communication patterns to function as a cohesive application.
+
+== Synchronous vs. Asynchronous Communication
+
+Communication between services generally falls into two categories: synchronous and asynchronous.
+
+=== Synchronous Communication
+Synchronous communication occurs when a client or service sends a request and waits for an immediate response. 
+
+*   **Pattern:** Typically implemented using RESTful APIs or gRPC.
+*   **The API Gateway Role:** As the entry point for the system, the API Gateway acts as a traffic cop. When a user sends a request, the gateway routes it to the appropriate service, waits for the response, and returns it to the client.
+*   **Trade-offs:** While easy to implement, it creates temporal coupling. If the downstream service is slow or unavailable, the calling service—and potentially the entire chain—becomes blocked.
+
+=== Asynchronous Communication
+Asynchronous communication allows services to interact without waiting for an immediate response, which is vital for building resilient systems.
+
+*   **Pattern:** Typically implemented using **Message Brokers** (e.g., RabbitMQ, Apache Kafka).
+*   **Reliability:** Messaging queues act as a buffer. If a service, such as a notification service, is temporarily down, the message is stored in the broker. Once the service recovers, it processes the queued messages, ensuring zero data loss.
+*   **Decoupling:** Services do not need to know the location or the state of other services, only the location of the message broker.
+
+== Service Discovery
+
+In dynamic environments like Kubernetes, microservice instances are ephemeral; they are frequently created, destroyed, and moved across different IP addresses. Hard-coding URLs is impossible.
+
+*   **Service Registry:** This is a database of available service instances. 
+*   **Workflow:** 
+    1.  When a service starts, it sends a registration request to the **Service Registry**.
+    2.  When a client (or another service) needs to communicate, it queries the registry to get the current location (IP and port) of the target service.
+
+[TIP]
+====
+Use a Service Registry to decouple your microservices from network-level configurations. This allows your architecture to scale horizontally automatically without manual updates to routing tables.
+====
+
+== Summary Table: Communication Patterns
+
+| Pattern | Type | Best Use Case |
+| :--- | :--- | :--- |
+| **REST/gRPC** | Synchronous | Direct, request-response operations (e.g., fetching a product catalog). |
+| **Message Queues** | Asynchronous | Decoupled background processing (e.g., sending email notifications after a purchase). |
+| **API Gateway** | Orchestration | Managing traffic flow from external clients to internal microservices. |
+| **Service Registry** | Infrastructure | Enabling dynamic location of services in cloud-native environments. |
+
+---
+
+== Hands-on Activity: Configuring a Service Registry
+
+In this activity, we look at how a service registry ensures services find each other.
+
+[NOTE]
+====
+In a real-world Quarkus environment, you would typically use an extension like `quarkus-kubernetes-service-binding` or integrate with a service mesh like Istio to handle service discovery automatically.
+====
+
+**Step 1: Define the Service Metadata**
+Every microservice must define its name, which will be used for registration. In your `application.properties`:
+
+[source,properties]
+----
+quarkus.application.name=inventory-service
+----
+
+**Step 2: Service Lookup**
+Instead of calling `http://192.168.1.50:8080`, your code should reference the service name. If using a service mesh or discovery client, the request is directed to the registry:
+
+[source,java]
+----
+// Example of a REST client looking up a service by name
+@RegisterRestClient(configKey = "catalog-api")
+public interface CatalogService {
+    @GET
+    @Path("/products")
+    List<Product> getProducts();
+}
+----
+
+**Step 3: Implementation Check**
+Ensure your infrastructure is configured so that when `inventory-service` requests `catalog-api`, the Service Registry resolves this to the current, healthy pod IP address managed by your orchestration layer.

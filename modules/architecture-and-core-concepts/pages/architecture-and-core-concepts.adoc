@@ -1,0 +1,13 @@
+#  Architecture and Core Concepts
+
+= Architecture and Core Concepts
+
+In microservices architecture, large applications are decomposed into small, independent services, each with a specific business purpose. This approach contrasts with monolithic architectures, where tight coupling poses risks to system stability and scalability.
+
+Key concepts include:
+
+*   **Service Decomposition:** Breaking down systems into modular components, such as independent services for catalogs, payments, and user management.
+*   **API Gateway:** Serves as a centralized router, managing client requests and directing them to the appropriate microservice.
+*   **Communication Patterns:**
+    *   **Synchronous/REST:** Standard request-response communication between services.
+    *   **Messaging Queues (e.g., RabbitMQ, Kafka):** Ensures system resilience and data integrity by buffering messages, allowing services to process tasks even if the consumer is temporarily unavailable.
