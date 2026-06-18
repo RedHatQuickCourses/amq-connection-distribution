@@ -3,7 +3,9 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width,initial-scale=1">
-    <title>Client-Side Challenges :: AMQ security with Keycloak</title>
+    <title>Deploy AMQ Broker Secured by KeyCloak 26 :: AMQ security with Keycloak</title>
+    <link rel="prev" href="../index.html">
+    <link rel="next" href="create-kubernetes-secrets-for-jaas-configuration-and-token-authentication.html">
     <meta name="generator" content="Antora 3.1.3">
     <link rel="stylesheet" href="../../../_/css/site.css">
     <script>var uiRootPath = '../../../_'</script>
@@ -44,15 +46,15 @@
   </li>
   <li class="nav-item" data-depth="0">
 <ul class="nav-list">
-  <li class="nav-item" data-depth="1">
+  <li class="nav-item is-current-page" data-depth="1">
     <button class="nav-item-toggle"></button>
-    <a class="nav-link" href="../deploy-amq-broker-secured-by-keycloak-26/deploy-amq-broker-secured-by-keycloak-26.html">Deploy AMQ Broker Secured by KeyCloak 26</a>
+    <a class="nav-link" href="deploy-amq-broker-secured-by-keycloak-26.html">Deploy AMQ Broker Secured by KeyCloak 26</a>
 <ul class="nav-list">
   <li class="nav-item" data-depth="2">
-    <a class="nav-link" href="../deploy-amq-broker-secured-by-keycloak-26/create-kubernetes-secrets-for-jaas-configuration-and-token-authentication.html">Create Kubernetes secrets for JAAS configuration and token authentication</a>
+    <a class="nav-link" href="create-kubernetes-secrets-for-jaas-configuration-and-token-authentication.html">Create Kubernetes secrets for JAAS configuration and token authentication</a>
   </li>
   <li class="nav-item" data-depth="2">
-    <a class="nav-link" href="../deploy-amq-broker-secured-by-keycloak-26/manage-tls-certificates-and-keystore-secrets-for-https-console-access.html">Manage TLS certificates and keystore secrets for HTTPS console access</a>
+    <a class="nav-link" href="manage-tls-certificates-and-keystore-secrets-for-https-console-access.html">Manage TLS certificates and keystore secrets for HTTPS console access</a>
   </li>
 </ul>
   </li>
@@ -118,7 +120,7 @@
 <nav class="breadcrumbs" aria-label="breadcrumbs">
   <ul>
     <li><a href="../index.html">AMQ security with Keycloak</a></li>
-    <li><a href="client-side-challenges.html">Client-Side Challenges</a></li>
+    <li><a href="deploy-amq-broker-secured-by-keycloak-26.html">Deploy AMQ Broker Secured by KeyCloak 26</a></li>
   </ul>
 </nav>
 </div>
@@ -127,29 +129,34 @@
   <div class="toc-menu"></div>
 </aside>
 <article class="doc">
-<h1 class="page">Client-Side Challenges</h1>
-<div class="sect2">
-<h3 id="_client_side_challenges"><a class="anchor" href="#_client_side_challenges"></a>Client-Side Challenges</h3>
+<h1 class="page">Deploy AMQ Broker Secured by KeyCloak 26</h1>
+<h1 id="_deploy_amq_broker_secured_by_keycloak_26" class="sect0"><a class="anchor" href="#_deploy_amq_broker_secured_by_keycloak_26"></a>Deploy AMQ Broker Secured by KeyCloak 26</h1>
 <div class="paragraph">
-<p>Client-side interactions with an ActiveMQ Artemis cluster can present several challenges, impacting performance and message distribution:</p>
+<p>Securing an AMQ Broker with Keycloak 26 involves integrating identity management with the broker&#8217;s authentication layer. This process ensures secure access to the management console and broker services through token-based authentication and TLS encryption.</p>
+</div>
+<div class="paragraph">
+<p>Key steps for deployment include:</p>
 </div>
 <div class="ulist">
 <ul>
 <li>
-<p><strong>Bottlenecks from Single Connection:</strong> Connecting a single client to only one broker can create performance bottlenecks and limit throughput.</p>
+<p><strong>Secret Management:</strong> Create Kubernetes secrets containing JAAS configuration files (<code>login.config</code>) and Keycloak client integration files (<code>_keycloak-bearer-token.json</code>, <code>_keycloak-direct-access.json</code>) for secure credential handling.</p>
 </li>
 <li>
-<p><strong>Impact of Default Load Balancing:</strong> Default client load-balancing policies may not evenly distribute connections or messages, leading to inefficient use of cluster resources and reduced overall throughput due to message redistribution.</p>
+<p><strong>JAAS Configuration:</strong> Configure the <code>login.config</code> to utilize Keycloak login modules, such as <code>BearerTokenLoginModule</code> and <code>DirectAccessGrantsLoginModule</code>, for verifying user identities and mapping roles.</p>
 </li>
 <li>
-<p><strong>Connection Disparity:</strong> Modern application frameworks, which scale connections on demand, can create a disparity in connections between broker nodes, especially when consumers are not long-lasting or disconnect frequently. This disparity can extend to consumers, leading to uneven message processing.</p>
+<p><strong>HTTPS Security:</strong> Provision and apply TLS certificates and keystore secrets (e.g., <code>mytlssecret</code>) to ensure encrypted communication for the AMQ management console.</p>
 </li>
 <li>
-<p><strong>Risk of Paging Messages:</strong> High-volume queues, particularly when messages are not evenly distributed, face the risk of paging messages to disk, which can degrade performance.</p>
+<p><strong>Keycloak Integration:</strong> Provision a Keycloak instance within the target namespace and configure it with the required realms, clients, and resource roles to support broker authentication.</p>
 </li>
 </ul>
 </div>
-</div>
+<nav class="pagination">
+  <span class="prev"><a href="../index.html">Home</a></span>
+  <span class="next"><a href="create-kubernetes-secrets-for-jaas-configuration-and-token-authentication.html">Create Kubernetes secrets for JAAS configuration and token authentication</a></span>
+</nav>
 </article>
   </div>
 </main>

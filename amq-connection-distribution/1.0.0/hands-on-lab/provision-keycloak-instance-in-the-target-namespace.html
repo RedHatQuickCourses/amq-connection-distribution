@@ -3,9 +3,9 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width,initial-scale=1">
-    <title>Creating TLS secrets for secure broker communication :: AMQ security with Keycloak</title>
+    <title>Provision Keycloak instance in the target namespace :: AMQ security with Keycloak</title>
     <link rel="prev" href="hands-on-lab.html">
-    <link rel="next" href="deploying-a-multi-node-broker-cluster-with-keycloak-authentication.html">
+    <link rel="next" href="generate-and-apply-security-secrets-for-jaas-and-tls.html">
     <meta name="generator" content="Antora 3.1.3">
     <link rel="stylesheet" href="../../../_/css/site.css">
     <script>var uiRootPath = '../../../_'</script>
@@ -66,7 +66,7 @@
     <button class="nav-item-toggle"></button>
     <a class="nav-link" href="hands-on-lab.html">Hands-on Lab</a>
 <ul class="nav-list">
-  <li class="nav-item is-current-page" data-depth="2">
+  <li class="nav-item" data-depth="2">
     <a class="nav-link" href="creating-tls-secrets-for-secure-broker-communication.html">Creating TLS secrets for secure broker communication</a>
   </li>
   <li class="nav-item" data-depth="2">
@@ -81,7 +81,7 @@
     <button class="nav-item-toggle"></button>
     <a class="nav-link" href="hands-on-lab.html">Hands-on Lab</a>
 <ul class="nav-list">
-  <li class="nav-item" data-depth="2">
+  <li class="nav-item is-current-page" data-depth="2">
     <a class="nav-link" href="provision-keycloak-instance-in-the-target-namespace.html">Provision Keycloak instance in the target namespace</a>
   </li>
   <li class="nav-item" data-depth="2">
@@ -121,7 +121,7 @@
   <ul>
     <li><a href="../index.html">AMQ security with Keycloak</a></li>
     <li><a href="hands-on-lab.html">Hands-on Lab</a></li>
-    <li><a href="creating-tls-secrets-for-secure-broker-communication.html">Creating TLS secrets for secure broker communication</a></li>
+    <li><a href="provision-keycloak-instance-in-the-target-namespace.html">Provision Keycloak instance in the target namespace</a></li>
   </ul>
 </nav>
 </div>
@@ -130,127 +130,148 @@
   <div class="toc-menu"></div>
 </aside>
 <article class="doc">
-<h1 class="page">Creating TLS secrets for secure broker communication</h1>
-<h1 id="_creating_tls_secrets_for_secure_broker_communication" class="sect0"><a class="anchor" href="#_creating_tls_secrets_for_secure_broker_communication"></a>Creating TLS Secrets for Secure Broker Communication</h1>
+<h1 class="page">Provision Keycloak instance in the target namespace</h1>
+<h1 id="_provision_keycloak_instance" class="sect0"><a class="anchor" href="#_provision_keycloak_instance"></a>Provision Keycloak Instance</h1>
 <div class="paragraph">
-<p>To ensure secure communication between AMQ Broker instances and their clients, you must implement Transport Layer Security (TLS). This process involves generating cryptographic assets and storing them as Kubernetes/OpenShift Secrets so the AMQ Broker operator can mount them during pod initialization.</p>
+<p>In this section, we will deploy Red Hat Build of Keycloak (RHBK) version 26 within an OpenShift environment. This instance will act as the identity provider for your AMQ Broker, managing authentication and authorization via OAuth2/OpenID Connect tokens.</p>
 </div>
 <div class="sect1">
-<h2 id="_overview_of_tls_requirements"><a class="anchor" href="#_overview_of_tls_requirements"></a>Overview of TLS Requirements</h2>
-<div class="sectionbody">
-<div class="paragraph">
-<p>In a production-grade AMQ Broker environment, you typically require:
-*   <strong>KeyStore:</strong> Contains the broker&#8217;s private key and public certificate for identity verification.
-*   <strong>TrustStore:</strong> Contains the Certificate Authority (CA) certificates that the broker trusts when validating incoming connections.</p>
-</div>
-<div class="paragraph">
-<p>For two-way TLS (Mutual TLS), both the client and the broker must present certificates that the other trusts.</p>
-</div>
-</div>
-</div>
-<div class="sect1">
-<h2 id="_step_by_step_generating_certificates_and_secrets"><a class="anchor" href="#_step_by_step_generating_certificates_and_secrets"></a>Step-by-Step: Generating Certificates and Secrets</h2>
-<div class="sectionbody">
-<div class="paragraph">
-<p>Follow these steps to generate the required certificates using <code>keytool</code> and package them into a Kubernetes Secret.</p>
-</div>
-<div class="sect2">
-<h3 id="_1_generate_certificates"><a class="anchor" href="#_1_generate_certificates"></a>1. Generate Certificates</h3>
-<div class="paragraph">
-<p>Use the Java <code>keytool</code> utility to generate the necessary stores. Ensure you replace <code>password</code> with a strong, secure passphrase.</p>
-</div>
-<div class="listingblock">
-<div class="content">
-<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># Create the Broker KeyStore
-keytool -genkeypair -alias broker -keyalg RSA -keysize 2048 \
-  -keystore broker.ks -storepass password -keypass password \
-  -dname "CN=broker-prod-ss-0, OU=AMQ, O=RedHat, L=Raleigh, C=US"
-
-# Extract the certificate to import into the TrustStore
-keytool -exportcert -alias broker -file broker.crt \
-  -keystore broker.ks -storepass password
-
-# Create the TrustStore and import the broker certificate
-keytool -importcert -alias broker -file broker.crt \
-  -keystore client.ts -storepass password -noprompt</code></pre>
-</div>
-</div>
-</div>
-<div class="sect2">
-<h3 id="_2_create_kubernetes_secrets"><a class="anchor" href="#_2_create_kubernetes_secrets"></a>2. Create Kubernetes Secrets</h3>
-<div class="paragraph">
-<p>Once the <code>.ks</code> (KeyStore) and <code>.ts</code> (TrustStore) files are generated, create the Kubernetes secrets. The AMQ Broker operator expects these files to be available under a specific secret name to mount them into the container.</p>
-</div>
-<div class="listingblock">
-<div class="content">
-<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># Create the secret for the broker KeyStore
-oc create secret generic ex-aao-amqp-secret \
-  --from-file=broker.ks=broker.ks
-
-# Create the secret for the client TrustStore
-oc create secret generic ex-aao-amqpsecret \
-  --from-file=client.ts=client.ts</code></pre>
-</div>
-</div>
-</div>
-<div class="sect2">
-<h3 id="_3_verify_secret_deployment"><a class="anchor" href="#_3_verify_secret_deployment"></a>3. Verify Secret Deployment</h3>
-<div class="paragraph">
-<p>After creation, verify that the secrets exist in your namespace:</p>
-</div>
-<div class="listingblock">
-<div class="content">
-<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get secret ex-aao-amqp-secret -o yaml
-oc get secret ex-aao-amqpsecret -o yaml</code></pre>
-</div>
-</div>
-</div>
-</div>
-</div>
-<div class="sect1">
-<h2 id="_configuring_the_broker_for_tls"><a class="anchor" href="#_configuring_the_broker_for_tls"></a>Configuring the Broker for TLS</h2>
-<div class="sectionbody">
-<div class="paragraph">
-<p>To leverage these secrets, your <code>ActiveMQArtemis</code> custom resource (CR) must reference these secrets in the <code>spec</code> section. The broker will mount these secrets into <code>/amq/extra/secrets/</code>.</p>
-</div>
-<div class="listingblock">
-<div class="content">
-<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">spec:
-  deploymentPlan:
-    image: registry.redhat.io/amq7/amq-broker-rhel8:7.11.6
-  acceptors:
-  - name: amqp-tls
-    port: 5671
-    sslEnabled: true
-    keyStoreSecret:
-      name: ex-aao-amqp-secret
-    trustStoreSecret:
-      name: ex-aao-amqpsecret</code></pre>
-</div>
-</div>
-</div>
-</div>
-<div class="sect1">
-<h2 id="_troubleshooting_guidance"><a class="anchor" href="#_troubleshooting_guidance"></a>Troubleshooting Guidance</h2>
+<h2 id="_prerequisites"><a class="anchor" href="#_prerequisites"></a>Prerequisites</h2>
 <div class="sectionbody">
 <div class="ulist">
 <ul>
 <li>
-<p><strong>Certificate Pathing:</strong> Ensure the paths defined in your AMQP connection strings or broker configuration match the standard mount point: <code>/amq/extra/secrets/&lt;secret-name&gt;/</code>.</p>
+<p>Ensure you are logged into your OpenShift cluster via <code>oc login</code>.</p>
 </li>
 <li>
-<p><strong>Permissions:</strong> If the broker fails to start with a <code>Permission Denied</code> error, verify that the ServiceAccount associated with the AMQ Broker pod has permissions to read the secrets.</p>
+<p>Ensure you have cluster-admin privileges to deploy Operators and manage namespaces.</p>
 </li>
 <li>
-<p><strong>Password Mismatch:</strong> A common cause for <code>SSLHandshakeException</code> is a mismatch between the <code>-storepass</code> used during <code>keytool</code> generation and the configuration provided to the broker. Always use the same password for the <code>keyStorePassword</code> property in your connection URI.</p>
+<p>The <code>envsubst</code> utility is required for processing the deployment manifests.</p>
 </li>
 </ul>
 </div>
 </div>
 </div>
+<div class="sect1">
+<h2 id="_step_1_prepare_the_namespace"><a class="anchor" href="#_step_1_prepare_the_namespace"></a>Step 1: Prepare the Namespace</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>First, create a dedicated project for your identity services to ensure isolation.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc new-project keycloak
+oc project keycloak</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_step_2_deploy_the_keycloak_operator"><a class="anchor" href="#_step_2_deploy_the_keycloak_operator"></a>Step 2: Deploy the Keycloak Operator</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Keycloak 26 is managed via the RHBK Operator. We will apply a <code>Subscription</code> manifest to trigger the installation via the OpenShift Operator Lifecycle Manager (OLM).</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc apply -f - &lt;&lt;EOF
+apiVersion: operators.coreos.com/v1alpha1
+kind: Subscription
+metadata:
+  labels:
+    operators.coreos.com/rhbk-operator.keycloak: ''
+  name: rhbk-operator
+  namespace: keycloak
+spec:
+  channel: stable-v26.2
+  installPlanApproval: Automatic
+  name: rhbk-operator
+  source: redhat-operators
+  sourceNamespace: openshift-marketplace
+  startingCSV: rhbk-operator.v26.2.9-opr.1
+EOF</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_step_3_configure_tls_security"><a class="anchor" href="#_step_3_configure_tls_security"></a>Step 3: Configure TLS Security</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Keycloak requires a TLS secret to secure its HTTPS interface. You must generate a self-signed certificate where the <code>CN</code> (Common Name) matches your intended external ingress URL.</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>Set your environment variable:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">export KEYCLOAK_HOST_URL=keycloak-host.apps.abouchama-ai.emea.aws.cee.support</code></pre>
+</div>
+</div>
+</li>
+<li>
+<p>Generate the certificate and store it as a Kubernetes secret:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">openssl req -subj "/CN=${KEYCLOAK_HOST_URL}/O=Keycloak-host/C=US" \
+  -newkey rsa:2048 -nodes -keyout key.pem -x509 -days 365 -out certificate.pem
+
+oc create secret tls example-tls-secret --cert=certificate.pem --key=key.pem</code></pre>
+</div>
+</div>
+</li>
+</ol>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_step_4_provision_the_keycloak_instance"><a class="anchor" href="#_step_4_provision_the_keycloak_instance"></a>Step 4: Provision the Keycloak Instance</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>With the operator running and the TLS secret prepared, use the following command to download and apply the Keycloak custom resource definition. This configuration includes the necessary environment variables to expose Keycloak at your defined host URL.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">curl -sL https://raw.githubusercontent.com/aboucham/activemq-artemistutorials/refs/heads/main/keycloak/keycloak-install.yaml | \
+  envsubst | \
+  oc apply -n keycloak -f -</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_step_5_retrieve_admin_credentials"><a class="anchor" href="#_step_5_retrieve_admin_credentials"></a>Step 5: Retrieve Admin Credentials</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Once the Keycloak pod is in a <code>Ready</code> state, the operator will generate an initial admin password. Retrieve it to log in to the Keycloak Admin Console:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">echo "Username: $(kubectl get secret -n keycloak example-kc-initial-admin -o jsonpath='{.data.username}' | base64 --decode)"
+echo "Password: $(kubectl get secret -n keycloak example-kc-initial-admin -o jsonpath='{.data.password}' | base64 --decode)"</code></pre>
+</div>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>It may take a few minutes for the Keycloak instance to initialize after the resource is applied. Check the status using <code>oc get keycloak -n keycloak</code>.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+</div>
+</div>
 <nav class="pagination">
   <span class="prev"><a href="hands-on-lab.html">Hands-on Lab</a></span>
-  <span class="next"><a href="deploying-a-multi-node-broker-cluster-with-keycloak-authentication.html">Deploying a multi-node broker cluster with Keycloak authentication</a></span>
+  <span class="next"><a href="generate-and-apply-security-secrets-for-jaas-and-tls.html">Generate and apply security secrets for JAAS and TLS</a></span>
 </nav>
 </article>
   </div>
