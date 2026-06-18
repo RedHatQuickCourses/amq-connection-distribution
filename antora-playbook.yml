@@ -1,5 +1,5 @@
 site:
-  title:  Advanced AMQ Broker Configuration and Security
+  title:  Authenticating AMQ with Keycloak
   start_page: amq-connection-distribution::index.adoc
 
 content:

@@ -1,9 +1,9 @@
-=  Advanced AMQ Broker Configuration and Security
+=  Authenticating AMQ with Keycloak
 :navtitle: Home
 
 == Introduction
 
-Course Title:  Advanced AMQ Broker Configuration and Security
+Course Title:  Authenticating AMQ with Keycloak
 
 Description:
 Course description FIXME
@@ -13,13 +13,7 @@ Duration: FIXME hours
 == Topics covered in this course
 
 
-*  AMQ with Keycloak
-
-*  AMQ Mirroring
-
-*  AMQ JDBC Persistence
-
-*  Hands-on Lab
+*  Securing AMQ Broker Deployment
 
 
 

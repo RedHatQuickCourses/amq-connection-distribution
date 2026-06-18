@@ -1,0 +1,9 @@
+#  Securing AMQ Broker Deployment
+
+= Securing AMQ Broker Deployment
+
+Securing an AMQ Broker deployment involves protecting both the communication channels and the authentication mechanisms within the cluster. Key practices include:
+
+*   **TLS Management**: Create and manage Kubernetes secrets (e.g., `mytlssecret`) to secure the broker console via HTTPS and maintain keystores and truststores for encrypted traffic.
+*   **Credential Configuration**: Define secure administration credentials, such as `adminUser` and `adminPassword`, within the `ActiveMQArtemis` custom resource to prevent unauthorized broker management.
+*   **Keycloak Integration**: Configure AMQ Broker to use Red Hat Build of Keycloak (RHBK) for centralized authentication. This requires creating a `keycloak-jaas-config` secret containing the necessary configuration files (`login.config`, bearer tokens, and client JSONs) to enable secure token-based access and attribute mapping.

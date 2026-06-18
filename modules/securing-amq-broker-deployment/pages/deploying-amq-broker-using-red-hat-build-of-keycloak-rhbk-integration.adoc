@@ -1,0 +1,93 @@
+#  Deploying AMQ Broker using Red Hat Build of Keycloak (RHBK) integration
+
+= Deploying AMQ Broker using Red Hat Build of Keycloak (RHBK) integration
+
+To secure an AMQ Broker deployment using Red Hat Build of Keycloak (RHBK), you must establish a trust relationship between the broker and the Keycloak server and provide the necessary configuration files to enable OIDC-based authentication.
+
+== Prerequisites
+
+* An active RHBK instance (e.g., Keycloak 26).
+* The RHBK server's public certificate or CA certificate.
+* `oc` CLI tool logged into your OpenShift cluster.
+* A target namespace (e.g., `amq`) where the broker will be deployed.
+
+== Hands-on Activity: Configuring Keycloak Integration
+
+Follow these steps to prepare the secrets and configurations required for your AMQ Broker deployment.
+
+=== 1. Create the Keycloak Truststore
+The AMQ Broker must trust the RHBK server's certificate to validate tokens. Extract the RHBK certificate and create a secret in the `amq` namespace.
+
+[source,bash]
+----
+# Extract the RHBK TLS certificate
+oc extract secret/example-tls-secret -n keycloak --confirm
+
+# Create the truststore secret in the amq namespace
+oc create secret generic keycloak-truststore -n amq --from-file=tls.crt
+----
+
+=== 2. Generate OIDC Configuration Files
+You need to define the Keycloak client configuration. Use `envsubst` to inject your Keycloak URL into the JSON templates.
+
+[source,bash]
+----
+export KEYCLOAK_URL=keycloak-sso.apps.com
+
+# Create the direct-access configuration
+cat <<EOF | envsubst > _keycloak-direct-access.json
+{
+  "realm": "amq-broker-realm",
+  "auth-server-url": "https://$KEYCLOAK_URL",
+  "ssl-required": "all",
+  "credentials": { "secret": "amq-broker-secret-value" },
+  "resource": "amq-broker",
+  "use-resource-role-mappings": true,
+  "principal-attribute": "preferred_username",
+  "verify-token-audience": true,
+  "enable-basic-auth": true,
+  "confidential-port": 0
+}
+EOF
+
+# Create the bearer-token configuration (similar process for _keycloak-bearer-token.json)
+# Note: Ensure all client configuration files (_keycloak-js-client.json, etc.) are prepared.
+----
+
+=== 3. Package Configuration into a Secret
+AMQ Broker requires the JAAS configuration and OIDC client files to be mounted via a Kubernetes Secret.
+
+[source,bash]
+----
+oc create secret -n amq generic keycloak-jaas-config \
+  --from-file=login.config \
+  --from-file=_keycloak-bearer-token.json \
+  --from-file=_keycloak-js-client.json \
+  --from-file=_keycloak-direct-access.json
+----
+
+=== 4. Deploy the AMQ Broker
+Deploy the AMQ Broker using your `ActiveMQArtemis` custom resource. Ensure the `mytlssecret` (for console HTTPS) and the `keycloak-jaas-config` secrets are referenced in your deployment YAML.
+
+.Example Deployment Configuration Snippet
+[source,yaml]
+----
+apiVersion: broker.amq.io/v2alpha1
+kind: ActiveMQArtemis
+metadata:
+  name: amq-broker-cluster
+  namespace: amq
+spec:
+  # ... other configurations ...
+  console:
+    enabled: true
+    secretName: mytlssecret
+  deploymentPlan:
+    # Ensure the Keycloak secrets are mounted for the broker process
+    ...
+----
+
+[NOTE]
+====
+Ensure the `tls.crt` used in the `keycloak-truststore` secret matches the server certificate served by your Keycloak instance. Mismatched certificates will result in `SSLHandshakeException` errors during token validation.
+====
