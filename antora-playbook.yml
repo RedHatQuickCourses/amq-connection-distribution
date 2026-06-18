@@ -1,5 +1,5 @@
 site:
-  title:  Overview of microservices with Quarkus
+  title:  AMQ security with Keycloak
   start_page: amq-connection-distribution::index.adoc
 
 content:

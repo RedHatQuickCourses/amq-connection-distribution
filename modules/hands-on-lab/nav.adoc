@@ -2,3 +2,6 @@
 ** xref:creating-tls-secrets-for-secure-broker-communication.adoc[]
 ** xref:deploying-a-multi-node-broker-cluster-with-keycloak-authentication.adoc[]
 ** xref:configuring-inter-broker-mirroring-for-multi-site-synchronization.adoc[]
+* xref:hands-on-lab.adoc[]
+** xref:provision-keycloak-instance-in-the-target-namespace.adoc[]
+** xref:generate-and-apply-security-secrets-for-jaas-and-tls.adoc[]

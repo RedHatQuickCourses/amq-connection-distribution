@@ -1,9 +1,9 @@
-=  Overview of microservices with Quarkus
+=  AMQ security with Keycloak
 :navtitle: Home
 
 == Introduction
 
-Course Title:  Overview of microservices with Quarkus
+Course Title:  AMQ security with Keycloak
 
 Description:
 Course description FIXME
@@ -13,11 +13,9 @@ Duration: FIXME hours
 == Topics covered in this course
 
 
-*  Architecture and Core Concepts
+*  Deploy AMQ Broker Secured by KeyCloak 26
 
-*  Quarkus Framework Fundamentals
-
-*  Hands-on Labs
+*  Hands on lab
 
 
 

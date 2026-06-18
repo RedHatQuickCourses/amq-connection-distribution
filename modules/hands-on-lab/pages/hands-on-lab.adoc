@@ -6,4 +6,12 @@ The hands-on lab focuses on practical implementation of advanced AMQ Broker secu
 
 * **Secure Communication:** Implementing TLS secrets to enforce encrypted broker connectivity.
 * **Identity Integration:** Deploying a multi-node broker cluster integrated with Keycloak for centralized authentication.
-* **Site Resiliency:** Configuring inter-broker mirroring to ensure robust multi-site message synchronization and disaster recovery.
+* **Site Resiliency:** Configuring inter-broker mirroring to ensure robust multi-site message synchronization and disaster recovery.#  Hands on lab
+
+== Hands on lab
+
+The hands-on lab focuses on implementing a secure AMQ Broker deployment integrated with Keycloak 26. Key activities include:
+
+* **Keycloak Provisioning:** Deploying and configuring a Keycloak instance within the target Kubernetes namespace to act as the identity provider.
+* **Secret Management:** Generating and applying the necessary Kubernetes secrets to handle JAAS authentication and token-based security.
+* **TLS Configuration:** Establishing secure HTTPS console access by managing TLS certificates and keystore secrets.

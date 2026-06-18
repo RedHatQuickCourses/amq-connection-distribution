@@ -1,0 +1,92 @@
+#  Provision Keycloak instance in the target namespace
+
+= Provision Keycloak Instance
+
+In this section, we will deploy Red Hat Build of Keycloak (RHBK) version 26 within an OpenShift environment. This instance will act as the identity provider for your AMQ Broker, managing authentication and authorization via OAuth2/OpenID Connect tokens.
+
+== Prerequisites
+
+* Ensure you are logged into your OpenShift cluster via `oc login`.
+* Ensure you have cluster-admin privileges to deploy Operators and manage namespaces.
+* The `envsubst` utility is required for processing the deployment manifests.
+
+== Step 1: Prepare the Namespace
+
+First, create a dedicated project for your identity services to ensure isolation.
+
+[source,bash]
+----
+oc new-project keycloak
+oc project keycloak
+----
+
+== Step 2: Deploy the Keycloak Operator
+
+Keycloak 26 is managed via the RHBK Operator. We will apply a `Subscription` manifest to trigger the installation via the OpenShift Operator Lifecycle Manager (OLM).
+
+[source,bash]
+----
+oc apply -f - <<EOF
+apiVersion: operators.coreos.com/v1alpha1
+kind: Subscription
+metadata:
+  labels:
+    operators.coreos.com/rhbk-operator.keycloak: ''
+  name: rhbk-operator
+  namespace: keycloak
+spec:
+  channel: stable-v26.2
+  installPlanApproval: Automatic
+  name: rhbk-operator
+  source: redhat-operators
+  sourceNamespace: openshift-marketplace
+  startingCSV: rhbk-operator.v26.2.9-opr.1
+EOF
+----
+
+== Step 3: Configure TLS Security
+
+Keycloak requires a TLS secret to secure its HTTPS interface. You must generate a self-signed certificate where the `CN` (Common Name) matches your intended external ingress URL.
+
+1. Set your environment variable:
++
+[source,bash]
+----
+export KEYCLOAK_HOST_URL=keycloak-host.apps.abouchama-ai.emea.aws.cee.support
+----
+
+2. Generate the certificate and store it as a Kubernetes secret:
++
+[source,bash]
+----
+openssl req -subj "/CN=${KEYCLOAK_HOST_URL}/O=Keycloak-host/C=US" \
+  -newkey rsa:2048 -nodes -keyout key.pem -x509 -days 365 -out certificate.pem
+
+oc create secret tls example-tls-secret --cert=certificate.pem --key=key.pem
+----
+
+== Step 4: Provision the Keycloak Instance
+
+With the operator running and the TLS secret prepared, use the following command to download and apply the Keycloak custom resource definition. This configuration includes the necessary environment variables to expose Keycloak at your defined host URL.
+
+[source,bash]
+----
+curl -sL https://raw.githubusercontent.com/aboucham/activemq-artemistutorials/refs/heads/main/keycloak/keycloak-install.yaml | \
+  envsubst | \
+  oc apply -n keycloak -f -
+----
+
+== Step 5: Retrieve Admin Credentials
+
+Once the Keycloak pod is in a `Ready` state, the operator will generate an initial admin password. Retrieve it to log in to the Keycloak Admin Console:
+
+[source,bash]
+----
+echo "Username: $(kubectl get secret -n keycloak example-kc-initial-admin -o jsonpath='{.data.username}' | base64 --decode)"
+echo "Password: $(kubectl get secret -n keycloak example-kc-initial-admin -o jsonpath='{.data.password}' | base64 --decode)"
+----
+
+[NOTE]
+====
+It may take a few minutes for the Keycloak instance to initialize after the resource is applied. Check the status using `oc get keycloak -n keycloak`.
+====

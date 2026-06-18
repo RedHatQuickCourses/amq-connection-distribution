@@ -1,0 +1,12 @@
+#  Deploy AMQ Broker Secured by KeyCloak 26
+
+= Deploy AMQ Broker Secured by KeyCloak 26
+
+Securing an AMQ Broker with Keycloak 26 involves integrating identity management with the broker's authentication layer. This process ensures secure access to the management console and broker services through token-based authentication and TLS encryption.
+
+Key steps for deployment include:
+
+*   **Secret Management:** Create Kubernetes secrets containing JAAS configuration files (`login.config`) and Keycloak client integration files (`_keycloak-bearer-token.json`, `_keycloak-direct-access.json`) for secure credential handling.
+*   **JAAS Configuration:** Configure the `login.config` to utilize Keycloak login modules, such as `BearerTokenLoginModule` and `DirectAccessGrantsLoginModule`, for verifying user identities and mapping roles.
+*   **HTTPS Security:** Provision and apply TLS certificates and keystore secrets (e.g., `mytlssecret`) to ensure encrypted communication for the AMQ management console.
+*   **Keycloak Integration:** Provision a Keycloak instance within the target namespace and configure it with the required realms, clients, and resource roles to support broker authentication.
