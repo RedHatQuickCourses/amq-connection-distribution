@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Microservices communication patterns :: Overview of microservices with Quarkus</title>
+    <link rel="prev" href="architecture-and-core-concepts.html">
+    <link rel="next" href="../quarkus-framework-fundamentals/quarkus-framework-fundamentals.html">
+    <meta name="generator" content="Antora 3.1.3">
+    <link rel="stylesheet" href="../../../_/css/site.css">
+    <script>var uiRootPath = '../../../_'</script>
+  </head>
+  <body class="article">
+<header class="header">
+  <nav class="navbar">
+    <div class="navbar-brand">
+      <a class="navbar-item" href="https://www.redhat.com" target="_blank"><img src="../../../_/img/redhat-logo.png" height="40px" alt="Red Hat"></a>
+      <a class="navbar-item" style="font-size: 24px; color: white" href="../../..">Overview of microservices with Quarkus</a>
+      <button class="navbar-burger" data-target="topbar-nav">
+        <span></span>
+        <span></span>
+        <span></span>
+      </button>
+    </div>
+    <div id="topbar-nav" class="navbar-menu">
+      <div class="navbar-end">
+        <a class="navbar-item" href="https://github.com/RedHatQuickCourses/REPLACEREPONAME/issues" target="_blank">Report Issues</a>
+      </div>
+    </div>
+  </nav>
+</header>
+<div class="body">
+<div class="nav-container" data-component="amq-connection-distribution" data-version="1.0.0">
+  <aside class="nav">
+    <div class="panels">
+<div class="nav-panel-menu is-active" data-panel="menu">
+  <nav class="nav-menu">
+    <h3 class="title"><a href="../index.html">Overview of microservices with Quarkus</a></h3>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="../index.html">Home</a>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="architecture-and-core-concepts.html">Architecture and Core Concepts</a>
+<ul class="nav-list">
+  <li class="nav-item is-current-page" data-depth="2">
+    <a class="nav-link" href="microservices-communication-patterns.html">Microservices communication patterns</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../quarkus-framework-fundamentals/quarkus-framework-fundamentals.html">Quarkus Framework Fundamentals</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../quarkus-framework-fundamentals/comparison-between-quarkus-and-spring-boot-performance.html">Comparison between Quarkus and Spring Boot performance</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../hands-on-labs/hands-on-labs.html">Hands-on Labs</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../hands-on-labs/deploying-microservices-with-service-discovery.html">Deploying microservices with service discovery</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+</ul>
+  </nav>
+</div>
+<div class="nav-panel-explore" data-panel="explore">
+  <div class="context">
+    <span class="title">Overview of microservices with Quarkus</span>
+    <span class="version">1.0.0</span>
+  </div>
+  <ul class="components">
+    <li class="component is-current">
+      <a class="title" href="../index.html">Overview of microservices with Quarkus</a>
+      <ul class="versions">
+        <li class="version is-current is-latest">
+          <a href="../index.html">1.0.0</a>
+        </li>
+      </ul>
+    </li>
+  </ul>
+</div>
+    </div>
+  </aside>
+</div>
+<main class="article">
+<div class="toolbar" role="navigation">
+<button class="nav-toggle"></button>
+  <a href="../index.html" class="home-link"></a>
+<nav class="breadcrumbs" aria-label="breadcrumbs">
+  <ul>
+    <li><a href="../index.html">Overview of microservices with Quarkus</a></li>
+    <li><a href="architecture-and-core-concepts.html">Architecture and Core Concepts</a></li>
+    <li><a href="microservices-communication-patterns.html">Microservices communication patterns</a></li>
+  </ul>
+</nav>
+</div>
+  <div class="content">
+<aside class="toc sidebar" data-title="Contents" data-levels="2">
+  <div class="toc-menu"></div>
+</aside>
+<article class="doc">
+<h1 class="page">Microservices communication patterns</h1>
+<h1 id="_microservices_communication_patterns" class="sect0"><a class="anchor" href="#_microservices_communication_patterns"></a>Microservices Communication Patterns</h1>
+<div class="paragraph">
+<p>In a microservices architecture, the system is decomposed into a collection of small, independent services. Because these services run in separate processes—often on different servers—they require robust communication patterns to function as a cohesive application.</p>
+</div>
+<div class="sect1">
+<h2 id="_synchronous_vs_asynchronous_communication"><a class="anchor" href="#_synchronous_vs_asynchronous_communication"></a>Synchronous vs. Asynchronous Communication</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Communication between services generally falls into two categories: synchronous and asynchronous.</p>
+</div>
+<div class="sect2">
+<h3 id="_synchronous_communication"><a class="anchor" href="#_synchronous_communication"></a>Synchronous Communication</h3>
+<div class="paragraph">
+<p>Synchronous communication occurs when a client or service sends a request and waits for an immediate response.</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>Pattern:</strong> Typically implemented using RESTful APIs or gRPC.</p>
+</li>
+<li>
+<p><strong>The API Gateway Role:</strong> As the entry point for the system, the API Gateway acts as a traffic cop. When a user sends a request, the gateway routes it to the appropriate service, waits for the response, and returns it to the client.</p>
+</li>
+<li>
+<p><strong>Trade-offs:</strong> While easy to implement, it creates temporal coupling. If the downstream service is slow or unavailable, the calling service—and potentially the entire chain—becomes blocked.</p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_asynchronous_communication"><a class="anchor" href="#_asynchronous_communication"></a>Asynchronous Communication</h3>
+<div class="paragraph">
+<p>Asynchronous communication allows services to interact without waiting for an immediate response, which is vital for building resilient systems.</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>Pattern:</strong> Typically implemented using <strong>Message Brokers</strong> (e.g., RabbitMQ, Apache Kafka).</p>
+</li>
+<li>
+<p><strong>Reliability:</strong> Messaging queues act as a buffer. If a service, such as a notification service, is temporarily down, the message is stored in the broker. Once the service recovers, it processes the queued messages, ensuring zero data loss.</p>
+</li>
+<li>
+<p><strong>Decoupling:</strong> Services do not need to know the location or the state of other services, only the location of the message broker.</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_service_discovery"><a class="anchor" href="#_service_discovery"></a>Service Discovery</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>In dynamic environments like Kubernetes, microservice instances are ephemeral; they are frequently created, destroyed, and moved across different IP addresses. Hard-coding URLs is impossible.</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>Service Registry:</strong> This is a database of available service instances.</p>
+</li>
+<li>
+<p><strong>Workflow:</strong></p>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>When a service starts, it sends a registration request to the <strong>Service Registry</strong>.</p>
+</li>
+<li>
+<p>When a client (or another service) needs to communicate, it queries the registry to get the current location (IP and port) of the target service.</p>
+</li>
+</ol>
+</div>
+</li>
+</ul>
+</div>
+<div class="admonitionblock tip">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-tip" title="Tip"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>Use a Service Registry to decouple your microservices from network-level configurations. This allows your architecture to scale horizontally automatically without manual updates to routing tables.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_summary_table_communication_patterns"><a class="anchor" href="#_summary_table_communication_patterns"></a>Summary Table: Communication Patterns</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>| Pattern | Type | Best Use Case |
+| :--- | :--- | :--- |
+| <strong>REST/gRPC</strong> | Synchronous | Direct, request-response operations (e.g., fetching a product catalog). |
+| <strong>Message Queues</strong> | Asynchronous | Decoupled background processing (e.g., sending email notifications after a purchase). |
+| <strong>API Gateway</strong> | Orchestration | Managing traffic flow from external clients to internal microservices. |
+| <strong>Service Registry</strong> | Infrastructure | Enabling dynamic location of services in cloud-native environments. |</p>
+</div>
+<hr>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_hands_on_activity_configuring_a_service_registry"><a class="anchor" href="#_hands_on_activity_configuring_a_service_registry"></a>Hands-on Activity: Configuring a Service Registry</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>In this activity, we look at how a service registry ensures services find each other.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>In a real-world Quarkus environment, you would typically use an extension like <code>quarkus-kubernetes-service-binding</code> or integrate with a service mesh like Istio to handle service discovery automatically.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p><strong>Step 1: Define the Service Metadata</strong>
+Every microservice must define its name, which will be used for registration. In your <code>application.properties</code>:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-properties hljs" data-lang="properties">quarkus.application.name=inventory-service</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p><strong>Step 2: Service Lookup</strong>
+Instead of calling <code><a href="http://192.168.1.50:8080" class="bare">http://192.168.1.50:8080</a></code>, your code should reference the service name. If using a service mesh or discovery client, the request is directed to the registry:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-java hljs" data-lang="java">// Example of a REST client looking up a service by name
+@RegisterRestClient(configKey = "catalog-api")
+public interface CatalogService {
+    @GET
+    @Path("/products")
+    List&lt;Product&gt; getProducts();
+}</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p><strong>Step 3: Implementation Check</strong>
+Ensure your infrastructure is configured so that when <code>inventory-service</code> requests <code>catalog-api</code>, the Service Registry resolves this to the current, healthy pod IP address managed by your orchestration layer.</p>
+</div>
+</div>
+</div>
+<nav class="pagination">
+  <span class="prev"><a href="architecture-and-core-concepts.html">Architecture and Core Concepts</a></span>
+  <span class="next"><a href="../quarkus-framework-fundamentals/quarkus-framework-fundamentals.html">Quarkus Framework Fundamentals</a></span>
+</nav>
+</article>
+  </div>
+</main>
+</div>
+<footer class="footer">
+  <img src="../../../_/img/rhl-logo-red.png" height="40px" alt="Red Hat"  href="https://redhat.com" >
+</footer><script id="site-script" src="../../../_/js/site.js" data-ui-root-path="../../../_"></script>
+<script async src="../../../_/js/vendor/highlight.js"></script>
+  </body>
+</html>
